@@ -56,7 +56,7 @@ module.exports = (robot) ->
       @user = message.user
       @room = message.room
 
-      @default_path = process.env.DEFAULT_PATH or '/Users/thomashowe/Documents/src/green_hubot'
+      @default_path = process.env.DEFAULT_PATH or './scripts'
       @default_cmd = process.env.DEFAULT_CMD or 'ruby example_script.rb'
   
       # Process the default path so we can use it for spawn. 

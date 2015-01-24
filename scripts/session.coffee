@@ -40,16 +40,13 @@ module.exports = (robot) ->
   console.log "Sessions are currently supported."
   robot.hear /(.*)/i, (msg) =>
     session_name = msg.message.user.name + "_" + msg.message.room
-    console.log "Looking for session named #{session_name}"
     for session in robot.sessions
       console.log session.session_name()
 
     session = robot.sessions[session_name]
     if session
-      console.log "Found session for #{session_name}"
       session.send_cmd_to_session(msg.message.text)
     else
-      console.log "Did not find session for #{session_name}"
       new_session = new Session msg.message
       new_session.start_session()
  
@@ -57,16 +54,14 @@ module.exports = (robot) ->
     constructor: (message)->
       @user = message.user
       @room = message.room
+      room_settings = "settings:#{@room}"
       @key = ShortUUID.generate()
       
-      room_settings = "settings:#{@room}"
       redis_client.get room_settings, (err, settings) =>
-        if not settings
-          console.log "Did not find settings. Exiting"
-          return 
+        return if not settings
         
         @settings = JSON.parse settings.toString()
-        @resolvePaths()
+        @preparePaths()
         @assembleEnv()
         opts = 
           cwd: @default_path
@@ -77,16 +72,16 @@ module.exports = (robot) ->
         # Setup callbacks for incoming data
         @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
         @process.stderr.on "data", (buffer) => @handle_incoming_msg(buffer)
+        
         @process.on "exit", (code, signal) =>
           @add_to_list("ENDED_SESSION", @key)
           console.log("Session ended for #{@user.name} with #{code}")
-          delete robot.sessions[@user.name]
+          delete robot.sessions[@session_name()]
 
         robot.sessions[@session_name()] = @
         @add_to_list("STARTED_SESSION", @key)
-        console.log "Started session for #{@session_name()}"
 
-    resolvePaths: () ->
+    preparePaths: () ->
       @default_path = @settings.default_path
       @split_args = @settings.default_cmd.split(" ")
       @default_cmd = @split_args[0]
@@ -99,8 +94,11 @@ module.exports = (robot) ->
       @env.SRC = @user.name
       @env.DST = @user.room
       for attrname of @settings.settings 
-        console.log "Applying #{attrname} to #{@settings.settings[attrname]}"
         @env[attrname] = @settings.settings[attrname]
+      if @settings.owners? and @user.name in @settings.owners
+        @env["OWNER"] = "true"
+      else
+        @env["OWNER"] = "false"
 
     isJsonString: (str) ->
       # When a text message comes from a session, if it's a valid JSON 

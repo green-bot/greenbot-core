@@ -7,6 +7,11 @@ require "./lib/greenbot.rb"
 
 say("Thanks for texting us. You can download your information here: http://www.yahoo.com")
 
+if ENV['OWNER'] == "true"
+  say("Hello, owner!")
+end
+
+
 local_variables.each do |v|
   eval(v.to_s).remember(v)
 end

@@ -31,10 +31,12 @@ Readline = require 'readline'
 ShortUUID = require 'shortid'
 Redis = require "redis"
 Os = require("os")
+ChildProcess = require("child_process")
 
 module.exports = (robot) ->
   robot.sessions = {}
   redis_client = Redis.createClient()
+
   console.log "Sessions are currently supported."
   robot.hear /(.*)/i, (msg) =>
     session_name = msg.message.user.name + "_" + msg.message.room
@@ -55,16 +57,50 @@ module.exports = (robot) ->
     constructor: (message)->
       @user = message.user
       @room = message.room
+      @key = ShortUUID.generate()
+      
+      room_settings = "settings:#{@room}"
+      redis_client.get room_settings, (err, settings) =>
+        if not settings
+          console.log "Did not find settings. Exiting"
+          return 
+        
+        @settings = JSON.parse settings.toString()
+        @resolvePaths()
+        @assembleEnv()
+        opts = 
+          cwd: @default_path
+          env: @env
+        console.log @
+        @process = ChildProcess.spawn(@default_cmd, @split_args, opts)
 
-      @default_path = process.env.DEFAULT_PATH or './scripts'
-      @default_cmd = process.env.DEFAULT_CMD or 'ruby example_script.rb'
-  
-      # Process the default path so we can use it for spawn. 
-      @default_script_cmd = @default_cmd.split(" ")[0]
-      @split_args = @default_cmd.split(" ")
+        # Setup callbacks for incoming data
+        @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
+        @process.stderr.on "data", (buffer) => @handle_incoming_msg(buffer)
+        @process.on "exit", (code, signal) =>
+          @add_to_list("ENDED_SESSION", @key)
+          console.log("Session ended for #{@user.name} with #{code}")
+          delete robot.sessions[@user.name]
+
+        robot.sessions[@session_name()] = @
+        @add_to_list("STARTED_SESSION", @key)
+        console.log "Started session for #{@session_name()}"
+
+    resolvePaths: () ->
+      @default_path = @settings.default_path
+      @split_args = @settings.default_cmd.split(" ")
+      @default_cmd = @split_args[0]
       @split_args.shift()
       @default_args = @split_args.join(" ")
-      @key = ShortUUID.generate()
+
+    assembleEnv: () ->
+      @env = process.env
+      @env.SESSION_ID = @key
+      @env.SRC = @user.name
+      @env.DST = @user.room
+      for attrname of @settings.settings 
+        console.log "Applying #{attrname} to #{@settings.settings[attrname]}"
+        @env[attrname] = @settings.settings[attrname]
 
     isJsonString: (str) ->
       # When a text message comes from a session, if it's a valid JSON 
@@ -117,50 +153,5 @@ module.exports = (robot) ->
       @record_transcript(cmd)
 
     start_session: () ->
-      console.log "Starting new session for #{@session_name()}"
-      @username = @user.name
-      @env = process.env
-      @env.SESSION_ID = @key
-      @env.SRC = @user.name
-      @env.DST = @user.room 
-      redis_client.get("DEFAULT_SETTINGS", (err, reply) => 
-        if reply?
-          reply = JSON.parse reply.toString()
-          for attrname of reply
-            console.log "Applying #{attrname} to #{reply[attrname]}"
-            @env[attrname] = reply[attrname]
-
-          # Do this again, but for settings for this particular room
-          redis_client.get("room_settings:#{@user.room}", (err, reply) =>
-            if reply?
-              reply = JSON.parse reply.toString()
-              for attrname of reply
-                console.log "Applying #{attrname} to #{reply[attrname]}"
-                @env[attrname] = reply[attrname]
-            @.spawn_shell()
-          )
-        else
-          @.spawn_shell()
-      )
-
-    spawn_shell: () ->
-      console.log "Spawning shell #{@default_script_cmd} #{@default_args} for #{@user.name} in directory #{@default_path}"
-      spawn = require("child_process").spawn
-      opts = {
-        cwd: @default_path
-        env: @env
-      }
-      @process = spawn(@default_script_cmd, @split_args, opts)
-      @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
-      @process.stderr.on "data", (buffer) => @handle_incoming_msg(buffer)
-      @process.on "exit", (code, signal) =>
-        @add_to_list("ENDED_SESSION", @key)
-        console.log("Session ended for #{@username} with #{code}")
-        delete robot.sessions[@username]
-
-      robot.sessions[@session_name()] = @
-      @add_to_list("STARTED_SESSION", @key)
-      console.log "Started session for #{@session_name()}"
-
 
      

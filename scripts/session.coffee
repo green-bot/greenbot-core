@@ -32,6 +32,7 @@ ShortUUID = require 'shortid'
 Redis = require "redis"
 Os = require("os")
 ChildProcess = require("child_process")
+Url = require("url")
 
 module.exports = (robot) ->
   robot.sessions = {}
@@ -75,8 +76,8 @@ module.exports = (robot) ->
         
         @process.on "exit", (code, signal) =>
           @add_to_list("ENDED_SESSION", @key)
-          console.log("Session ended for #{@user.name} with #{code}")
           delete robot.sessions[@session_name()]
+          @notify_conversation_end
 
         robot.sessions[@session_name()] = @
         @add_to_list("STARTED_SESSION", @key)
@@ -99,6 +100,20 @@ module.exports = (robot) ->
         @env["OWNER"] = "true"
       else
         @env["OWNER"] = "false"
+
+    notify_conversation_end: () =>
+      if @settings.webhook_url?
+        console.log "Sending webhook to #{@settings.webhook_ur}"
+        hook_params = 
+          protocol: URL.protocol(@settings.webhook_url)
+          host: URL.host(@settings.webhook_url)
+          pathname: URL.pathname(@settings.webhook_url)
+          method: "POST"
+        hook_params["auth"] = @settings.webhook_auth if @settings.webhook_auth?
+        uri = url.format hook_params
+        http.request(uri).on "error", (e) ->
+          console.log "Got webhook error: " + e.message
+          return
 
     isJsonString: (str) ->
       # When a text message comes from a session, if it's a valid JSON 

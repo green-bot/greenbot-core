@@ -75,9 +75,9 @@ module.exports = (robot) ->
         @process.stderr.on "data", (buffer) => @handle_incoming_msg(buffer)
         
         @process.on "exit", (code, signal) =>
+          @emit "conversation_ended", @
           @add_to_list("ENDED_SESSION", @key)
-          delete robot.sessions[@session_name()]
-          @notify_conversation_end
+          console.log "Conversation ended. Deleting from active sessions"
 
         robot.sessions[@session_name()] = @
         @add_to_list("STARTED_SESSION", @key)
@@ -102,6 +102,7 @@ module.exports = (robot) ->
         @env["OWNER"] = "false"
 
     notify_conversation_end: () =>
+      console.log("Webhook is currently setup at #{@settings.webhook_url}")
       if @settings.webhook_url?
         console.log "Sending webhook to #{@settings.webhook_ur}"
         hook_params = 
@@ -165,6 +166,7 @@ module.exports = (robot) ->
       @process.stdin.write("#{cmd}\n")
       @record_transcript(cmd)
 
+    robot.on "conversation_ended" 
     start_session: () ->
 
      

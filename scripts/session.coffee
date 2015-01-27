@@ -75,10 +75,8 @@ module.exports = (robot) ->
         @process.stderr.on "data", (buffer) => @handle_incoming_msg(buffer)
         
         @process.on "exit", (code, signal) =>
-          @emit "conversation_ended", @
-          @add_to_list("ENDED_SESSION", @key)
-          console.log "Conversation ended. Deleting from active sessions"
-
+          robot.emit "conversation_ended", @
+        
         robot.sessions[@session_name()] = @
         @add_to_list("STARTED_SESSION", @key)
 
@@ -100,21 +98,6 @@ module.exports = (robot) ->
         @env["OWNER"] = "true"
       else
         @env["OWNER"] = "false"
-
-    notify_conversation_end: () =>
-      console.log("Webhook is currently setup at #{@settings.webhook_url}")
-      if @settings.webhook_url?
-        console.log "Sending webhook to #{@settings.webhook_ur}"
-        hook_params = 
-          protocol: URL.protocol(@settings.webhook_url)
-          host: URL.host(@settings.webhook_url)
-          pathname: URL.pathname(@settings.webhook_url)
-          method: "POST"
-        hook_params["auth"] = @settings.webhook_auth if @settings.webhook_auth?
-        uri = url.format hook_params
-        http.request(uri).on "error", (e) ->
-          console.log "Got webhook error: " + e.message
-          return
 
     isJsonString: (str) ->
       # When a text message comes from a session, if it's a valid JSON 
@@ -166,7 +149,24 @@ module.exports = (robot) ->
       @process.stdin.write("#{cmd}\n")
       @record_transcript(cmd)
 
-    robot.on "conversation_ended" 
+    robot.on "conversation_ended", (session) ->
+      session.add_to_list("ENDED_SESSION", session.key)
+      console.log "Conversation ended. Deleting from active sessions"
+      console.log("Webhook is currently setup at #{JSON.stringify session.settings, null, 4}")
+      if session.settings.webhook_url?
+        console.log "Sending webhook to #{session.settings.webhook_url}"
+        hook_params = 
+          protocol: Url.protocol(session.settings.webhook_url)
+          host: Url.host(session.settings.webhook_url)
+          pathname: Url.pathname(session.settings.webhook_url)
+          method: "POST"
+        uri = url.format hook_params
+        console.log "Sending webhook to #{JSON.Stringify uri, null, 4}"
+        http.request(uri).on "error", (e) ->
+          console.log "Got webhook error: " + e.message
+          return
+
+
     start_session: () ->
 
      

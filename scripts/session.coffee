@@ -34,6 +34,8 @@ Os = require("os")
 ChildProcess = require("child_process")
 Url = require("url")
 Request = require("request")
+Mailer = require("nodemailer")
+Moment = require("moment")
 
 module.exports = (robot) ->
   robot.sessions = {}
@@ -42,12 +44,13 @@ module.exports = (robot) ->
   class Session
     constructor: (message)->
       @user = message.user
-      @room = message.room
-      @session_name = @user.name + "_" + @room
+      @room = message.room.toLowerCase()
+      @session_name = @user.name.toLowerCase() + "_" + @room
       @session_id = ShortUUID.generate()
       @transcript_key = "session_transcript:#{@session_id}"
       @data_key = "session_data:#{@session_id}"
-      @settings_key = "settings:#{@room}"
+      @settings_key = "room:#{@room}"
+      @transcript = ""
       
       # Fetch the settings for this session from Redis.
       # Settings are defined per room.
@@ -57,14 +60,27 @@ module.exports = (robot) ->
         if not settings
           console.log "Did not find settings!"
           return
+        else
+          console.log "Settings: #{settings}"
 
         # Prepare the settings, start the process.
         @settings = JSON.parse settings.toString()
         @command_path = @settings.default_path
-        @arguments = @settings.default_cmd.split(" ")
+        if @isOwner()
+          if @settings.test_mode = "true"
+            @arguments = @settings.default_cmd.split(" ")
+            @settings.test_mode = "false"
+            redis_client.set @settings_key, JSON.stringify(@settings, null, 2)
+          else
+            @arguments = @settings.owner_cmd.split(" ")
+        else
+          @arguments = @settings.default_cmd.split(" ")
+
         @command = @arguments[0]
         @arguments.shift()
         @env = @commandSettings()
+        # send the inital message to the script
+        @env.INITIAL_MESSAGE = message
         opts = 
           cwd: @command_path
           env: @env
@@ -82,9 +98,6 @@ module.exports = (robot) ->
         # Add this session session_id to the started session list
         @add_to_list("STARTED_SESSION", @session_id)
         
-        # send the inital message to the script
-        @send_cmd_to_session(message)
-
         # Tell the world that the blessed event has occured
         robot.emit "conversation_started", @
 
@@ -95,11 +108,13 @@ module.exports = (robot) ->
       env.DST = @user.room
       for attrname of @settings.settings 
         env[attrname] = @settings.settings[attrname]
-      if @settings.owners? and @user.name in @settings.owners
-        env["OWNER"] = "true"
-      else
-        env["OWNER"] = "false"
       return env
+    
+    isOwner: () ->
+      if @settings.owners? and @user.name in @settings.owners
+        true
+      else
+        false
 
     isJsonString: (str) ->
       # When a text message comes from a session, if it's a valid JSON 
@@ -114,30 +129,27 @@ module.exports = (robot) ->
     add_to_list: (list_session_id, session_session_id) ->
       redis_client.sadd(list_session_id, session_session_id)
 
-    record_transcript:  (line) -> 
+    record_transcript:  (src, line) -> 
       #Update the transcript
-      redis_client.get(@transcript_key, (err, transcript) =>
-        line += "\n"
-        if transcript?
-          transcript = transcript + line
-        else
-          transcript = line
-        redis_client.set(@transcript_key, transcript)
-      )
+      line = "#{Moment().format('lll')}|#{src}|#{line}\n"
+      @transcript += line
+      redis_client.set(@transcript_key, @transcript)
     
     handle_incoming_msg: (text) =>
       # If the message is a valid JSON object, treat it as if it were collected data
       # If so, stick it in a session_id in REDIS for somebody else to handle.
       lines = text.toString().split("\n")
       for line in lines
+        console.log "Received from process : #{line}"
         if @isJsonString(line)
           redis_client.set @data_key, line
         else
           # It's not JSON.
           robot.send @user, line
-          @record_transcript(line)
+          @record_transcript("bot", line)
 
     send_cmd_to_session: (cmd ) =>
+      console.log "Sending to process :#{cmd}"
       @process.stdin.write("#{cmd}\n")
       @record_transcript(cmd)
 
@@ -145,7 +157,7 @@ module.exports = (robot) ->
 
 
   robot.hear /(.*)/i, (msg) =>
-    room_name = msg.message.user.name + "_" + msg.message.room
+    room_name = msg.message.user.name.toLowerCase() + "_" + msg.message.room.toLowerCase()
     session = robot.sessions[room_name]
     if session
       session.send_cmd_to_session(msg.message.text)
@@ -164,5 +176,30 @@ module.exports = (robot) ->
               console.log "Webhook returned error"
               console.log body
               console.log error
- 
-     
+      if session.settings.notification_emails?
+        # Create a SMTP transporter object
+        transporter = Mailer.createTransport(
+          host: session.settings.mail_host
+          port: session.settings.mail_port
+          auth:
+            user: session.settings.mail_user
+            pass: session.settings.mail_pass
+        )
+        # Message object
+        message =          
+          from: "notifier@green-bot.com"
+          to: session.settings.notification_emails.join(",")
+          subject: "Conversation Complete"
+          text: session.transcript
+          html: "<p><b>Hello</b> to myself <img src=\"cid:note@example.com\"/></p>" + "<p>Here's a nyan cat for you as an embedded attachment:<br/><img src=\"cid:nyan@example.com\"/></p>"
+
+        console.log "Sending Mail"
+        transporter.sendMail message, (error, info) ->
+          if error
+            console.log "Error occurred"
+            console.log error.message
+            return
+          console.log "Message sent successfully!"
+          console.log "Server responded with \"%s\"", info.response
+          return
+         

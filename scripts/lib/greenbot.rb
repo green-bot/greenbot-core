@@ -2,7 +2,9 @@ require "rubygems"
 require "highline/import"
 require "yaml"
 require "json"
-
+require 'redis'
+require "uuidtools"
+require 'awesome_print'
 
 
 class SessionData
@@ -52,12 +54,110 @@ class Object
   end
 end
 
-$session = SessionData.new(ENV['SESSION_ID'])
+$r = Redis.new
+
+class Room
+  def initialize(room_name)
+    @room_name = room_name
+    @redis = $r || Redis.new
+    load
+  end
+  
+  def room_key
+    "room:#{@room_name}"
+  end
+  
+  def set_test_mode
+    @settings['TEST_MODE'] = "true"
+    publish
+  end
+  
+  def load
+    raw = @redis.get(self.room_key)
+    unless raw.nil?
+      @settings = JSON.parse(raw)
+      return @settings
+    else
+      null
+    end
+  end
+  
+  def env_settings
+    @settings["settings"].reject{|k,v| %w(AWAY AUTO_CHARGE auto_charge).include?(k) }
+  end
+    
+  def update_setting(key, value)
+    @settings['settings'][key] = value
+    publish
+  end
+  
+  def get_setting(key)
+    @settings['settings'][key]
+  end
+  
+  def publish
+    if @settings
+      @redis.set(room_key, @settings.to_json)
+    end
+    load
+  end
+  
+  def set_environment
+    env_settings.each {|k,v| ENV[k]= v }
+  end
+  
+end
+
+def confirm(prompt)
+  positives = %w(yes sure OK yep)
+  negatives = %w(no nope noway)
+  puts prompt+"(y/n)"
+  answered = false
+  while not answered
+    answer = gets.chomp.downcase
+    positives.each do |p| 
+      return true if answer.include? p
+    end
+    negatives.each do |p|
+      return false if answer.include? p
+    end
+    return true if answer == "y"
+    return false if answer == "n"
+    puts ("I'm sorry, we are looking for a Y or an N")
+  end
+end
+
+def select(prompt, choices)
+  puts prompt + " (" + choices.sort.join(",") + ")"
+  begin 
+    answer = gets.chomp.downcase
+    choices.each {|e|
+      return e if e.downcase == answer.downcase
+    }
+    puts "I'm sorry, please pick one : " + choices.join(",")
+  end while true
+end
+
+def confirmed_gets(prompt)
+  begin
+    puts(prompt)
+    new_setting = gets.chomp
+    did_it_right = confirm("Did you send that correctly? Please check.")
+    return new_setting if did_it_right
+  end while not did_it_right          
+end
+
+
+# Check to see if we are in a debugging environment.
+# If we are, setup a dummy environment
+room_name = ENV['DST']
+$room = Room.new(room_name)
+$room.set_environment
+
+session_id = ENV['SESSION_ID'] || UUIDTools::UUID.random_create.to_s
+ENV['SESSION_ID'] = session_id
+$session = SessionData.new(session_id)
+
 %w(SRC DST SESSION_ID).each do |s|
   $session.remember(s,ENV[s])
-end
-if ENV["RECORD_ENV"]
-  ENV.keys.each do |s|
-    $session.remember(s, ENV[s])
-  end
 end

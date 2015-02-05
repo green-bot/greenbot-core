@@ -71,7 +71,7 @@ module.exports = (robot) ->
           console.log "Settings: #{settings}"
 
         # Prepare the settings, start the process.
-        @settings = JSON.parse settings 
+        @settings = JSON.parse settings
         @command_path = @settings.default_path
 
         # There are generally two different people who text in
@@ -117,7 +117,7 @@ module.exports = (robot) ->
             if @outbound_msg_queue.length > 0
               msg = @outbound_msg_queue.shift()
               robot.send @user, msg
-          ,3000)
+          ,6000)
 
         # Add this session session_id to the started session list
         @add_session_to_list("STARTED_SESSION", @session_id)

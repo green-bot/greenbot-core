@@ -6,6 +6,11 @@ require 'redis'
 require "uuidtools"
 require 'awesome_print'
 
+#
+###########################################################
+#
+# Utility Classes
+#
 def puts(o)
   if o.is_a? Array
     super(o.to_s)
@@ -14,6 +19,11 @@ def puts(o)
   end
   $stdout.flush
 end
+
+
+#
+###########################################################
+#
 
 class SessionData
 

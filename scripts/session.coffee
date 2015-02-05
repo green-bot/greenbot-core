@@ -42,6 +42,10 @@ module.exports = (robot) ->
   redis_client = Redis.createClient()
 
   class Session
+    STR_PAD_LEFT = 1
+    STR_PAD_RIGHT = 2
+    STR_PAD_BOTH = 3
+
     constructor: (message)->
       @user = message.user
       @room = message.room.toLowerCase()
@@ -90,7 +94,6 @@ module.exports = (robot) ->
         @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
         @process.stderr.on "data", (buffer) => @handle_incoming_msg(buffer)
         @process.on "exit", (code, signal) =>
-          @record_transcript "\nCollected Data"
           for k,v of JSON.parse @collected_data
             @record_transcript "collected_data", "#{k}:#{v}"
           @add_to_list("ENDED_SESSION", @session_id)
@@ -135,7 +138,7 @@ module.exports = (robot) ->
 
     record_transcript:  (src, line) ->
       #Update the transcript
-      line = "#{Moment().format('lll')}|#{@src}|#{line}\n"
+      line = "#{Moment().format('lll')}|#{@pad(src, 15, ' ', STR_PAD_LEFT)}|#{line}\n"
       @transcript += line
       redis_client.set(@transcript_key, @transcript)
 
@@ -156,6 +159,26 @@ module.exports = (robot) ->
       @process.stdin.write("#{cmd}\n")
       @record_transcript(@user.name, cmd)
 
+    pad: (str, len, pad, dir) ->
+      if typeof len == 'undefined'
+        len = 0
+      if typeof pad == 'undefined'
+        pad = ' '
+      if typeof dir == 'undefined'
+        dir = STR_PAD_RIGHT
+      if len + 1 >= str.length
+        switch dir
+          when STR_PAD_LEFT
+            str = Array(len + 1 - str.length).join(pad) + str
+          when STR_PAD_BOTH
+            right = Math.ceil((padlen = len - str.length) / 2)
+            left = padlen - right
+            str = Array(left + 1).join(pad) + str + Array(right + 1).join(pad)
+          else
+            str = str + Array(len + 1 - str.length).join(pad)
+            break
+        # switch
+      str
 
  #end Session Class
 

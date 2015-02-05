@@ -6,6 +6,14 @@ require 'redis'
 require "uuidtools"
 require 'awesome_print'
 
+def puts(o)
+  if o.is_a? Array
+    super(o.to_s)
+  else
+    super(o)
+  end
+  $stdout.flush
+end
 
 class SessionData
 
@@ -58,20 +66,20 @@ $r = Redis.new
 
 class Room
   def initialize(room_name)
-    @room_name = room_name
+    @room_name = room_name.downcase
     @redis = $r || Redis.new
     load
   end
-  
+
   def room_key
     "room:#{@room_name}"
   end
-  
+
   def set_test_mode
     @settings['TEST_MODE'] = "true"
     publish
   end
-  
+
   def load
     raw = @redis.get(self.room_key)
     unless raw.nil?
@@ -81,31 +89,31 @@ class Room
       null
     end
   end
-  
+
   def env_settings
     @settings["settings"].reject{|k,v| %w(AWAY AUTO_CHARGE auto_charge).include?(k) }
   end
-    
+
   def update_setting(key, value)
     @settings['settings'][key] = value
     publish
   end
-  
+
   def get_setting(key)
     @settings['settings'][key]
   end
-  
+
   def publish
     if @settings
       @redis.set(room_key, @settings.to_json)
     end
     load
   end
-  
+
   def set_environment
     env_settings.each {|k,v| ENV[k]= v }
   end
-  
+
 end
 
 def confirm(prompt)
@@ -115,7 +123,7 @@ def confirm(prompt)
   answered = false
   while not answered
     answer = gets.chomp.downcase
-    positives.each do |p| 
+    positives.each do |p|
       return true if answer.include? p
     end
     negatives.each do |p|
@@ -129,7 +137,7 @@ end
 
 def select(prompt, choices)
   puts prompt + " (" + choices.sort.join(",") + ")"
-  begin 
+  begin
     answer = gets.chomp.downcase
     choices.each {|e|
       return e if e.downcase == answer.downcase
@@ -144,7 +152,7 @@ def confirmed_gets(prompt)
     new_setting = gets.chomp
     did_it_right = confirm("Did you send that correctly? Please check.")
     return new_setting if did_it_right
-  end while not did_it_right          
+  end while not did_it_right
 end
 
 

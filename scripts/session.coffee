@@ -2,19 +2,19 @@
 #
 # Session connects users with shell scripts. All inbound messages are handled by this
 # script, and each inbound message is sent to an arbitrary unix shell script for handling.
-# When a user sends his first message, Session will create a new process and run the 
+# When a user sends his first message, Session will create a new process and run the
 # specified script, saving pointers to stdin, stdout and stderr. Session will then pass
-# this message into the script through stdin. Any more messages from that user will be 
+# this message into the script through stdin. Any more messages from that user will be
 # passed into the same script. If the script sends messages back out, this script will
 # forward those to the original user. When the script ends, the session will also end,
 # and the first new message from that user will create a new session. Every session
-# is identified by a unique short session_id; scripts that write data to a JSON file with that 
+# is identified by a unique short session_id; scripts that write data to a JSON file with that
 # will be collected by this script.
 #
 # As a convenience, and for further processing, Session will emits events to handle
 # session life cycle (start and finish), messaging in the session (stdin, stdout, stderr)
 # and listen for any JSON file and emit that as an event as well.
-# 
+#
 #  Configuration:
 #    command_path: The default path of the file to be executed.
 #    command: The command line to execute
@@ -51,7 +51,7 @@ module.exports = (robot) ->
       @data_key = "session_data:#{@session_id}"
       @settings_key = "room:#{@room}"
       @transcript = ""
-      
+
       # Fetch the settings for this session from Redis.
       # Settings are defined per room.
       redis_client.get @settings_key, (err, settings) =>
@@ -81,7 +81,7 @@ module.exports = (robot) ->
         @env = @commandSettings()
         # send the inital message to the script
         @env.INITIAL_MESSAGE = message
-        opts = 
+        opts =
           cwd: @command_path
           env: @env
         @process = ChildProcess.spawn(@command, @arguments, opts)
@@ -90,14 +90,17 @@ module.exports = (robot) ->
         @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
         @process.stderr.on "data", (buffer) => @handle_incoming_msg(buffer)
         @process.on "exit", (code, signal) =>
-          robot.emit "conversation_ended", @
+          @record_transcript "\nCollected Data"
+          for k,v of JSON.parse @collected_data
+            @record_transcript "collected_data", "#{k}:#{v}"
           @add_to_list("ENDED_SESSION", @session_id)
           delete robot.sessions[@session_name]
+          robot.emit "conversation_ended", @
           console.log "Session instance #{@session_id} for #{@session_name} has ended."
-       
+
         # Add this session session_id to the started session list
         @add_to_list("STARTED_SESSION", @session_id)
-        
+
         # Tell the world that the blessed event has occured
         robot.emit "conversation_started", @
 
@@ -106,10 +109,10 @@ module.exports = (robot) ->
       env.SESSION_ID = @session_id
       env.SRC = @user.name
       env.DST = @user.room
-      for attrname of @settings.settings 
+      for attrname of @settings.settings
         env[attrname] = @settings.settings[attrname]
       return env
-    
+
     isOwner: () ->
       if @settings.owners? and @user.name in @settings.owners
         true
@@ -117,7 +120,7 @@ module.exports = (robot) ->
         false
 
     isJsonString: (str) ->
-      # When a text message comes from a session, if it's a valid JSON 
+      # When a text message comes from a session, if it's a valid JSON
       # string, we will treat it as a command or data. This function
       # allows us to figure that out.
       try
@@ -125,33 +128,34 @@ module.exports = (robot) ->
       catch e
         return false
       true
-    
+
     add_to_list: (list_session_id, session_session_id) ->
       redis_client.sadd(list_session_id, session_session_id)
 
-    record_transcript:  (src, line) -> 
+
+    record_transcript:  (src, line) ->
       #Update the transcript
-      line = "#{Moment().format('lll')}|#{src}|#{line}\n"
+      line = "#{Moment().format('lll')}|#{@src}|#{line}\n"
       @transcript += line
       redis_client.set(@transcript_key, @transcript)
-    
+
     handle_incoming_msg: (text) =>
       # If the message is a valid JSON object, treat it as if it were collected data
       # If so, stick it in a session_id in REDIS for somebody else to handle.
       lines = text.toString().split("\n")
       for line in lines
-        console.log "Received from process : #{line}"
         if @isJsonString(line)
           redis_client.set @data_key, line
+          @collected_data = line
         else
           # It's not JSON.
           robot.send @user, line
           @record_transcript("bot", line)
 
     send_cmd_to_session: (cmd ) =>
-      console.log "Sending to process :#{cmd}"
       @process.stdin.write("#{cmd}\n")
-      @record_transcript(cmd)
+      @record_transcript(@user.name, cmd)
+
 
  #end Session Class
 
@@ -168,11 +172,12 @@ module.exports = (robot) ->
 
 
   robot.on "conversation_ended", (session) =>
+      #Add the collected data. That's a great idea.
       if session.settings.webhook_url?
         console.log "Completed. Notifying #{session.settings.webhook_url}"
         Request.get "#{session.settings.webhook_url}?session_id=#{session.session_id}", null,
           (error, response, body) =>
-            if error 
+            if error
               console.log "Webhook returned error"
               console.log body
               console.log error
@@ -186,12 +191,11 @@ module.exports = (robot) ->
             pass: session.settings.mail_pass
         )
         # Message object
-        message =          
-          from: "notifier@green-bot.com"
+        message =
+          from: session.settings.mail_user
           to: session.settings.notification_emails.join(",")
           subject: "Conversation Complete"
           text: session.transcript
-          html: "<p><b>Hello</b> to myself <img src=\"cid:note@example.com\"/></p>" + "<p>Here's a nyan cat for you as an embedded attachment:<br/><img src=\"cid:nyan@example.com\"/></p>"
 
         console.log "Sending Mail"
         transporter.sendMail message, (error, info) ->
@@ -202,4 +206,3 @@ module.exports = (robot) ->
           console.log "Message sent successfully!"
           console.log "Server responded with \"%s\"", info.response
           return
-         

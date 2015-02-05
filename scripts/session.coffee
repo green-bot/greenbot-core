@@ -71,7 +71,7 @@ module.exports = (robot) ->
           console.log "Settings: #{settings}"
 
         # Prepare the settings, start the process.
-        @settings = JSON.parse settings.toString()
+        @settings = JSON.parse settings 
         @command_path = @settings.default_path
 
         # There are generally two different people who text in
@@ -79,16 +79,12 @@ module.exports = (robot) ->
         # texting into the system to configure it.
         # The second are the customers, who are there to use it.
         if @is_owner()
-          if @settings.test_mode = "true"
-            # If we are in test mode, then even if it's the owner
-            # pretend that he's a customer, but only once.
-            @arguments = @settings.default_cmd.split(" ")
-            @settings.test_mode = "false"
-            redis_client.set @settings_key, JSON.stringify(@settings, null, 2)
-          else
-            @arguments = @settings.owner_cmd.split(" ")
+          console.log "Running as the owner"
+          @arguments = @settings.owner_cmd.split(" ")
         else
           @arguments = @settings.default_cmd.split(" ")
+
+        console.log "Running #{@arguments}"
 
         # @arguments is an array of words, the first one is the command. Like ruby
         # The rest are parameters, and we send them down as an array.
@@ -139,6 +135,7 @@ module.exports = (robot) ->
       return env
 
     is_owner: () ->
+      console.log "Thinking I'm #{@user.name}"
       if @settings.owners? and @user.name in @settings.owners
         true
       else

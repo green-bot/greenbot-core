@@ -47,14 +47,16 @@ module.exports = (robot) ->
     STR_PAD_BOTH = 3
 
     constructor: (message)->
-      @user = message.user
-      @room = message.room.toLowerCase()
-      @session_name = @user.name.toLowerCase() + "_" + @room
+      # The variables that make up a Session
+      @user = message.user    # This is the user structure from hubot.
+      @room = message.room.toLowerCase() # this is a string.
+      @session_key = @user.name.toLowerCase() + "_" + @room
       @session_id = ShortUUID.generate()
       @transcript_key = "session_transcript:#{@session_id}"
       @data_key = "session_data:#{@session_id}"
       @settings_key = "room:#{@room}"
       @transcript = ""
+      @outbound_msg_queue = []
 
       # Fetch the settings for this session from Redis.
       # Settings are defined per room.
@@ -70,8 +72,15 @@ module.exports = (robot) ->
         # Prepare the settings, start the process.
         @settings = JSON.parse settings.toString()
         @command_path = @settings.default_path
-        if @isOwner()
+
+        # There are generally two different people who text in
+        # The first is the owner of the number, and he is
+        # texting into the system to configure it.
+        # The second are the customers, who are there to use it.
+        if @is_owner()
           if @settings.test_mode = "true"
+            # If we are in test mode, then even if it's the owner
+            # pretend that he's a customer, but only once.
             @arguments = @settings.default_cmd.split(" ")
             @settings.test_mode = "false"
             redis_client.set @settings_key, JSON.stringify(@settings, null, 2)
@@ -80,14 +89,18 @@ module.exports = (robot) ->
         else
           @arguments = @settings.default_cmd.split(" ")
 
+        # @arguments is an array of words, the first one is the command. Like ruby
+        # The rest are parameters, and we send them down as an array.
         @command = @arguments[0]
         @arguments.shift()
-        @env = @commandSettings()
+        @env = @command_settings()
         # send the inital message to the script
         @env.INITIAL_MESSAGE = message
         opts =
           cwd: @command_path
           env: @env
+
+        # All setup, we now spawn the process.
         @process = ChildProcess.spawn(@command, @arguments, opts)
 
         # Setup callbacks for incoming data
@@ -96,18 +109,25 @@ module.exports = (robot) ->
         @process.on "exit", (code, signal) =>
           for k,v of JSON.parse @collected_data
             @record_transcript "collected_data", "#{k}:#{v}"
-          @add_to_list("ENDED_SESSION", @session_id)
-          delete robot.sessions[@session_name]
+          @add_session_to_list("ENDED_SESSION", @session_id)
+          delete robot.sessions[@session_key]
           robot.emit "conversation_ended", @
-          console.log "Session instance #{@session_id} for #{@session_name} has ended."
+          console.log "Session instance #{@session_id} for #{@session_key} has ended."
+
+        # Setup callbacks for outbound data (throttled message sending)
+        setInterval(
+          () =>
+            if @outbound_msg_queue.length > 0
+              robot.send @user, @outbound_msg_queue.shift()
+          ,2000)
 
         # Add this session session_id to the started session list
-        @add_to_list("STARTED_SESSION", @session_id)
+        @add_session_to_list("STARTED_SESSION", @session_id)
 
         # Tell the world that the blessed event has occured
         robot.emit "conversation_started", @
 
-    commandSettings: () ->
+    command_settings: () ->
       env = process.env
       env.SESSION_ID = @session_id
       env.SRC = @user.name
@@ -116,13 +136,13 @@ module.exports = (robot) ->
         env[attrname] = @settings.settings[attrname]
       return env
 
-    isOwner: () ->
+    is_owner: () ->
       if @settings.owners? and @user.name in @settings.owners
         true
       else
         false
 
-    isJsonString: (str) ->
+    is_json_string: (str) ->
       # When a text message comes from a session, if it's a valid JSON
       # string, we will treat it as a command or data. This function
       # allows us to figure that out.
@@ -132,7 +152,7 @@ module.exports = (robot) ->
         return false
       true
 
-    add_to_list: (list_session_id, session_session_id) ->
+    add_session_to_list: (list_session_id, session_session_id) ->
       redis_client.sadd(list_session_id, session_session_id)
 
 
@@ -147,12 +167,15 @@ module.exports = (robot) ->
       # If so, stick it in a session_id in REDIS for somebody else to handle.
       lines = text.toString().split("\n")
       for line in lines
-        if @isJsonString(line)
+        if @is_json_string(line)
           redis_client.set @data_key, line
           @collected_data = line
         else
-          # It's not JSON.
-          robot.send @user, line
+          # It's not JSON, gotta be a message.
+          # because this might be a throttled service, we put this message in an
+          # array that holds the outbound messages.  Peridoically, and for a service
+          # like Nexmo, this is a one message per second rate.
+          @outbound_msg_queue.push line
           @record_transcript("bot", line)
 
     send_cmd_to_session: (cmd ) =>

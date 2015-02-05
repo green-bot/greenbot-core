@@ -36,6 +36,7 @@ Url = require("url")
 Request = require("request")
 Mailer = require("nodemailer")
 Moment = require("moment")
+Us = require("underscore.string")
 
 module.exports = (robot) ->
   robot.sessions = {}
@@ -118,8 +119,9 @@ module.exports = (robot) ->
         setInterval(
           () =>
             if @outbound_msg_queue.length > 0
-              robot.send @user, @outbound_msg_queue.shift()
-          ,2000)
+              msg = @outbound_msg_queue.shift()
+              robot.send @user, msg
+          ,3000)
 
         # Add this session session_id to the started session list
         @add_session_to_list("STARTED_SESSION", @session_id)
@@ -167,6 +169,7 @@ module.exports = (robot) ->
       # If so, stick it in a session_id in REDIS for somebody else to handle.
       lines = text.toString().split("\n")
       for line in lines
+        line = line.trim()
         if @is_json_string(line)
           redis_client.set @data_key, line
           @collected_data = line
@@ -175,8 +178,9 @@ module.exports = (robot) ->
           # because this might be a throttled service, we put this message in an
           # array that holds the outbound messages.  Peridoically, and for a service
           # like Nexmo, this is a one message per second rate.
-          @outbound_msg_queue.push line
-          @record_transcript("bot", line)
+          if line.length > 0
+            @outbound_msg_queue.push line
+            @record_transcript("bot", line)
 
     send_cmd_to_session: (cmd ) =>
       @process.stdin.write("#{cmd}\n")

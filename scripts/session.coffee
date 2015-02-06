@@ -80,8 +80,8 @@ module.exports = (robot) ->
         # The second are the customers, who are there to use it.
         if @is_owner()
           console.log "Running as the owner"
-          if @setings.test_mode == "true"
-            @settings.test_mode = false
+          if @settings.test_mode is "true"
+            @settings.test_mode = "false"
             @arguments = @settings.default_cmd.split(" ")
           else
             @arguments = @settings.owner_cmd.split(" ")

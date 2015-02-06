@@ -6,29 +6,9 @@ require 'redis'
 require "uuidtools"
 require 'awesome_print'
 
-#
-###########################################################
-#
-# Utility Classes
-#
-def puts(o)
-  if o.is_a? Array
-    super(o.to_s)
-  else
-    super(o)
-  end
-  $stdout.flush
-end
-
-
-#
-###########################################################
-#
-
 class SessionData
 
   attr_accessor :collected_data
-
   def initialize(session_id = nil)
     session_data_path = "./session_data/"
     session_base_filname = (session_id || "session_data") + ".json"
@@ -81,19 +61,25 @@ class Room
     load
   end
 
+  def trace
+    ap $room if ENV['DEVELOPER'] == "true"
+  end
+
   def room_key
     "room:#{@room_name}"
   end
 
   def set_test_mode
-    @settings['TEST_MODE'] = "true"
+    @settings["test_mode"] = "true"
     publish
+    trace
   end
 
   def load
     raw = @redis.get(self.room_key)
     unless raw.nil?
       @settings = JSON.parse(raw)
+      trace
       return @settings
     else
       null
@@ -107,6 +93,7 @@ class Room
   def update_setting(key, value)
     @settings['settings'][key] = value
     publish
+    trace
   end
 
   def get_setting(key)
@@ -118,6 +105,7 @@ class Room
       @redis.set(room_key, @settings.to_json)
     end
     load
+    trace
   end
 
   def set_environment
@@ -127,7 +115,7 @@ class Room
   def owners
     @settings["owners"]
   end
-  
+
 end
 
 def confirm(prompt)
@@ -169,6 +157,16 @@ def confirmed_gets(prompt)
   end while not did_it_right
 end
 
+def ask(prompt)
+  puts prompt
+  $stdout.flush
+  gets.chomp
+end
+
+def tell(prompt)
+  puts prompt
+  $stdout.flush
+end
 
 # Check to see if we are in a debugging environment.
 # If we are, setup a dummy environment

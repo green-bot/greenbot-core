@@ -26,6 +26,7 @@
     "nodemailer-smtp-transport": "^0.1.13",
     "npm": "^2.3.0",
     "redis": "^0.12.1",
+    "request": "^2.53.0",
     "shortid": "^2.1.3",
     "twitter": "^1.0.2",
     "underscore.string": "^3.0.2"

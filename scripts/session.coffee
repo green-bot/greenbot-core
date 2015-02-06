@@ -117,7 +117,7 @@ module.exports = (robot) ->
             if @outbound_msg_queue.length > 0
               msg = @outbound_msg_queue.shift()
               robot.send @user, msg
-          ,6000)
+          ,10000)
 
         # Add this session session_id to the started session list
         @add_session_to_list("STARTED_SESSION", @session_id)

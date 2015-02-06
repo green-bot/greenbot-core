@@ -6,6 +6,7 @@
 require "./lib/greenbot.rb"
 require "timeout"
 require 'open3'
+require 'pry'
 
 HOUR = 60 * 60
 timeout = ENV['CONVERSATION_TIMEOUT'].to_i || 4 * HOUR
@@ -23,7 +24,7 @@ def offer_recharge
       $room.env_settings["AUTO_CHARGE"] = "false"
       $room.publish
       puts("Auto recharge is now turned off. You will get a notification when your account balance goes low.")
-    end 
+    end
   else
     change = confirm("Would you like to turn auto charge on?")
     if change
@@ -35,10 +36,10 @@ def offer_recharge
 end
 
 begin
-  puts "Welcome Master. I can help you configure this number."
+  puts "Hello, #{ENV['SRC']} I can help you configure this number."
   Timeout::timeout(timeout) {
     begin
-      tasks = %w(away balance settings test quit)
+      tasks = %w(away owner settings test quit)
       my_task = select("What would you like to do?", tasks)
       case my_task
       when 'clone'
@@ -46,7 +47,7 @@ begin
         if clone
           puts("This bot will also answer on 617-#{rand(1000).to_i}-#{rand(10000).to_i}")
         end
-        
+
         #code
       when 'test'
         $room.set_test_mode
@@ -61,7 +62,7 @@ begin
         end
         offer_recharge
         show_balance
-        
+
       when "quit"
         puts "Thanks! See you later!"
         break
@@ -73,7 +74,26 @@ begin
           $room.update_setting("AWAY","true")
           puts "Away mode enabled"
         end
-        
+      when "owner"
+        owner_choices = %w(add remove show)
+        owner_choice = select("You can add a new owner, remove one, or show them all.", owner_choices)
+        case owner_choice
+        when "show"
+          puts("The current owners are #{$room.owners.join(",")}")
+
+        when "add"
+          new_owner = confirmed_gets("Please give me the phone number of the new owner")
+          $room.owners << new_owner.downcase
+          $room.publish
+        when "remove"
+          deleted_owner = confirmed_gets("Please give me the phone number of the owner to remove")
+          if deleted_owner.downcase == ENV['SRC'].downcase
+            puts("Sorry, but you are not allowed to remove yourself.")
+          else
+            $room.owners.delete_if {|o| o.downcase == deleted_owner.downcase}
+            $room.publish
+          end
+        end
       when "settings"
         config_paths = %w(all one show)
         config_option = select("You can configure all of the prompts, just one, print out their current values.", config_paths)
@@ -106,5 +126,3 @@ begin
 rescue Timeout::Error  => e
   puts "If you want to restart this conversation, text us again!"
 end
-
- 

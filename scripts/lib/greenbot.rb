@@ -124,6 +124,10 @@ class Room
     env_settings.each {|k,v| ENV[k]= v }
   end
 
+  def owners
+    @settings["owners"]
+  end
+  
 end
 
 def confirm(prompt)

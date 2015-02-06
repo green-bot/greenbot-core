@@ -121,10 +121,9 @@ end
 def confirm(prompt)
   positives = %w(yes sure OK yep)
   negatives = %w(no nope noway)
-  puts prompt+"(y/n)"
+  answer = ask(prompt+"(y/n)").chomp.downcase
   answered = false
   while not answered
-    answer = gets.chomp.downcase
     positives.each do |p|
       return true if answer.include? p
     end
@@ -133,25 +132,24 @@ def confirm(prompt)
     end
     return true if answer == "y"
     return false if answer == "n"
-    puts ("I'm sorry, we are looking for a Y or an N")
+    answer = ask("I'm sorry, we are looking for a Y or an N").chomp.downcase
   end
 end
 
 def select(prompt, choices)
-  puts prompt + " (" + choices.sort.join(",") + ")"
+  display_prompt = prompt + " (" + choices.sort.join(",") + ")"
+  answer = ask(display_prompt)
   begin
-    answer = gets.chomp.downcase
     choices.each {|e|
       return e if e.downcase == answer.downcase
     }
-    puts "I'm sorry, please pick one : " + choices.join(",")
+    answer = ask("I'm sorry, please pick one : " + choices.join(","))
   end while true
 end
 
 def confirmed_gets(prompt)
   begin
-    puts(prompt)
-    new_setting = gets.chomp
+    new_setting = ask(prompt)
     did_it_right = confirm("Did you send that correctly? Please check.")
     return new_setting if did_it_right
   end while not did_it_right

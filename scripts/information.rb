@@ -10,9 +10,9 @@ HOUR = 60 * 60
 timeout = ENV['CONVERSATION_TIMEOUT'].to_i || 4 * HOUR
 
 begin
-  tell ENV['PROMPT_1']
-  tell ENV['PROMPT_2']
   Timeout::timeout(timeout) {
+    tell ENV['PROMPT_1']
+    tell ENV['PROMPT_2']
     begin
       tasks = %w(hours specials address contact quit)
       my_task = select("How can I help?", tasks)

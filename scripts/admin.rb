@@ -158,7 +158,7 @@ begin
 
       when "bots"
         numbers = nexmo.account_numbers
-        $r.set "NEXMO_NUMBERS", numbers
+        numbers.each{|n| $r.sadd("NEXMO_NUMBERS", n)}
         unless numbers.empty?
           tell numbers.join(",")
         else

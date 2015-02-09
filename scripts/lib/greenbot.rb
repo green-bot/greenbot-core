@@ -65,6 +65,10 @@ class Room
     ap $room if ENV['DEVELOPER'] == "true"
   end
 
+  def name
+    @room_name
+  end
+
   def room_key
     "room:#{@room_name}"
   end
@@ -114,6 +118,10 @@ class Room
 
   def owners
     @settings["owners"]
+  end
+
+  def notification_emails
+    @settings["notification_emails"]
   end
 
 end

@@ -174,6 +174,99 @@ def tell(prompt)
   $stdout.flush
 end
 
+class Account
+    def initialize(key = ENV['NEXMO_KEY'], secret = ENV['NEXMO_SECRET'])
+      @client = Nexmo::Client.new(key: key, secret: secret)
+    end
+    def fetch_numbers
+      begin
+        area_code = confirmed_gets("What pattern (like area code) should I search for?")
+        available_numbers = @client.number_search("US", {
+          pattern: area_code.to_i,
+          search_pattern: 1,
+          features: "SMS, VOICE"
+          })
+        tell "No numbers available with that pattern. Please try again." if available_numbers.empty?
+      end while available_numbers.empty?
+      return available_numbers["numbers"].map{|n| n["msisdn"]}
+    end
+    def purchase_number(number)
+      @client.buy_number({
+        country: "US",
+        msisdn: number
+        })
+    end
+    def account_numbers
+      account_numbers = @client.get_account_numbers({})
+      account_numbers["numbers"].map{|n| n["msisdn"]}
+    end
+    def point_voice(account_number, voice_number)
+      @client.update_number({
+        country: "US",
+        msisdn: account_number,
+        voiceCallbackType: "tel",
+        voiceCallbackValue: voice_number
+        })
+    end
+end
+
+def get_script
+  scripts = $r.keys("scripts:*").each {|s| s.gsub!("scripts:","")}
+  scripts << "cancel"
+  script = select("Please select which script you'd like to attach to this number", scripts)
+  return script
+end
+
+def pick_bot
+  rooms = $r.keys("room*").each {|k| k.gsub!("room:","")}
+  number = ask "What number would you like to configure?"
+  if number == "show" or not rooms.include? number
+    number = select "Here are the current numbers you can configure. Pick one", rooms
+  end
+  bot = Room.new(number)
+end
+
+def create_redis_key(number_to_provision, script)
+  template = $r.get "scripts:#{script}"
+  settings = JSON.parse template
+  settings["owners"] << confirmed_gets("Please give us the cell phone number of the owner, including the 1 and area code.")
+  while confirm("Are there are any other cell phones that should be owners?")
+    settings["owners"] << confirmed_gets("Please give us the cell phone number of the owner, including the 1 and area code")
+  end
+  settings["notification_emails"] << confirmed_gets("Please give us the email address that we should email conversations to.")
+  while confirm("Are there are any other email addresses?")
+    settings["notification_emails"] << confirmed_gets("Please give us the email address that we should email conversations to.")
+  end
+  $r.set("room:#{number_to_provision}",settings.to_json)
+end
+
+def manage_settings(bot)
+  config_paths = %w(all one show)
+  config_option = select("You can configure all of the prompts, just one, print out their current values.", config_paths)
+  case config_option
+  when "show"
+    tell "Here are the current settings:"
+    bot.env_settings.each {|k,v|
+      tell "#{k}:#{v}"
+      }
+  when "all"
+    bot.env_settings.each {|k,v|
+    unless confirm("#{k} is currently #{v}. Keep it?")
+      bot.update_setting(k,confirmed_gets("Please give me the new value for #{k}."))
+    end
+    }
+  when "one"
+    key_name = select("Please select a setting to change", bot.env_settings.keys)
+    change_it = confirm("That setting is currently : #{bot.get_setting(key_name)}. Change it?")
+    if change_it
+      new_value = confirmed_gets("Please give me the new value for #{key_name}.")
+      bot.update_setting(key_name, new_value)
+      tell("Changed setting to #{new_value}")
+    end
+  end
+end
+
+
 # Check to see if we are in a debugging environment.
 # If we are, setup a dummy environment
 room_name = ENV['DST']

@@ -82,6 +82,7 @@ module.exports = (robot) ->
           console.log "Running as the owner"
           if @settings.test_mode is "true"
             @settings.test_mode = "false"
+            redis_client.set @settings_key, JSON.stringify @settings
             @arguments = @settings.default_cmd.split(" ")
           else
             @arguments = @settings.owner_cmd.split(" ")

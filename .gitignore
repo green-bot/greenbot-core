@@ -2,3 +2,4 @@ node_modules
 .DS_Store*
 .hubot_history
 scripts/session_data/*
+session_data/*

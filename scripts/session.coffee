@@ -58,7 +58,6 @@ module.exports = (robot) ->
       @data_key = "session_data:#{@session_id}"
       @settings_key = "room:#{@room}"
       @transcript = ""
-      @outbound_msg_queue = []
 
       # Fetch the settings for this session from Redis.
       # Settings are defined per room.
@@ -117,14 +116,6 @@ module.exports = (robot) ->
           robot.emit "conversation_ended", @
           console.log "Session instance #{@session_id} for #{@session_key} has ended."
 
-        # Setup callbacks for outbound data (throttled message sending)
-        setInterval(
-          () =>
-            if @outbound_msg_queue.length > 0
-              msg = @outbound_msg_queue.shift()
-              robot.send @user, msg
-          ,10000)
-
         # Add this session session_id to the started session list
         @add_session_to_list("STARTED_SESSION", @session_id)
 
@@ -182,7 +173,7 @@ module.exports = (robot) ->
           # array that holds the outbound messages.  Peridoically, and for a service
           # like Nexmo, this is a one message per second rate.
           if line.length > 0
-            @outbound_msg_queue.push line
+            robot.send @user, line
             @record_transcript("bot", line)
 
     send_cmd_to_session: (cmd ) =>

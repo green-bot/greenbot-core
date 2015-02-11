@@ -5,6 +5,7 @@ require "json"
 require 'redis'
 require "uuidtools"
 require 'awesome_print'
+require 'airbrake'
 
 class SessionData
 
@@ -280,3 +281,20 @@ $session = SessionData.new(session_id)
 %w(SRC DST SESSION_ID).each do |s|
   $session.remember(s,ENV[s])
 end
+
+# Catch all uncaught errors here, pass them to Airbrake
+Airbrake.configure do |config|
+  config.api_key = ENV['AIRBRAKE_KEY'] || '466e18742945643dc8c08d6a9e334143'
+end
+
+at_exit {
+  e = $!
+  unless e.nil?
+    Airbrake.notify_or_ignore($!, {
+      error_message: e.message,
+      backtrace: e.backtrace,
+      cgi_data: ENV.to_hash
+      })
+      exit!
+  end
+}

@@ -37,6 +37,7 @@ Request = require("request")
 Mailer = require("nodemailer")
 Moment = require("moment")
 Us = require("underscore.string")
+Wellknown = require("nodemailer-wellknown")
 
 module.exports = (robot) ->
   robot.sessions = {}
@@ -236,8 +237,7 @@ module.exports = (robot) ->
       if session.settings.notification_emails?
         # Create a SMTP transporter object
         transporter = Mailer.createTransport(
-          host: session.settings.mail_host
-          port: session.settings.mail_port
+          service: "gmail"
           auth:
             user: session.settings.mail_user
             pass: session.settings.mail_pass

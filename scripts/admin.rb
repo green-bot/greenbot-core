@@ -21,7 +21,7 @@ begin
   end until passcode == "6578"
   Timeout::timeout(timeout) {
     begin
-      tasks = %w(describe email new bots owner assign settings voice quit help)
+      tasks = %w(describe email new bots orphaned owner assign settings voice quit help)
       my_task = select("What would you like to do?", tasks)
       case my_task
       when "help"
@@ -30,10 +30,28 @@ begin
         tell "describe: describes a bot"
         tell "emails: sets the notification_emails for a bot"
         tell "new: creates a new bot and connects it to the network."
+        tell "orphaned: lists bots without brains"
         tell "owner: manages the owners for a bot"
         tell "quit: ends this conversation"
+        tell "repair: checks active numbers and checks their setup"
         tell "settings: manages the settings for a bot"
         tell "voice: sets what phone rings when somebody calls this bot."
+
+      when "assign"
+        numbers = nexmo.account_numbers
+        begin
+          number = confirmed_gets("Which bot should I assign? Text cancel if you'd like to go back")
+          valid = numbers.include?(number) || number.downcase == "cancel"
+          tell "That is not a valid choice" unless valid
+        end unless valid
+        unless number.downcase == "cancel"
+          script = get_script
+          create_redis_key(number, script)
+          bot = Room.new(number)
+          manage_settings(bot)
+        else
+          tell "Transaction cancelled"
+        end
 
       when "describe"
         numbers = nexmo.account_numbers
@@ -64,6 +82,15 @@ begin
           tell "Transaction cancelled."
         end
 
+      when "orphaned"
+        numbers = nexmo.account_numbers
+        orphaned_numbers = [ ]
+        numbers.each do |n|
+          room = Room.new(n)
+          orphaned_numbers << n unless room.valid?
+        end
+        tell "Orphans: #{orphaned_numbers.join(',')}"
+
       when "bots"
         numbers = nexmo.account_numbers
         numbers.each{|n| $r.sadd("NEXMO_NUMBERS", n)}
@@ -71,21 +98,6 @@ begin
           tell numbers.join(",")
         else
           tell "This account has no numbers"
-        end
-      when "assign"
-        numbers = nexmo.account_numbers
-        begin
-          number = confirmed_gets("Which bot should I assign? Text cancel if you'd like to go back")
-          valid = numbers.include?(number) || number.downcase == "cancel"
-          tell "That is not a valid choice" unless valid
-        end unless valid
-        unless number.downcase == "cancel"
-          script = get_script
-          create_redis_key(number, script)
-          bot = Room.new(number)
-          manage_settings(bot)
-        else
-          tell "Transaction cancelled"
         end
       when "quit"
         tell "Thanks! See you later!"

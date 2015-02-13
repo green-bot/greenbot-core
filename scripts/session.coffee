@@ -192,31 +192,27 @@ module.exports = (robot) ->
 
   create_session = (msg, settings) ->
     new_session = new Session(msg.message, JSON.parse(settings))
-    console.log "Created new session #{room_name} with session_id #{new_session.session_id}"
-    robot.sessions[room_name] = new_session
+    console.log "Created new session #{new_session.session_key} with session_id #{new_session.session_id}"
+    robot.sessions[new_session.session_key] = new_session
 
 
   robot.hear /(.*)/i, (msg) =>
-    room_name = msg.message.user.name.toLowerCase() + "_" + msg.message.room.toLowerCase()
-    session = robot.sessions[room_name]
+    session_key = msg.message.user.name.toLowerCase() + "_" + msg.message.room.toLowerCase()
+    session = robot.sessions[session_key]
     if session
       session.send_cmd_to_session(msg.message.text)
     else
       # This is a new session. See if there are settings defined for it.
       # If there are not, then create an empty template for this room
       # That allows the named owner the ability to set it up.
-      settings_key =  "room:#{msg.room.toLowerCase()}"
+      settings_key =  "room:#{msg.message.room.toLowerCase()}"
 
       # Fetch the settings for this session from Redis.
       # Settings are defined per room.
       redis_client.get settings_key, (err, settings) =>
         if not settings
-          console.log "Did not find settings!"
-          redis_client.get "room:template", (err, settings) =>
-            unless settings?
-              console.log "Cannot setup room - no room:template defined"
-              return
-            create_session(msg, settings)
+          console.log "Cannot setup room - no room:template defined"
+          return
         else
           create_session(msg, settings)
 

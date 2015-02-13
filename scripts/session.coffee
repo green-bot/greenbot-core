@@ -48,7 +48,7 @@ module.exports = (robot) ->
     STR_PAD_RIGHT = 2
     STR_PAD_BOTH = 3
 
-    constructor: (message)->
+    constructor: (message, settings)->
       # The variables that make up a Session
       @user = message.user    # This is the user structure from hubot.
       @room = message.room.toLowerCase() # this is a string.
@@ -58,69 +58,56 @@ module.exports = (robot) ->
       @data_key = "session_data:#{@session_id}"
       @settings_key = "room:#{@room}"
       @transcript = ""
+      @settings = settings
+      @command_path = @settings.default_path
 
-      # Fetch the settings for this session from Redis.
-      # Settings are defined per room.
-      redis_client.get @settings_key, (err, settings) =>
-        #Need to do a better job of handling this error condition
-        #FIX
-        if not settings
-          console.log "Did not find settings!"
-          return
-        else
-          console.log "Settings: #{settings}"
-
-        # Prepare the settings, start the process.
-        @settings = JSON.parse settings
-        @command_path = @settings.default_path
-
-        # There are generally two different people who text in
-        # The first is the owner of the number, and he is
-        # texting into the system to configure it.
-        # The second are the customers, who are there to use it.
-        if @is_owner()
-          console.log "Running as the owner"
-          if @settings.test_mode is "true"
-            @settings.test_mode = "false"
-            redis_client.set @settings_key, JSON.stringify @settings
-            @arguments = @settings.default_cmd.split(" ")
-          else
-            @arguments = @settings.owner_cmd.split(" ")
-        else
+      # There are generally two different people who text in
+      # The first is the owner of the number, and he is
+      # texting into the system to configure it.
+      # The second are the customers, who are there to use it.
+      if @is_owner()
+        console.log "Running as the owner"
+        if @settings.test_mode is "true"
+          @settings.test_mode = "false"
+          redis_client.set @settings_key, JSON.stringify @settings
           @arguments = @settings.default_cmd.split(" ")
+        else
+          @arguments = @settings.owner_cmd.split(" ")
+      else
+        @arguments = @settings.default_cmd.split(" ")
 
-        console.log "Running #{@arguments}"
+      console.log "Running #{@arguments}"
 
-        # @arguments is an array of words, the first one is the command. Like ruby
-        # The rest are parameters, and we send them down as an array.
-        @command = @arguments[0]
-        @arguments.shift()
-        @env = @command_settings()
-        # send the inital message to the script
-        @env.INITIAL_MESSAGE = message
-        opts =
-          cwd: @command_path
-          env: @env
+      # @arguments is an array of words, the first one is the command. Like ruby
+      # The rest are parameters, and we send them down as an array.
+      @command = @arguments[0]
+      @arguments.shift()
+      @env = @command_settings()
+      # send the inital message to the script
+      @env.INITIAL_MESSAGE = message
+      opts =
+        cwd: @command_path
+        env: @env
 
-        # All setup, we now spawn the process.
-        @process = ChildProcess.spawn(@command, @arguments, opts)
+      # All setup, we now spawn the process.
+      @process = ChildProcess.spawn(@command, @arguments, opts)
 
-        # Setup callbacks for incoming data
-        @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
-        @process.stderr.on "data", (buffer) => @handle_incoming_msg(buffer)
-        @process.on "exit", (code, signal) =>
-          for k,v of JSON.parse @collected_data
-            @record_transcript "collected_data", "#{k}:#{v}"
-          @add_session_to_list("ENDED_SESSION", @session_id)
-          delete robot.sessions[@session_key]
-          robot.emit "conversation_ended", @
-          console.log "Session instance #{@session_id} for #{@session_key} has ended."
+      # Setup callbacks for incoming data
+      @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
+      @process.stderr.on "data", (buffer) => @handle_incoming_msg(buffer)
+      @process.on "exit", (code, signal) =>
+        for k,v of JSON.parse @collected_data
+          @record_transcript "collected_data", "#{k}:#{v}"
+        @add_session_to_list("ENDED_SESSION", @session_id)
+        delete robot.sessions[@session_key]
+        robot.emit "conversation_ended", @
+        console.log "Session instance #{@session_id} for #{@session_key} has ended."
 
-        # Add this session session_id to the started session list
-        @add_session_to_list("STARTED_SESSION", @session_id)
+      # Add this session session_id to the started session list
+      @add_session_to_list("STARTED_SESSION", @session_id)
 
-        # Tell the world that the blessed event has occured
-        robot.emit "conversation_started", @
+      # Tell the world that the blessed event has occured
+      robot.emit "conversation_started", @
 
     command_settings: () ->
       env = process.env
@@ -203,6 +190,11 @@ module.exports = (robot) ->
 
  #end Session Class
 
+  create_session = (msg, settings) ->
+    new_session = new Session(msg.message, JSON.parse(settings))
+    console.log "Created new session #{room_name} with session_id #{new_session.session_id}"
+    robot.sessions[room_name] = new_session
+
 
   robot.hear /(.*)/i, (msg) =>
     room_name = msg.message.user.name.toLowerCase() + "_" + msg.message.room.toLowerCase()
@@ -210,10 +202,23 @@ module.exports = (robot) ->
     if session
       session.send_cmd_to_session(msg.message.text)
     else
-      new_session = new Session msg.message
-      console.log "Created new session #{room_name} with session_id #{new_session.session_id}"
-      robot.sessions[room_name] = new_session
+      # This is a new session. See if there are settings defined for it.
+      # If there are not, then create an empty template for this room
+      # That allows the named owner the ability to set it up.
+      settings_key =  "room:#{msg.room.toLowerCase()}"
 
+      # Fetch the settings for this session from Redis.
+      # Settings are defined per room.
+      redis_client.get settings_key, (err, settings) =>
+        if not settings
+          console.log "Did not find settings!"
+          redis_client.get "room:template", (err, settings) =>
+            unless settings?
+              console.log "Cannot setup room - no room:template defined"
+              return
+            create_session(msg, settings)
+        else
+          create_session(msg, settings)
 
   robot.on "conversation_ended", (session) =>
       #Add the collected data. That's a great idea.

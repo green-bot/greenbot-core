@@ -6,6 +6,7 @@
   "description": "A simple helpful robot for your Company",
   "dependencies": {
     "airbrake": "^0.3.8",
+    "colors": "^1.0.3",
     "hubot": "^2.11.0",
     "hubot-diagnostics": "0.0.1",
     "hubot-google-images": "^0.1.3",

@@ -38,11 +38,18 @@ Mailer = require("nodemailer")
 Moment = require("moment")
 Us = require("underscore.string")
 Wellknown = require("nodemailer-wellknown")
+Winston = require('winston')
+Papertrail = require('winston-papertrail').Papertrail
+
+
+
+
 
 module.exports = (robot) ->
   robot.sessions = {}
   redis_client = Redis.createClient()
 
+  robot.emit "log", "Session loaded"
   class Session
     STR_PAD_LEFT = 1
     STR_PAD_RIGHT = 2
@@ -108,6 +115,7 @@ module.exports = (robot) ->
 
       # Tell the world that the blessed event has occured
       robot.emit "conversation_started", @
+      robot.emit "log", "New session started : #{@user}|#{@room}|#{@arguments}"
 
     command_settings: () ->
       env = process.env

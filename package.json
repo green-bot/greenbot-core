@@ -24,6 +24,7 @@
     "hubot-twitter": "^2.1.1",
     "hubot-youtube": "^0.1.2",
     "install": "^0.1.8",
+    "minitest": "^0.2.0",
     "moment": "^2.9.0",
     "nodemailer-smtp-transport": "^0.1.13",
     "nodemailer-wellknown": "^0.1.5",

@@ -42,12 +42,6 @@ begin
       tasks = %w(away owner settings test quit)
       my_task = select("What would you like to do?", tasks)
       case my_task
-      when 'clone'
-        clone = confirm("Do you want this same bot to be attached to another number?")
-        if clone
-          tell("This bot will also answer on 617-#{rand(1000).to_i}-#{rand(10000).to_i}")
-        end
-
         #code
       when 'test'
         $room.set_test_mode

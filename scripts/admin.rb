@@ -18,29 +18,51 @@ begin
   nexmo = Account.new
   begin
     passcode = ask "Passcode required"
-  end until passcode == "6578"
+  end until passcode == fetch_passcode()
   Timeout::timeout(timeout) {
     begin
-      tasks = %w(describe email new bots orphaned owner assign settings voice quit help)
+      tasks = %w(clone describe email new bots orphaned owner passcode assign settings voice quit help)
       my_task = select("What would you like to do?", tasks)
       case my_task
       when "help"
         tell "assign: assigns an existing network connection to a new type of bot"
         tell "bots: shows the active bots on this account, and refreshes the number database"
+        tell "clone: create a copy of a bot with a new network connection"
         tell "describe: describes a bot"
         tell "emails: sets the notification_emails for a bot"
         tell "new: creates a new bot and connects it to the network."
         tell "orphaned: lists bots without brains"
         tell "owner: manages the owners for a bot"
+        tell "passcode: changes the passcode on the account"
         tell "quit: ends this conversation"
         tell "repair: checks active numbers and checks their setup"
         tell "settings: manages the settings for a bot"
         tell "voice: sets what phone rings when somebody calls this bot."
 
+      when "clone"
+        existing_number = confirmed_gets("Please give me the existing number to use as a template.")
+        new_number = confirmed_gets("What is the new number?")
+        if confirm("All set here. Clone the number?")
+          bot = Room.new(existing_number)
+          settings = bot.load
+          unless settings
+            tell "Failed to load settings."
+            next
+          end
+          bot.retarget(new_number)
+          bot.publish
+        end
+
+      when "passcode"
+        new_passcode = confirmed_gets("Please provide a new passcode")
+        set_passcode(new_passcode)
+        tell "Passcode set."
+
       when "assign"
         numbers = nexmo.account_numbers
         begin
-          number = confirmed_gets("Which bot should I assign? Text cancel if you'd like to go back")
+          number = confirmed_gets("Which bot should I assign? I'll search for partial matches.
+          Text cancel if you'd like to go back")
           valid = numbers.include?(number) || number.downcase == "cancel"
           tell "That is not a valid choice" unless valid
         end unless valid
@@ -48,7 +70,7 @@ begin
           script = get_script
           create_redis_key(number, script)
           bot = Room.new(number)
-          manage_settings(bot)
+          create_settings(bot)
         else
           tell "Transaction cancelled"
         end

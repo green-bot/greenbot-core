@@ -6,9 +6,23 @@ class Room
     @valid = settings ? true : false
   end
 
+  def key_name
+    "room:#{@room_name}"
+  end
+
   def valid?
     @valid
   end
+
+  def retarget(new_room_name)
+    @room_name = new_room_name.downcase
+    tell "Room name is now #{@room_name}"
+  end
+
+  def delete
+    $redis.delete key_name
+  end
+
 
   def trace
     ap $room if ENV['DEVELOPER'] == "true"
@@ -52,7 +66,9 @@ class Room
 
   def publish
     if @settings
-      @redis.set(room_key, @settings.to_json)
+      @redis.set(key_name, @settings.to_json)
+    else
+      tell "No settings to save."
     end
     load
     trace

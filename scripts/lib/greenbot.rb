@@ -141,6 +141,14 @@ class Account
     end
 end
 
+def fetch_passcode()
+  $r.get("PASSCODE") || "6578"
+end
+
+def set_passcode(passcode)
+  $r.set("PASSCODE",  passcode)
+end
+
 def get_script
   scripts = $r.keys("scripts:*").each {|s| s.gsub!("scripts:","")}
   scripts << "cancel"
@@ -169,6 +177,12 @@ def create_redis_key(number_to_provision, script)
     settings["notification_emails"] << confirmed_gets("Please give us the email address that we should email conversations to.")
   end
   $r.set("room:#{number_to_provision}",settings.to_json)
+end
+
+def create_settings(bot)
+  bot.env_settings.each {|k,v|
+    bot.update_setting(k,confirmed_gets("Please give me the a value for #{k}."))
+  }
 end
 
 def manage_settings(bot)
@@ -215,17 +229,20 @@ Airbrake.configure do |config|
   config.api_key = ENV['AIRBRAKE_KEY'] || '466e18742945643dc8c08d6a9e334143'
 end
 
-at_exit {
-  e = $!
-  unless e.nil?
-    Airbrake.notify_or_ignore($!, {
-      error_message: e.message,
-      backtrace: e.backtrace,
-      cgi_data: ENV.to_hash
-      })
-      exit!
-  end
-}
+unless ENV['DEVELOPER'] == "true"
+  at_exit {
+    e = $!
+    unless e.nil?
+      Airbrake.notify_or_ignore($!, {
+        error_message: e.message,
+        backtrace: e.backtrace,
+        cgi_data: ENV.to_hash
+        })
+        exit!
+    end
+  }
+end
+
 
 if ENV['INTERACTIVE'] == "true"
   require 'pry'

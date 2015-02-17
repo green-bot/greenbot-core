@@ -1,0 +1,4 @@
+#!/bin/sh
+
+export PATH="node_modules/.bin:node_modules/hubot/node_modules/.bin:$PATH"
+node-debug node_modules/.bin/hubot "$@"

@@ -128,7 +128,7 @@ module.exports = (robot) ->
 
     is_owner: () ->
       console.log "Thinking I'm #{@user.name}"
-      if @settings.owners? and @user.name in @settings.owners
+      if @settings.owners? and @user.name.toLowerCase() in @settings.owners
         true
       else
         false
@@ -200,7 +200,7 @@ module.exports = (robot) ->
 
   create_session = (msg, settings) ->
     new_session = new Session(msg.message, JSON.parse(settings))
-    console.log "Created new session #{new_session.session_key} with session_id #{new_session.session_id}"
+    console.log "New session #{new_session.session_key} (session_id #{new_session.session_id}) between #{new_session.user.name} and #{new_session.user.room}"
     robot.sessions[new_session.session_key] = new_session
 
 

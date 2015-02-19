@@ -94,6 +94,11 @@ def confirmed_gets(prompt)
   end while not did_it_right
 end
 
+def listen
+  $stdout.flush
+  gets.chomp
+end
+
 def ask(prompt)
   puts prompt
   $stdout.flush

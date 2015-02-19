@@ -115,6 +115,8 @@ begin
 
       when "bots"
         numbers = nexmo.account_numbers
+        current_members = $r.smembers "NEXMO_NUMBERS"
+        $r.srem("NEXMO_NUMBERS", current_members.join(" "))
         numbers.each{|n| $r.sadd("NEXMO_NUMBERS", n)}
         unless numbers.empty?
           tell numbers.join(",")

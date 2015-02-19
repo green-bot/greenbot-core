@@ -10,7 +10,6 @@ require 'redis'
 require 'json'
 require 'eventmachine'
 require "./lib/greenbot.rb"
-require "awesome_print"
 
 POLLING_INTERVAL=10 #seconds
 MESSAGE_LENGTH=140 #characters

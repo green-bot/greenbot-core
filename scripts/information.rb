@@ -14,13 +14,10 @@ begin
     tell ENV['PROMPT_1']
     tell ENV['PROMPT_2']
     begin
-      tasks = %w(hours specials address contact quit error)
+      tasks = %w(hours specials address contact quit )
       my_task = select("How can I help?", tasks)
 
       case my_task
-      when "error"
-        test = 8/0
-
       when "hours"
         tell ENV['HOURS']
       when "specials"

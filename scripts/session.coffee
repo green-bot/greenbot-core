@@ -208,7 +208,13 @@ module.exports = (robot) ->
     session_key = msg.message.user.name.toLowerCase() + "_" + msg.message.room.toLowerCase()
     session = robot.sessions[session_key]
     if session
-      session.send_cmd_to_session(msg.message.text)
+      clean_text = msg.message.text.trim().toLowerCase()
+      switch clean_text
+        when "/quit"
+          session.process.kill("SIGHUP")
+        else
+          console.log("Sending #{msg.message.text}")
+          session.send_cmd_to_session(msg.message.text)
     else
       # This is a new session. See if there are settings defined for it.
       # If there are not, then create an empty template for this room

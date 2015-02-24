@@ -41,10 +41,6 @@ Wellknown = require("nodemailer-wellknown")
 Winston = require('winston')
 Papertrail = require('winston-papertrail').Papertrail
 
-
-
-
-
 module.exports = (robot) ->
   robot.sessions = {}
   redis_client = Redis.createClient()
@@ -107,14 +103,14 @@ module.exports = (robot) ->
           @record_transcript "collected_data", "#{k}:#{v}"
         @add_session_to_list("ENDED_SESSION", @session_id)
         delete robot.sessions[@session_key]
-        robot.emit "conversation_ended", @
+        robot.emit "session:end", @
         console.log "Session instance #{@session_id} for #{@session_key} has ended."
 
       # Add this session session_id to the started session list
       @add_session_to_list("STARTED_SESSION", @session_id)
 
       # Tell the world that the blessed event has occured
-      robot.emit "conversation_started", @
+      robot.emit "session:start", @
       robot.emit "log", "New session started : #{@user}|#{@room}|#{@arguments}"
 
     command_settings: () ->
@@ -170,10 +166,15 @@ module.exports = (robot) ->
           if line.length > 0
             robot.send @user, line
             @record_transcript("bot", line)
+            robot.emit("session:outbound_msg", @, line)
+
 
     send_cmd_to_session: (cmd ) =>
       @process.stdin.write("#{cmd}\n")
       @record_transcript(@user.name, cmd)
+      robot.emit("session:inbound_msg", @, cmd)
+
+
 
     pad: (str, len, pad, dir) ->
       if typeof len == 'undefined'
@@ -230,7 +231,7 @@ module.exports = (robot) ->
         else
           create_session(msg, settings)
 
-  robot.on "conversation_ended", (session) =>
+  robot.on "chat:end", (session) =>
       #Add the collected data. That's a great idea.
       if session.settings.webhook_url?
         console.log "Completed. Notifying #{session.settings.webhook_url}"

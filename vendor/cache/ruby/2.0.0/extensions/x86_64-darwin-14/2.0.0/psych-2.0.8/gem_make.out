@@ -1,0 +1,18 @@
+/Users/thomashowe/.rvm/rubies/ruby-2.0.0-p247/bin/ruby -r ./siteconf20150225-29778-f0bluv.rb extconf.rb 
+checking for yaml.h... yes
+checking for yaml_get_version() in -lyaml... yes
+creating Makefile
+
+make "DESTDIR=" clean
+
+make "DESTDIR="
+compiling psych.c
+compiling psych_emitter.c
+compiling psych_parser.c
+compiling psych_to_ruby.c
+compiling psych_yaml_tree.c
+linking shared-object psych.bundle
+
+make "DESTDIR=" install
+/usr/bin/install -c -m 0755 psych.bundle ./.gem.20150225-29778-14taybk
+installing default psych libraries

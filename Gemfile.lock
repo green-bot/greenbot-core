@@ -1,4 +1,5 @@
 GEM
+  remote: https://rubygems.org/
   specs:
     airbrake (4.1.0)
       builder
@@ -16,8 +17,8 @@ GEM
       mail (>= 2.2.1)
     gmail_xoauth (0.4.1)
       oauth (>= 0.3.6)
-    highline (1.7.0)
-    io-console (0.4.3)
+    highline (1.7.1)
+    io-console (0.4.2)
     json (1.8.2)
     mail (2.6.3)
       mime-types (>= 1.16, < 3)
@@ -63,8 +64,8 @@ DEPENDENCIES
   gem-wrappers
   gmail
   gmail_xoauth
-  highline
-  io-console
+  highline (>= 1.7.1)
+  io-console (= 0.4.2)
   json
   mail
   method_source

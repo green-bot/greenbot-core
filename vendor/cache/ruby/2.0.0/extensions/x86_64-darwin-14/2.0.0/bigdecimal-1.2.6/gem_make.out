@@ -1,0 +1,21 @@
+/Users/thomashowe/.rvm/rubies/ruby-2.0.0-p247/bin/ruby -r ./siteconf20150225-29778-1gfkxgf.rb extconf.rb 
+checking for labs() in stdlib.h... yes
+checking for llabs() in stdlib.h... yes
+creating Makefile
+
+make "DESTDIR=" clean
+
+make "DESTDIR="
+compiling bigdecimal.c
+bigdecimal.c:238:12: warning: implicit declaration of function 'rb_rational_num' is invalid in C99 [-Wimplicit-function-declaration]
+            num = rb_rational_num(v);
+                  ^
+bigdecimal.c:242:39: warning: implicit declaration of function 'rb_rational_den' is invalid in C99 [-Wimplicit-function-declaration]
+            v = BigDecimal_div2(ToValue(pv), rb_rational_den(v), LONG2NUM(prec));
+                                             ^
+2 warnings generated.
+linking shared-object bigdecimal.bundle
+
+make "DESTDIR=" install
+/usr/bin/install -c -m 0755 bigdecimal.bundle ./.gem.20150225-29778-xyovyt
+installing default bigdecimal libraries

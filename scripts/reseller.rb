@@ -5,7 +5,6 @@
 # reseller.rb
 #
 require "./lib/greenbot.rb"
-require "awesome_print"
 require 'json'
 require 'open3'
 require 'pry'

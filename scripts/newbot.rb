@@ -8,7 +8,6 @@ require "timeout"
 require 'open3'
 require 'pry'
 require 'nexmo'
-require 'awesome_print'
 require 'json'
 
 HOUR = 60 * 60

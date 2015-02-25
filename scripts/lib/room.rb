@@ -25,7 +25,7 @@ class Room
 
 
   def trace
-    ap $room if ENV['DEVELOPER'] == "true"
+    puts $room.inspect if ENV['DEVELOPER'] == "true"
   end
 
   def name

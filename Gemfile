@@ -1,3 +1,5 @@
+source 'https://rubygems.org'
+
 gem 'airbrake' 
 gem 'awesome_print' 
 gem 'bigdecimal' 
@@ -10,8 +12,8 @@ gem 'executable-hooks'
 gem 'gem-wrappers' 
 gem 'gmail' 
 gem 'gmail_xoauth' 
-gem 'highline' 
-gem 'io-console' 
+gem 'highline', ">=1.7.1"
+gem 'io-console', "0.4.2"
 gem 'json' 
 gem 'mail' 
 gem 'method_source' 

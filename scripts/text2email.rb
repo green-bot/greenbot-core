@@ -123,7 +123,6 @@ EventMachine.run do
     # See if there's any inbound emails that we have to send as messages
     while true
       if $r.llen(session_key) > 0
-        puts "Start consuming"
         inbound_message = $r.lpop(session_key)
         if inbound_message
           email = JSON.parse(inbound_message)
@@ -132,11 +131,10 @@ EventMachine.run do
             text = text.split(MSG_BODY_DELIMITER).first
             tell text
           else
-            tell text[0..MESSAGE_LENGTH]
+            tell text[0..MESSAGE_LENGTH].delete("\n")
           end
         end
       else
-        puts "Ended"
         break
       end
     end

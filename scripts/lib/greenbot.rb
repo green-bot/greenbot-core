@@ -4,7 +4,6 @@ require "yaml"
 require "json"
 require 'redis'
 require "uuidtools"
-require 'awesome_print'
 require 'airbrake'
 require './lib/room'
 

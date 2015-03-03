@@ -110,6 +110,22 @@ def tell(prompt)
   $stdout.flush
 end
 
+def note(prompt)
+  complete = false
+  note = ""
+  response << ask(prompt)
+  begin
+    if response.chomp.length == 1
+      complete = true
+      tell "Note taking mode complete."
+    else
+      note << response
+      response << "Currently in note taking mode. Send as many messages as you like, send a message with a single character to end note taking. "
+    end
+  end while not complete
+  return note
+end
+
 class Account
     def initialize(key = ENV['NEXMO_KEY'], secret = ENV['NEXMO_SECRET'])
       @client = Nexmo::Client.new(key: key, secret: secret)

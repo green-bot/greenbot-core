@@ -10,6 +10,9 @@ require 'redis'
 require 'json'
 require 'eventmachine'
 require "./lib/greenbot.rb"
+require 'syslog/logger'
+log = Syslog::Logger.new 'text2email'
+
 
 POLLING_INTERVAL=10 #seconds
 MESSAGE_LENGTH=140 #characters
@@ -45,6 +48,7 @@ send_email(ENV['INITIAL_MESSAGE'])
 
 EventMachine.run do
   EM.add_periodic_timer(POLLING_INTERVAL) do
+    log.info("Starting main loop")
     master_session = $r.get("MASTER_TEXT2EMAIL_SESSION")
     case master_session
     when ENV["SESSION_ID"]

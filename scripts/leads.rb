@@ -20,6 +20,7 @@ begin
         better_number = ask("Please enter that number with an area code")
         better_number.remember("better_number")
       end
+      issue = note("How can we help you? Please use as many messages as you need.")
     else
       tell("No problem at all.")
     end

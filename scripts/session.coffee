@@ -81,7 +81,11 @@ module.exports = (robot) ->
         console.log "Running as the owner"
         if @room.test_mode is true
           @room.test_mode = false
-          parse.update 'Room', @room.id, { test_mode: false }
+          parse.update 'Room', @room.objectId, { test_mode: false }, (err, response) =>
+            if err
+              console.log("Found an error trying to turn off test mode : #{err}")
+            else
+              console.log("Turned off test mode on room #{@room.objectId}")
           @arguments = @room.default_cmd.split(" ")
         else
           @arguments = @room.owner_cmd.split(" ")

@@ -50,7 +50,7 @@ class Room
 
 
   def set_test_mode
-    @settings["test_mode"] = "true"
+    @room["test_mode"] = true
     publish
     trace
   end

@@ -14,8 +14,28 @@ class Room
     new_room.save
   end
 
+  def self.scripts
+    scripts = Parse::Query.new("Script").get
+  end
+
+  def assign(script_object_id)
+    q = Parse::Query.new("Script")
+    q.eq("objectId", script_object_id)
+    script = q.get.first
+    @room['default_cmd'] = script['default_cmd']
+    @room['settings'] = script['default_settings']
+    @room['owner_cmd'] = script['owner_cmd']
+    @room['default_path'] = script['default_path']
+    publish
+  end
+
+  def not_setup?
+    @room["default_cmd"] == "ruby default.rb"
+  end
+
+
   def options
-    interesting_fields = %w(default_cmd default_path notification_emails owner_cmd owners settings mail_user mail_pass)
+    interesting_fields = %w(default_cmd default_path notification_emails owner_cmd owners settings mail_user mail_pass test_mode)
     options = {}
     interesting_fields.each do |f|
       options[f] = @room[f]

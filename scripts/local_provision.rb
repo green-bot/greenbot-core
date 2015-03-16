@@ -21,10 +21,7 @@ Parse.init(application_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI", api_key: 
 q = Parse::Query.new("Room")
 q.eq("name", @template_room_name)
 template_room = q.get.first
-ap template_room
-
 template_room = Room.new(ARGV[1])
-ap template_room.options
 Room.create(@new_room, template_room.options)
 
 

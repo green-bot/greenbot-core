@@ -139,21 +139,25 @@ module.exports = (robot) ->
 
     save_collected_data: (callback) =>
       console.log("Saving collected data for room #{@room.objectId}")
-      collected_data_object=
-        src:   @src
-        data:  JSON.parse @collected_data
-      parse.insert 'CollectedData', collected_data_object, (err, response) =>
-        if err
-          console.log("Threw error during data save : #{err} #{response}")
-          callback("Could not create object.", null)
-        else
-          # Saved object, now add relation
-          console.log response
-          @collected_data_object_id = response.objectId
-          parse.addRelation("room", "CollectedData", response.objectId, "Room", @room.objectId,
-            () =>
-              console.log("Object saved")
-              callback(null, "Saved object"))
+      console.log(@collected_data)
+      if @collected_data?
+        collected_data_object=
+          src:   @src
+          data:  JSON.parse @collected_data
+        parse.insert 'CollectedData', collected_data_object, (err, response) =>
+          if err
+            console.log("Threw error during data save : #{err} #{response}")
+            callback("Could not create object.", null)
+          else
+            # Saved object, now add relation
+            console.log response
+            @collected_data_object_id = response.objectId
+            parse.addRelation("room", "CollectedData", response.objectId, "Room", @room.objectId,
+              () =>
+                console.log("Object saved")
+                callback(null, "Saved object"))
+      else
+        callback(null, "No data to save")
 
     save_session: (callback) =>
       console.log("Saving session for room #{@room.objectId}")

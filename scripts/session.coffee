@@ -106,7 +106,6 @@ module.exports = (robot) ->
 
       # Setup callbacks for incoming data
       @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
-      @process.stderr.on "data", (buffer) => @handle_incoming_msg(buffer)
       @process.on "exit", (code, signal) => @end_and_record_session()
 
       # Tell the world that the blessed event has occured

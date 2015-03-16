@@ -6,7 +6,6 @@
 require "./lib/greenbot.rb"
 require "timeout"
 require 'open3'
-require 'pry'
 
 HOUR = 60 * 60
 timeout = ENV['CONVERSATION_TIMEOUT'].to_i || 4 * HOUR

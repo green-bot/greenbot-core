@@ -2,7 +2,7 @@ require 'parse-ruby-client'
 
 class Room
   def initialize(room_name)
-    Parse.init(application_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI", api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7", auiet: false)
+    Parse.init(application_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI", api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7", auiet: true)
     @room_name = room_name.downcase
     load
   end

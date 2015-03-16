@@ -46,6 +46,10 @@ Async = require('async')
 module.exports = (robot) ->
   robot.sessions = {}
   redis_client = Redis.createClient()
+  options =
+    app_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI"
+    api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7"
+  parse = new Parse(options)
 
   robot.emit "log", "Session loaded"
   class Session
@@ -67,10 +71,6 @@ module.exports = (robot) ->
       @transcript = ""
       @room = room
       @command_path = @room.default_path
-      options =
-        app_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI"
-        api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7"
-      @parse = new Parse(options)
 
 
       # There are generally two different people who text in
@@ -81,7 +81,7 @@ module.exports = (robot) ->
         console.log "Running as the owner"
         if @room.test_mode is "true"
           @room.test_mode = "false"
-          @parse.update 'Room', @room.id, { test_mode: false }
+          parse.update 'Room', @room.id, { test_mode: false }
           @arguments = @room.default_cmd.split(" ")
         else
           @arguments = @room.owner_cmd.split(" ")
@@ -128,11 +128,11 @@ module.exports = (robot) ->
       transcript_object=
         transcript:      @transcript
         transcript_key:  @transcript_key
-      @parse.insert 'Transcript', transcript_object, (err, response) =>
+      parse.insert 'Transcript', transcript_object, (err, response) =>
         if err
           callback("Could not create object.", null)
         else
-          @parse.addRelation("room", "Transcript", response.objectId, "Room", @room.objectId,
+          parse.addRelation("room", "Transcript", response.objectId, "Room", @room.objectId,
             () =>
               @transcript_data_id = response.objectId
               console.log("Object saved")
@@ -143,7 +143,7 @@ module.exports = (robot) ->
       collected_data_object=
         src:   @src
         data:  JSON.parse @collected_data
-      @parse.insert 'CollectedData', collected_data_object, (err, response) =>
+      parse.insert 'CollectedData', collected_data_object, (err, response) =>
         if err
           console.log("Threw error during data save : #{err} #{response}")
           callback("Could not create object.", null)
@@ -151,7 +151,7 @@ module.exports = (robot) ->
           # Saved object, now add relation
           console.log response
           @collected_data_object_id = response.objectId
-          @parse.addRelation("room", "CollectedData", response.objectId, "Room", @room.objectId,
+          parse.addRelation("room", "CollectedData", response.objectId, "Room", @room.objectId,
             () =>
               console.log("Object saved")
               callback(null, "Saved object"))
@@ -161,7 +161,7 @@ module.exports = (robot) ->
       session_object=
         src:          @src
         sessionId:   @session_id
-      @parse.insert 'Session', session_object, (err, response) =>
+      parse.insert 'Session', session_object, (err, response) =>
         if err
           console.log("Threw error during data save : #{err} #{response}")
           callback("Could not create object.", null)
@@ -169,11 +169,11 @@ module.exports = (robot) ->
           # Saved object, now add relation
           console.log response
           @session_object_id = response.objectId
-          @parse.addRelation("room", "Session", @session_object_id, "Room", @room.objectId,
+          parse.addRelation("room", "Session", @session_object_id, "Room", @room.objectId,
             () =>
-              @parse.addRelation("collectedData", "Session", @session_object_id, "CollectedData", @collected_data_object_id,
+              parse.addRelation("collectedData", "Session", @session_object_id, "CollectedData", @collected_data_object_id,
                 () =>
-                  @parse.addRelation("transcript", "Session", @session_object_id, "Transcript", @transcript_data_id,
+                  parse.addRelation("transcript", "Session", @session_object_id, "Transcript", @transcript_data_id,
                     () =>
                         console.log("Object saved")
                         callback(null, "Saved object"))))
@@ -291,7 +291,7 @@ module.exports = (robot) ->
       # That allows the named owner the ability to set it up.
       room_name =  "#{msg.message.room.toLowerCase()}"
       console.log("Looking for " + room_name)
-      @parse.findMany 'Room', { name: room_name }, (err, response) ->
+      parse.findMany 'Room', { name: room_name }, (err, response) ->
         rooms = response.results
         console.log JSON.stringify(rooms, null, 4)
         if err or (rooms.length == 0)

@@ -16,12 +16,12 @@ Parse.init(application_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI", api_key: 
 
 # Usage: local_provision new_number template_number
 @new_room = ARGV[0]
-@template_room_name = ARGV[1]
+@template_room_name = ARGV[1] || "template"
 
 q = Parse::Query.new("Room")
 q.eq("name", @template_room_name)
 template_room = q.get.first
-template_room = Room.new(ARGV[1])
+template_room = Room.new(@template_room_name)
 Room.create(@new_room, template_room.options)
 
 

@@ -35,7 +35,7 @@ def offer_recharge
 end
 
 def assign_bot
-  tell "If you don't know what sort of job you want your bot to do, check out this video (http://www.yahoo.com) or help page (http://www.google.com)"
+  tell "If you don't know what sort of job you want your bot to do, check this out first (http://www.bit.ly/AVDSfS)"
   scripts = Room.scripts
   sortof_bot = select("What sort of bot do you want to deploy?", scripts.collect{|s| s["name"] })
   script = scripts.detect{|s| s["name"] == sortof_bot}
@@ -44,7 +44,7 @@ end
 
 begin
   if $room.not_setup?
-    tell "Hi! Welcome to your bot. If this is your first time, we've got a great video (http://www.yahoo.com) and help page (http://www.yahoo.com)"
+    tell "Hi! Welcome to your bot. If this is your first time, we've got a mobile site with videos and tutorials to get you started."
     assign_bot
     tell "From now on, when you text into your bot, you will be able to change settings, prompts, etc."
   else

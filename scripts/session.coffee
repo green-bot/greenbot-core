@@ -79,8 +79,8 @@ module.exports = (robot) ->
       # The second are the customers, who are there to use it.
       if @is_owner()
         console.log "Running as the owner"
-        if @room.test_mode is "true"
-          @room.test_mode = "false"
+        if @room.test_mode is true
+          @room.test_mode = false
           parse.update 'Room', @room.id, { test_mode: false }
           @arguments = @room.default_cmd.split(" ")
         else

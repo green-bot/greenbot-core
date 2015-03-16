@@ -300,9 +300,10 @@ module.exports = (robot) ->
           console.log "Found room with id " + room.objectId.toString()
           create_session(msg, room)
 
-  robot.on "chat:end", (session) =>
+  robot.on "session:end", (session) =>
       #Add the collected data. That's a great idea.
-      if session.settings.webhook_url?
+      console.log("Session ended. Who do we have to tell?")
+      if session.room.webhook_url?
         console.log "Completed. Notifying #{session.settings.webhook_url}"
         Request.get "#{session.settings.webhook_url}?session_id=#{session.session_id}", null,
           (error, response, body) =>
@@ -310,18 +311,19 @@ module.exports = (robot) ->
               console.log "Webhook returned error"
               console.log body
               console.log error
-      if session.settings.notification_emails?
+      if session.room.notification_emails?
         # Create a SMTP transporter object
+        console.log("Sending notification email")
         transporter = Mailer.createTransport(
           service: "gmail"
           auth:
-            user: session.settings.mail_user
-            pass: session.settings.mail_pass
+            user: session.room.mail_user
+            pass: session.room.mail_pass
         )
         # Message object
         message =
-          from: session.settings.mail_user
-          to: session.settings.notification_emails.join(",")
+          from: session.room.mail_user
+          to: session.room.notification_emails.join(",")
           subject: "Conversation Complete"
           text: session.transcript
 

@@ -1,0 +1,14 @@
+{
+    "applications": {
+        "KISST": {
+            "applicationId": "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI", 
+            "masterKey": "RwIarCIom4SGBI6S3oXfKIydRdQ0vlti96enEigO"
+        }, 
+        "_default": {
+            "link": "KISST"
+        }
+    }, 
+    "global": {
+        "parseVersion": "1.3.5"
+    }
+}

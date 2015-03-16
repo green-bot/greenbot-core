@@ -11,7 +11,9 @@ require 'json'
 require 'eventmachine'
 require "./lib/greenbot.rb"
 require 'syslog/logger'
+
 log = Syslog::Logger.new 'text2email'
+$r = Redis.new
 
 
 POLLING_INTERVAL=10 #seconds

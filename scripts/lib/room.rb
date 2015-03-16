@@ -1,10 +1,26 @@
-require 'parse-ruby-client'
+
 
 class Room
+
   def initialize(room_name)
-    Parse.init(application_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI", api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7", quiet: true)
     @room_name = room_name.downcase
     load
+  end
+
+  def self.create(room_name, options)
+    new_room = Parse::Object.new("Room")
+    options.each{|k,v| new_room[k] = v}
+    new_room["name"] = room_name
+    new_room.save
+  end
+
+  def options
+    interesting_fields = %w(default_cmd default_path notification_emails owner_cmd owners settings mail_user mail_pass)
+    options = {}
+    interesting_fields.each do |f|
+      options[f] = @room[f]
+    end
+    options
   end
 
   def key_name
@@ -77,5 +93,6 @@ class Room
   def notification_emails
     @room["notification_emails"]
   end
+
 
 end

@@ -5,8 +5,10 @@ require "json"
 require 'redis'
 require "uuidtools"
 require 'airbrake'
+require 'parse-ruby-client'
 require './lib/room'
 
+Parse.init(application_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI", api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7", quiet: true)
 class SessionData
 
   attr_accessor :collected_data

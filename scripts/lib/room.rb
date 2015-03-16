@@ -1,13 +1,14 @@
+require 'parse-ruby-client'
+
 class Room
   def initialize(room_name)
+    Parse.init(application_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI", api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7", auiet: false)
     @room_name = room_name.downcase
-    @redis = $r || Redis.new
-    settings = load
-    @valid = settings ? true : false
+    load
   end
 
   def key_name
-    "room:#{@room_name}"
+    @room_name
   end
 
   def valid?
@@ -20,12 +21,11 @@ class Room
   end
 
   def delete
-    $redis.delete key_name
+    @room.parse_delete
   end
 
 
   def trace
-    ap $room if ENV['DEVELOPER'] == "true"
   end
 
   def name
@@ -40,37 +40,30 @@ class Room
   end
 
   def load
-    raw = @redis.get("room:#{@room_name}")
-    unless raw.nil?
-      @settings = JSON.parse(raw)
-      trace
-      return @settings
-    else
-      nil
-    end
+    q = Parse::Query.new("Room")
+    q.eq("name", @room_name)
+    @room = q.get.first
+    puts @room.inspect
+    @settings = @room["settings"]
+    @valid = @settings ? true : false
   end
 
   def env_settings
-    @settings["settings"].reject{|k,v| %w(AWAY AUTO_CHARGE auto_charge).include?(k) }
+    @room["settings"].reject{|k,v| %w(AWAY AUTO_CHARGE auto_charge).include?(k) }
   end
 
   def update_setting(key, value)
-    @settings['settings'][key] = value
+    @room["settings"][key] = value
     publish
     trace
   end
 
   def get_setting(key)
-    @settings['settings'][key]
+    @room["settings"][key]
   end
 
   def publish
-    if @settings
-      @redis.set(key_name, @settings.to_json)
-    else
-      tell "No settings to save."
-    end
-    load
+    @room.save
     trace
   end
 
@@ -79,11 +72,11 @@ class Room
   end
 
   def owners
-    @settings["owners"]
+    @room["owners"]
   end
 
   def notification_emails
-    @settings["notification_emails"]
+    @room["notification_emails"]
   end
 
 end

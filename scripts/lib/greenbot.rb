@@ -53,9 +53,6 @@ class Object
   end
 end
 
-$r = Redis.new
-
-
 def confirm(prompt)
   positives = %w(yes sure OK yep)
   negatives = %w(no nope noway)
@@ -159,44 +156,6 @@ class Account
         voiceCallbackValue: voice_number
         })
     end
-end
-
-def fetch_passcode()
-  $r.get("PASSCODE") || "6578"
-end
-
-def set_passcode(passcode)
-  $r.set("PASSCODE",  passcode)
-end
-
-def get_script
-  scripts = $r.keys("scripts:*").each {|s| s.gsub!("scripts:","")}
-  scripts << "cancel"
-  script = select("Please select which script you'd like to attach to this number", scripts)
-  return script
-end
-
-def pick_bot
-  rooms = $r.keys("room*").each {|k| k.gsub!("room:","")}
-  number = ask "What number would you like to configure?"
-  if number == "show" or not rooms.include? number
-    number = select "Here are the current numbers you can configure. Pick one", rooms
-  end
-  bot = Room.new(number)
-end
-
-def create_redis_key(number_to_provision, script)
-  template = $r.get "scripts:#{script}"
-  settings = JSON.parse template
-  settings["owners"] << confirmed_gets("Please give us the cell phone number of the owner, including the 1 and area code.")
-  while confirm("Are there are any other cell phones that should be owners?")
-    settings["owners"] << confirmed_gets("Please give us the cell phone number of the owner, including the 1 and area code")
-  end
-  settings["notification_emails"] << confirmed_gets("Please give us the email address that we should email conversations to.")
-  while confirm("Are there are any other email addresses?")
-    settings["notification_emails"] << confirmed_gets("Please give us the email address that we should email conversations to.")
-  end
-  $r.set("room:#{number_to_provision}",settings.to_json)
 end
 
 def create_settings(bot)

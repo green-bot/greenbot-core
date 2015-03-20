@@ -14,7 +14,7 @@ app.post('/billing', function(req, res) {
   req_data = req.body
   console.log("Entered billing function -> " + req_data.type);
   console.log(req_data);
-  Stripe.initialize('sk_test_Qb4fiHrfYE22fKBnGFtcWR6b');
+  Stripe.initialize('sk_live_CDYuW7Nsp4dtyKXT7ifjZ47q');
 
   if(req_data.type == "customer.subscription.created"){
     // First things first, get the customer record.

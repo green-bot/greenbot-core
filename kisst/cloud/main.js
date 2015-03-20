@@ -39,6 +39,81 @@ Parse.Cloud.job("allocateRoom", function(request, status) {
         // Allocate the room and send the information.
         console.log("Allocating room");
         Parse.Config.get().then(function(config) {
+          console.log("Allocating did from inventory");
+          var Did = Parse.Object.extend("did");
+          var query = new Parse.Query(Did);
+          query.equalTo("allocated", false);
+          query.first({
+            success: function(did) {
+              // Successfully retrieved the object.
+              // Don't update the did yet.
+              room.set("name", did["did"]);
+              room.set("allocated", true);
+              room.save();
+              did.set("allocated", true);
+              did.save();
+
+              Parse.Cloud.httpRequest(
+                {
+                  method: 'POST',
+                  url: 'http://rest.tsg.com/sms/json',
+                  params: {
+                    key: config.get("tsg_key")
+                  },
+                  body: {
+                    method: "sms.send",
+                    id: 0,
+                    params: [
+                      room.get("owners")[0],
+                      room.get("name"),
+                      config.get("new_bot_announce"),
+                      1
+                    ],
+                    json: true
+                  },
+                  success: function(httpResponse) {
+                    console.log("OK, bot created. Woooooo!!!!");
+                    status.success();
+                  },
+                  error: function(httpResponse) {
+                    console.error('Send hello message request failed with response code ' + httpResponse.status);
+                    console.error('Server returned text ' + httpResponse.text);
+                  }
+              } );
+            },
+            error: function(error) {
+              console.log("Failed to fetch free DID.");
+              status.error("Failed to fetch free DID.");
+            }
+          });
+        });
+      } else {
+        console.log("It was allocated???");
+        status.success();
+      }
+    },
+    error: function(object, error) {
+      console.log('Query room request failed ' + error);
+      status.error("Query room request failed.");
+    }
+  });
+  console.log("Exiting and waiting for callbacks");
+});
+
+
+Parse.Cloud.job("allocatefNexmoRoom", function(request, status) {
+  room_id = request.params.room_id;
+  console.log("Running the room with " + room_id);
+
+  var Room = Parse.Object.extend("Room");
+  var query = new Parse.Query(Room);
+  query.get(room_id, {
+    success: function(room) {
+      console.log("Fetched room");
+      if(room.get("allocated") == false) {
+        // Allocate the room and send the information.
+        console.log("Allocating room");
+        Parse.Config.get().then(function(config) {
           console.log("Making request to Nexmo for numbers");
           Parse.Cloud.httpRequest({
             method: 'GET',
@@ -54,7 +129,7 @@ Parse.Cloud.job("allocateRoom", function(request, status) {
               console.log("Successful request for numbers");
               console.log(httpResponse.text);
               console.log("Purchasing number " + json_result.numbers[0].msisdn);
-              
+
               // OK, buy it, then send a text out to the new owner.
               Parse.Cloud.httpRequest({
                 method: 'POST',

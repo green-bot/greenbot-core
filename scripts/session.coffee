@@ -40,10 +40,16 @@ Us = require("underscore.string")
 Wellknown = require("nodemailer-wellknown")
 Winston = require('winston')
 Papertrail = require('winston-papertrail').Papertrail
+Parse = require('node-parse-api').Parse
+Async = require('async')
 
 module.exports = (robot) ->
   robot.sessions = {}
   redis_client = Redis.createClient()
+  options =
+    app_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI"
+    api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7"
+  parse = new Parse(options)
 
   robot.emit "log", "Session loaded"
   class Session
@@ -51,18 +57,21 @@ module.exports = (robot) ->
     STR_PAD_RIGHT = 2
     STR_PAD_BOTH = 3
 
-    constructor: (message, settings)->
+    constructor: (message, room)->
       # The variables that make up a Session
+      console.log("Setting up a new session with settings")
+      console.log JSON.stringify(room, null, 4)
       @user = message.user    # This is the user structure from hubot.
-      @room = message.room.toLowerCase() # this is a string.
-      @session_key = @user.name.toLowerCase() + "_" + @room
+      @src = @user.name.toLowerCase()
+      @room_name = message.room.toLowerCase() # this is a string.
+      @session_key = @src + "_" + @room_name
       @session_id = ShortUUID.generate()
-      @transcript_key = "session_transcript:#{@session_id}"
+      @transcript_key = @session_id
       @data_key = "session_data:#{@session_id}"
-      @settings_key = "room:#{@room}"
       @transcript = ""
-      @settings = settings
-      @command_path = @settings.default_path
+      @room = room
+      @command_path = @room.default_path
+
 
       # There are generally two different people who text in
       # The first is the owner of the number, and he is
@@ -70,14 +79,18 @@ module.exports = (robot) ->
       # The second are the customers, who are there to use it.
       if @is_owner()
         console.log "Running as the owner"
-        if @settings.test_mode is "true"
-          @settings.test_mode = "false"
-          redis_client.set @settings_key, JSON.stringify @settings
-          @arguments = @settings.default_cmd.split(" ")
+        if @room.test_mode is true
+          @room.test_mode = false
+          parse.update 'Room', @room.objectId, { test_mode: false }, (err, response) =>
+            if err
+              console.log("Found an error trying to turn off test mode : #{err}")
+            else
+              console.log("Turned off test mode on room #{@room.objectId}")
+          @arguments = @room.default_cmd.split(" ")
         else
-          @arguments = @settings.owner_cmd.split(" ")
+          @arguments = @room.owner_cmd.split(" ")
       else
-        @arguments = @settings.default_cmd.split(" ")
+        @arguments = @room.default_cmd.split(" ")
 
       console.log "Running #{@arguments}"
 
@@ -97,34 +110,101 @@ module.exports = (robot) ->
 
       # Setup callbacks for incoming data
       @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
-      @process.stderr.on "data", (buffer) => @handle_incoming_msg(buffer)
-      @process.on "exit", (code, signal) =>
-        for k,v of JSON.parse @collected_data
-          @record_transcript "collected_data", "#{k}:#{v}"
-        @add_session_to_list("ENDED_SESSION", @session_id)
-        delete robot.sessions[@session_key]
-        robot.emit "session:end", @
-        console.log "Session instance #{@session_id} for #{@session_key} has ended."
-
-      # Add this session session_id to the started session list
-      @add_session_to_list("STARTED_SESSION", @session_id)
+      @process.on "exit", (code, signal) => @end_and_record_session()
 
       # Tell the world that the blessed event has occured
       robot.emit "session:start", @
-      robot.emit "log", "New session started : #{@user}|#{@room}|#{@arguments}"
+      robot.emit "log", "New session started : #{@user}|#{@room_name}|#{@arguments}"
+
+    end_and_record_session: () =>
+      console.log "Ending and recording session #{@session_id}"
+      Async.series([
+        @save_collected_data,
+        @save_transcript,
+        @save_session,
+        @delete_session])
+
+    save_transcript: (callback) =>
+      console.log("Saving transcript")
+      for k,v of JSON.parse @collected_data
+        @update_transcript "collected_data", "#{k}:#{v}"
+      transcript_object=
+        transcript:      @transcript
+        transcript_key:  @transcript_key
+      parse.insert 'Transcript', transcript_object, (err, response) =>
+        if err
+          callback("Could not create object.", null)
+        else
+          parse.addRelation("room", "Transcript", response.objectId, "Room", @room.objectId,
+            () =>
+              @transcript_data_id = response.objectId
+              console.log("Object saved")
+              callback(null, "Saved object"))
+
+    save_collected_data: (callback) =>
+      console.log("Saving collected data for room #{@room.objectId}")
+      console.log(@collected_data)
+      if @collected_data?
+        collected_data_object=
+          src:   @src
+          data:  JSON.parse @collected_data
+        parse.insert 'CollectedData', collected_data_object, (err, response) =>
+          if err
+            console.log("Threw error during data save : #{err} #{response}")
+            callback("Could not create object.", null)
+          else
+            # Saved object, now add relation
+            console.log response
+            @collected_data_object_id = response.objectId
+            parse.addRelation("room", "CollectedData", response.objectId, "Room", @room.objectId,
+              () =>
+                console.log("Object saved")
+                callback(null, "Saved object"))
+      else
+        callback(null, "No data to save")
+
+    save_session: (callback) =>
+      console.log("Saving session for room #{@room.objectId}")
+      session_object=
+        src:          @src
+        sessionId:   @session_id
+      parse.insert 'Session', session_object, (err, response) =>
+        if err
+          console.log("Threw error during data save : #{err} #{response}")
+          callback("Could not create object.", null)
+        else
+          # Saved object, now add relation
+          console.log response
+          @session_object_id = response.objectId
+          parse.addRelation("room", "Session", @session_object_id, "Room", @room.objectId,
+            () =>
+              parse.addRelation("collectedData", "Session", @session_object_id, "CollectedData", @collected_data_object_id,
+                () =>
+                  parse.addRelation("transcript", "Session", @session_object_id, "Transcript", @transcript_data_id,
+                    () =>
+                        console.log("Object saved")
+                        callback(null, "Saved object"))))
+
+    delete_session: (callback) =>
+      console.log("Ending session...")
+      delete robot.sessions[@session_key]
+      robot.emit "session:end", @
+      console.log "Session instance #{@session_id} for #{@session_key} has ended."
+      callback(null, "Ended session")
+
 
     command_settings: () ->
       env = process.env
       env.SESSION_ID = @session_id
-      env.SRC = @user.name
+      env.SRC = @src
       env.DST = @user.room
-      for attrname of @settings.settings
-        env[attrname] = @settings.settings[attrname]
+      for attrname of @room.settings
+        env[attrname] = @room.settings[attrname]
       return env
 
     is_owner: () ->
-      console.log "Thinking I'm #{@user.name}"
-      if @settings.owners? and @user.name.toLowerCase() in @settings.owners
+      console.log "Thinking I'm #{@src}"
+      if @room.owners? and @src in @room.owners
         true
       else
         false
@@ -139,15 +219,11 @@ module.exports = (robot) ->
         return false
       true
 
-    add_session_to_list: (list_session_id, session_session_id) ->
-      redis_client.sadd(list_session_id, session_session_id)
-
-
-    record_transcript:  (src, line) ->
+    update_transcript:  (src, line) ->
       #Update the transcript
       line = "#{Moment().format('lll')}|#{@pad(src, 15, ' ', STR_PAD_LEFT)}|#{line}\n"
       @transcript += line
-      redis_client.set(@transcript_key, @transcript)
+
 
     handle_incoming_msg: (text) =>
       # If the message is a valid JSON object, treat it as if it were collected data
@@ -165,13 +241,13 @@ module.exports = (robot) ->
           # like Nexmo, this is a one message per second rate.
           if line.length > 0
             robot.send @user, line
-            @record_transcript("bot", line)
+            @update_transcript("bot", line)
             robot.emit("session:outbound_msg", @, line)
 
 
     send_cmd_to_session: (cmd ) =>
       @process.stdin.write("#{cmd}\n")
-      @record_transcript(@user.name, cmd)
+      @update_transcript(@src, cmd)
       robot.emit("session:inbound_msg", @, cmd)
 
 
@@ -200,7 +276,7 @@ module.exports = (robot) ->
  #end Session Class
 
   create_session = (msg, settings) ->
-    new_session = new Session(msg.message, JSON.parse(settings))
+    new_session = new Session(msg.message, settings)
     console.log "New session #{new_session.session_key} (session_id #{new_session.session_id}) between #{new_session.user.name} and #{new_session.user.room}"
     robot.sessions[new_session.session_key] = new_session
 
@@ -220,20 +296,22 @@ module.exports = (robot) ->
       # This is a new session. See if there are settings defined for it.
       # If there are not, then create an empty template for this room
       # That allows the named owner the ability to set it up.
-      settings_key =  "room:#{msg.message.room.toLowerCase()}"
-
-      # Fetch the settings for this session from Redis.
-      # Settings are defined per room.
-      redis_client.get settings_key, (err, settings) =>
-        if not settings
-          console.log "Cannot setup room - no room:template defined"
-          return
+      room_name =  "#{msg.message.room.toLowerCase()}"
+      console.log("Looking for " + room_name)
+      parse.findMany 'Room', { name: room_name }, (err, response) ->
+        rooms = response.results
+        console.log JSON.stringify(rooms, null, 4)
+        if err or (rooms.length == 0)
+          console.log "Cannot setup room - no room defined"
         else
-          create_session(msg, settings)
+          room = rooms.shift()
+          console.log "Found room with id " + room.objectId.toString()
+          create_session(msg, room)
 
-  robot.on "chat:end", (session) =>
+  robot.on "session:end", (session) =>
       #Add the collected data. That's a great idea.
-      if session.settings.webhook_url?
+      console.log("Session ended. Who do we have to tell?")
+      if session.room.webhook_url?
         console.log "Completed. Notifying #{session.settings.webhook_url}"
         Request.get "#{session.settings.webhook_url}?session_id=#{session.session_id}", null,
           (error, response, body) =>
@@ -241,18 +319,19 @@ module.exports = (robot) ->
               console.log "Webhook returned error"
               console.log body
               console.log error
-      if session.settings.notification_emails?
+      if session.room.notification_emails?
         # Create a SMTP transporter object
+        console.log("Sending notification email")
         transporter = Mailer.createTransport(
           service: "gmail"
           auth:
-            user: session.settings.mail_user
-            pass: session.settings.mail_pass
+            user: session.room.mail_user
+            pass: session.room.mail_pass
         )
         # Message object
         message =
-          from: session.settings.mail_user
-          to: session.settings.notification_emails.join(",")
+          from: session.room.mail_user
+          to: session.room.notification_emails.join(",")
           subject: "Conversation Complete"
           text: session.transcript
 

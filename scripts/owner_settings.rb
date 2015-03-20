@@ -6,7 +6,6 @@
 require "./lib/greenbot.rb"
 require "timeout"
 require 'open3'
-require 'pry'
 
 HOUR = 60 * 60
 timeout = ENV['CONVERSATION_TIMEOUT'].to_i || 4 * HOUR
@@ -35,14 +34,34 @@ def offer_recharge
   end
 end
 
+def assign_bot
+  tell "If you don't know what sort of job you want your bot to do, check this out first (http://www.bit.ly/AVDSfS)"
+  scripts = Room.scripts
+  sortof_bot = select("What sort of bot do you want to deploy?", scripts.collect{|s| s["name"] })
+  script = scripts.detect{|s| s["name"] == sortof_bot}
+  $room.assign(script["objectId"])
+end
+
 begin
-  tell "Hello, #{ENV['SRC']} I can help you configure this number."
+  if $room.not_setup?
+    tell "Hi! Welcome to your bot. If this is your first time, we've got a mobile site with videos and tutorials to get you started."
+    assign_bot
+    tell "From now on, when you text into your bot, you will be able to change settings, prompts, etc."
+  else
+    tell "Hello, #{ENV['SRC']} I can help you configure this number."
+  end
+
   Timeout::timeout(timeout) {
     begin
-      tasks = %w(away owner settings test quit)
+      tasks = %w(away bot owner settings test quit)
       my_task = select("What would you like to do?", tasks)
       case my_task
         #code
+      when 'bot'
+        if confirm("Do you want to change the sort of job your bot will do? You will lose your settings.")
+          assign_bot
+        end
+
       when 'test'
         $room.set_test_mode
         tell("The next time you text in, you will use the actual bot so you can test it.")

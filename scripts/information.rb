@@ -27,7 +27,7 @@ begin
       when "contact"
           if confirm("Would you like someone to contact you?")
             contact_me = true
-            contact_me.remember("remember_me")
+            contact_me.remember("contact_me")
             name = ask("When we call, who should we ask for?")
             name.remember("who_to_ask_for")
             if confirm("Is there another number we should try?")
@@ -36,6 +36,8 @@ begin
             end
           else
             tell("No problem at all.")
+            contact_me = false
+            contact_me.remember("contact_me")
           end
       when "quit"
         break

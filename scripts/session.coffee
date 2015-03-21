@@ -42,6 +42,8 @@ Winston = require('winston')
 Papertrail = require('winston-papertrail').Papertrail
 Parse = require('node-parse-api').Parse
 Async = require('async')
+BitlyAPI = require('node-bitlyapi')
+
 
 module.exports = (robot) ->
   robot.sessions = {}
@@ -50,6 +52,11 @@ module.exports = (robot) ->
     app_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI"
     api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7"
   parse = new Parse(options)
+  Bitly = new BitlyAPI(
+    client_id: 'a491e6dd824dd4f070fd810898e939fcb583028b'
+    client_secret: '7478c375e2e2b96df5ce7d05178e3ff8cc2bd61e'
+  )
+  Bitly.setAccessToken('dae862bf86adea3e7f950f8bc1239ca6d75cdac1')
 
   robot.emit "log", "Session loaded"
   class Session
@@ -119,10 +126,29 @@ module.exports = (robot) ->
     end_and_record_session: () =>
       console.log "Ending and recording session #{@session_id}"
       Async.series([
+        @send_goodbye,
         @save_collected_data,
         @save_transcript,
         @save_session,
         @delete_session])
+
+    send_goodbye: (callback) =>
+      base_link = @room.goodbye_link or "http://www.justkisst.me"
+      url = Url.parse(base_link, true)
+      url.query["src"] = @src
+      url.query["dst"] = @room_name
+      url.query["session_id"] = @session_id
+      url.query["reseller"] = @room.reseller
+
+      console.log("Using the closing link #{Url.format(url)}")
+      Bitly.shortenLink encodeURIComponent(Url.format(url)), (err, results) =>
+        console.log("Shortened info is #{results}")
+        throw err if err
+        # See http://code.google.com/p/bitly-api/wiki/ApiDocumentation for format of returned object
+        short_url = JSON.parse(results).data.url
+        # Do something with data
+        @handle_incoming_msg(@room.closing_message + short_url)
+
 
     save_transcript: (callback) =>
       console.log("Saving transcript")
@@ -329,13 +355,14 @@ module.exports = (robot) ->
             pass: session.room.mail_pass
         )
         # Message object
+        recipients = session.room.notification_emails.join(",")
         message =
           from: session.room.mail_user
-          to: session.room.notification_emails.join(",")
+          to: recipients
           subject: "Conversation Complete"
           text: session.transcript
 
-        console.log "Sending Mail"
+        console.log "Sending Mail to #{recipients}"
         transporter.sendMail message, (error, info) ->
           if error
             console.log "Error occurred"

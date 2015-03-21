@@ -53,10 +53,31 @@ begin
 
   Timeout::timeout(timeout) {
     begin
-      tasks = %w(away bot owner settings test quit)
+      tasks = %w(away bot email help owner settings test quit)
       my_task = select("What would you like to do?", tasks)
       case my_task
         #code
+
+      when 'email'
+        email_choices = %w(add remove show)
+        email_choice = select("Conversations are mailed when complete. You can add another recipient, remove one, or show them all.", owner_choices)
+        case email_choice
+        when "show"
+          tell("The current recipients are #{$room.notification_emails.join(",")}")
+
+        when "add"
+          new_notification_email = confirmed_gets("Please give me the email to add to the recipient list.")
+          $room.notification_emails << new_notification_email.downcase
+          $room.publish
+        when "remove"
+          deleted_email = confirmed_gets("Please give me the email of the recipient to remove.")
+          $room.notification_emails.delete_if {|o| o.downcase == deleted_email.downcase}
+          $room.publish
+        end
+
+      when 'help'
+        tell "Online help is available right from your mobile browser at https://kisst.zendesk.com"
+
       when 'bot'
         if confirm("Do you want to change the sort of job your bot will do? You will lose your settings.")
           assign_bot
@@ -66,15 +87,6 @@ begin
         $room.set_test_mode
         tell("The next time you text in, you will use the actual bot so you can test it.")
         break
-      when 'balance'
-        show_balance
-      when 'recharge'
-        charge = confirm("Would you like to recharge your account?")
-        if charge
-          tell("Your account has been re-filled.")
-        end
-        offer_recharge
-        show_balance
 
       when "quit"
         tell "Thanks! See you later!"

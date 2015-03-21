@@ -60,7 +60,7 @@ begin
 
       when 'email'
         email_choices = %w(add remove show)
-        email_choice = select("Conversations are mailed when complete. You can add another recipient, remove one, or show them all.", owner_choices)
+        email_choice = select("Conversations are mailed when complete. You can add another recipient, remove one, or show them all.", email_choices)
         case email_choice
         when "show"
           tell("The current recipients are #{$room.notification_emails.join(",")}")

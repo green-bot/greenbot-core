@@ -148,6 +148,7 @@ module.exports = (robot) ->
         short_url = JSON.parse(results).data.url
         # Do something with data
         @handle_incoming_msg(@room.closing_message + short_url)
+        callback(null, "Saved object")
 
 
     save_transcript: (callback) =>

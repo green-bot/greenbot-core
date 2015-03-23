@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
     <meta name="author" content="">
 
-    <title>Simple Business Texting</title>
+    <title>Instant Inbound Customer Texting</title>
 
     <!-- Bootstrap core CSS -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -18,15 +18,15 @@
     <!-- Custom Google Web Font -->
     <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet">
     <link href='http://fonts.googleapis.com/css?family=Lato:100,300,400,700,900,100italic,300italic,400italic,700italic,900italic' rel='stylesheet' type='text/css'>
-	<link href='http://fonts.googleapis.com/css?family=Arvo:400,700' rel='stylesheet' type='text/css'>
+	  <link href='http://fonts.googleapis.com/css?family=Arvo:400,700' rel='stylesheet' type='text/css'>
 
     <!-- Custom CSS-->
     <link href="css/general.css" rel="stylesheet">
 
 	 <!-- Owl-Carousel -->
-    <link href="css/custom.css" rel="stylesheet">
+  <link href="css/custom.css" rel="stylesheet">
 	<link href="css/owl.carousel.css" rel="stylesheet">
-    <link href="css/owl.theme.css" rel="stylesheet">
+  <link href="css/owl.theme.css" rel="stylesheet">
 	<link href="css/style.css" rel="stylesheet">
 	<link href="css/animate.css" rel="stylesheet">
 
@@ -44,36 +44,42 @@
 	</div>
 
 	<!-- FullScreen -->
-    <div class="intro-header">
+  <div class="intro-header">
 		<div class="col-xs-12 text-center abcen1">
 			<h1 class="h1_home wow fadeIn" data-wow-delay="0.4s">KISST</h1>
-			<h3 class="h3_home wow fadeIn" data-wow-delay="0.6s">Inbound Customer Texting</h3>
-      <div class="col-lg-4 center-block" style="float:none" >
+			<h3 class="h3_home wow fadeIn" data-wow-delay="0.6s">Instant Inbound Customer Texting</h3>
+      <div class="col-lg-3 center-block" style="float:none" >
   			<ul class="list-inline intro-social-buttons">
   				<li id="cell" >
             <div class="input-group">
-              <input type="text" class="form-control" name="cellNumber" id="cellNumber" placeholder="Enter Your Cell Number To Purchase" required>
+              <input type="text" class="form-control" name="cellNumber" id="cellNumber" placeholder="Enter Cell Number To Purchase" required>
               <span class="input-group-addon"><i class="glyphicon glyphicon-ok form-control-feedback"></i></span>
             </div>
   				</li>
+        </ul>
+      </div>
+      <div class="col-lg-4 center-block" style="float:none" >
+        <ul class="list-inline intro-social-buttons">
           <li id="purchase" >
-  					<a id="purchaseButton" class="btn  btn-lg mybutton_standard wow swing wow fadeIn" data-wow-delay="1.2s">
-  						<span class="network-name">Start My Service</span>
+  					<a id="15purchaseButton" class="btn  btn-lg mybutton_standard wow swing wow fadeIn" data-wow-delay="1.2s">
+  						<span class="network-name">$15 for 40 </span>
   					</a>
-            <a id="showMe" class="btn  btn-lg mybutton_standard wow swing wow fadeIn" data-wow-delay="1.2s">
+            <a id="purchaseButton" class="btn  btn-lg mybutton_standard wow swing wow fadeIn" data-wow-delay="1.2s">
+              <span class="network-name">$30 Unlimited </span>
+            </a>
+            <a id="homepageVideo" class="btn  btn-lg mybutton_standard wow swing wow fadeIn" data-wow-delay="1.2s">
               <span class="network-name">Show me!</span>
             </a>
   				</li>
   			</ul>
       </div>
 		</div>
-        <!-- /.container -->
 		<div class="col-xs-12 text-center abcen wow fadeIn">
 			<div class="button_down ">
 				<a class="imgcircle wow bounceInUp" data-wow-duration="1.5s"  href="#whatis"> <img class="img_scroll" src="img/icon/circle.png" alt=""> </a>
 			</div>
 		</div>
-    </div>
+  </div>
 
 	<!-- NavBar-->
 	<nav class="navbar-default" role="navigation">
@@ -313,45 +319,117 @@
 	<script src="https://checkout.stripe.com/checkout.js"></script>
 	<!-- StikyMenu -->
 	<script src="js/stickUp.min.js"></script>
+
+
 	<script type="text/javascript">
+    function getUrlParameter(sParam) {
+      var sPageURL = window.location.search.substring(1);
+      var sURLVariables = sPageURL.split('&');
+      for (var i = 0; i < sURLVariables.length; i++)
+      {
+          var sParameterName = sURLVariables[i].split('=');
+          if (sParameterName[0] == sParam)
+          {
+              return sParameterName[1];
+          }
+      }
+    }
+
 	  jQuery(function($) {
 		$(document).ready( function() {
-		  $('.navbar-default').stickUp();
+      // Setup the opening video.
 
-      var stripe_options = {
-		    key: 'pk_live_8J0kapTsVLD9vRRQUrLvfIbI',
-		    image: '/img/bot.png',
-        name: 'www.justkisst.me',
-        description: 'KISST Monthly Service',
-        amount: 2999,
-        zipcode: true,
-		    token: function(token) {
-          token.owner_cell = $("#cellNumber").val();
-          $.ajax({
-            type:    "POST",
-            url:     "/new_order",
-            data:    token,
-            success: function(data) {
-              console.log("Success, lets' pop");
-              $('#configModal').modal('show');
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
-              alert("Error, status = " + textStatus + ", " + "error thrown: " + errorThrown);
-            }
+    $('#homepageVideo').magnificPopup({
+        items: [
+          {
+        src: 'https://vimeo.com/122923135',
+        type: 'iframe' // this overrides default type
+          }
+      ]
+      });
+
+
+      $('.navbar-default').stickUp();
+
+      var ownerCell = getUrlParameter('src');
+      if (ownerCell) {
+        $("#cellNumber").attr('value', ownerCell);
+      }
+
+      var unl_stripe_options = {
+    	    key: 'pk_live_8J0kapTsVLD9vRRQUrLvfIbI',
+    	    image: '/img/bot.png',
+          name: 'www.justkisst.me',
+          description: 'KISST Monthly - Unlimited',
+          amount: 3000,
+          zipcode: true,
+    	    token: function(token) {
+            token.owner_cell = $("#cellNumber").val();
+            token.plan_id = "KISST_UNL"
+            token.reseller_string = getUrlParameter('reseller_string');
+            token.session_id = getUrlParameter('session_id');
+            token.dst = getUrlParameter('dst');
+            $.ajax({
+              type:    "POST",
+              url:     "/new_order",
+              data:    token,
+              success: function(data) {
+                console.log("Success, lets' pop");
+                $('#configModal').modal('show');
+              },
+              error: function(jqXHR, textStatus, errorThrown) {
+                alert("Error, status = " + textStatus + ", " + "error thrown: " + errorThrown);
+              }
+            });
+  	       }
+  		  }
+
+  		  var unlHandler = StripeCheckout.configure(unl_stripe_options);
+  		  $('#purchaseButton').on('click', function(e) {
+  		    unlHandler.open();
+  		    e.preventDefault();
+  		  });
+
+
+        var conv_stripe_options = {
+            key: 'pk_live_8J0kapTsVLD9vRRQUrLvfIbI',
+            image: '/img/bot.png',
+            name: 'www.justkisst.me',
+            description: 'KISST Monthly - 40 CONV',
+            amount: 1500,
+            zipcode: true,
+            token: function(token) {
+              token.owner_cell = $("#cellNumber").val();
+              token.plan_id = "KISST_40"
+              token.reseller_string = getUrlParameter('reseller_string');
+              token.session_id = getUrlParameter('session_id');
+              token.dst = getUrlParameter('dst');
+              $.ajax({
+                type:    "POST",
+                url:     "/new_order",
+                data:    token,
+                success: function(data) {
+                  console.log("Success, lets' pop");
+                  $('#configModal').modal('show');
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                  alert("Error, status = " + textStatus + ", " + "error thrown: " + errorThrown);
+                }
+              });
+             }
+          }
+          var handler = StripeCheckout.configure(conv_stripe_options);
+          $('#15purchaseButton').on('click', function(e) {
+            handler.open();
+            e.preventDefault();
           });
-		    }
-		  }
 
-		  var handler = StripeCheckout.configure(stripe_options);
-		  $('#purchaseButton').on('click', function(e) {
-		    handler.open();
-		    e.preventDefault();
-		  });
 
-		  // Close Checkout on page navigation
-		  $(window).on('popstate', function() {
-		    handler.close();
-		  });
+  		  // Close Checkout on page navigation
+  		  $(window).on('popstate', function() {
+  		    handler.close();
+  		  });
+
 
 		});
 	  });

@@ -73,10 +73,10 @@ app.post('/new_order', function(req, res) {
   console.log(req.body);
   token_info = req.body;
 
-  Stripe.initialize('sk_test_Qb4fiHrfYE22fKBnGFtcWR6b');
+  Stripe.initialize('sk_live_CDYuW7Nsp4dtyKXT7ifjZ47q');
   Stripe.Customers.create({
     source: token_info.id,
-    plan: 1,
+    plan: token_info.plan_id,
     email: token_info.email,
     metadata: {
       owner_cell: token_info.owner_cell

@@ -18,20 +18,24 @@ $r = Redis.new
 
 POLLING_INTERVAL=10 #seconds
 MESSAGE_LENGTH=140 #characters
+SESSION_EXPIRE=60*60*24*4 #Sessions last for four days
+
 SESSION_TAG="\nDo not delete below this line\n----------------------------------\n#{ENV['SESSION_ID']}"
 MSG_BODY_DELIMITER="###"
 
 def fetch_session(string)
-  active_sessions = $r.smembers("STARTED_SESSION")
-  ended_sessions = $r.smembers("ENDED_SESSION")
-  active_sessions = active_sessions - ended_sessions
-  return active_sessions.find { |key| string.include?(key)}
+  # Match the session from the string.
+  # Sessions are kept between square brackets.
+  m = /\[(.*)\]/.match(string)
+
+  # Return the match,if any. Nil means no match
+  m[1]
 end
 
-def send_email(msg)
+def send_email(msg, src, dst, key, label)
   email = {}
   email["RECIPIENT"] = ENV['RECIPIENT']
-  email['SUBJECT'] = "Greenbot Testing"
+  email['SUBJECT'] = "Conversation : #{src} <=> #{dst} : #{label} : [#{key}]"
   email["BODY"] = msg
   $r.lpush("OUTBOUND_EMAILS", email.to_json)
 end
@@ -45,8 +49,9 @@ s = Redis::Semaphore.new(
 
 master_script = false
 gmail = nil
-session_key = "email:#{ENV['SESSION_ID']}"
-send_email(ENV['INITIAL_MESSAGE'])
+
+session_key = "TEXT2EMAIL_SESSION:#{ENV['SESSION_ID']}"
+send_email(ENV['INITIAL_MESSAGE'], ENV['SRC'], ENV['DST'], ENV['SESSION_ID'], "thomas, sales")
 
 # There's a chance the "MASTER_TEXT2EMAIL_SESSION" won't expire.
 # Let's expire that in a bit just to make sure it gets refreshed.
@@ -102,8 +107,8 @@ EventMachine.run do
       # Check for inbound emails.
       begin
         gmail.inbox.emails.each do |e|
-          print_and_flush "Checking email: #{e.body.decoded}"
-          session_id = fetch_session(e.body.decoded)
+          print_and_flush "Checking email: #{e.subject}"
+          session_id = fetch_session(e.subject)
           if session_id
             new_message = {
               body:       e.parts.first.decoded,
@@ -112,8 +117,9 @@ EventMachine.run do
               to:         e.to
             }
             $r.lpush(session_key, new_message.to_json)
+            $r.expire(session_key, SESSION_EXPIRE)
           else
-            print_and_flush "Failed to find session ID : #{e.body.decoded}"
+            print_and_flush "Failed to find session ID : #{e.subject}"
           end
           e.delete!
         end
@@ -133,7 +139,7 @@ EventMachine.run do
           new_email = gmail.compose do
             to      new_email["RECIPIENT"]
             subject new_email["SUBJECT"]
-            body    new_email['BODY'] + SESSION_TAG
+            body    new_email['BODY']
           end
           new_email.deliver!
         end
@@ -147,7 +153,7 @@ EventMachine.run do
       ready_readers = IO::select([$stdin], nil, nil, 1.0)
       if ready_readers
         msg = listen
-        send_email(msg)
+        send_email(msg, ENV['SRC'], ENV['DST'], ENV['SESSION_ID'], "sales, thomas mccarthy-howe" )
         print_and_flush("text2email: #{ENV['SESSION_ID']} just received #{msg} from stdin. Send as an email to recipient.")
       else
         print_and_flush "And not so much."
@@ -161,7 +167,7 @@ EventMachine.run do
       if $r.llen(session_key) > 0
         inbound_message = $r.lpop(session_key)
         if inbound_message
-          print_and_flush "Looks like we've got one!"
+          print_and_flush "Looks like we've got one!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
           email = JSON.parse(inbound_message)
           text = email["body"]
           if text.include?(MSG_BODY_DELIMITER)

@@ -1,0 +1,19 @@
+rvm:
+  - 1.9.3
+  - 2.0.0
+  - 2.1.5
+  - 2.2.0
+  - rbx
+  - jruby
+
+matrix:
+  allow_failures:
+    - rvm: rbx
+    - rvm: jruby
+
+# http://blog.travis-ci.com/2014-12-17-faster-builds-with-container-based-infrastructure/
+sudo: false
+
+# script:
+#   - bundle exec rspec
+#   - bundle exec rubocop

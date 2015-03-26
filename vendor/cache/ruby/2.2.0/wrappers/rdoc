@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+if
+  [[ -s "/Users/thomashowe/Documents/src/greenbot/vendor/cache/ruby/2.2.0/environment" ]]
+then
+  source "/Users/thomashowe/Documents/src/greenbot/vendor/cache/ruby/2.2.0/environment"
+  exec rdoc "$@"
+else
+  echo "ERROR: Missing RVM environment file: '/Users/thomashowe/Documents/src/greenbot/vendor/cache/ruby/2.2.0/environment'" >&2
+  exit 1
+fi

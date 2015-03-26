@@ -1,0 +1,18 @@
+/Users/thomashowe/.rvm/rubies/ruby-2.2.0/bin/ruby -r ./siteconf20150324-75677-5mbp4k.rb extconf.rb 
+checking for termios.h... yes
+checking for cfmakeraw() in termios.h... yes
+checking for sys/ioctl.h... yes
+checking for rb_check_hash_type() in ruby.h... yes
+checking for rb_io_get_write_io() in ruby/io.h... yes
+checking for rb_cloexec_open() in ruby/io.h... yes
+creating Makefile
+
+make "DESTDIR=" clean
+
+make "DESTDIR="
+compiling console.c
+linking shared-object io/console.bundle
+
+make "DESTDIR=" install
+/usr/bin/install -c -m 0755 console.bundle ./.gem.20150324-75677-4shcnr/io
+installing default console libraries

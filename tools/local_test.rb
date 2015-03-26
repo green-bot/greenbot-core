@@ -1,13 +1,24 @@
 #!/usr/bin/env ruby
+# The basic usage script from https://github.com/JEG2/highline.git
 #
-require 'rubygems'
-require 'redis'
-require 'json'
-require "uuidtools"
-require 'awesome_print'
+# basic_usage.rb
+#
+require "timeout"
+require 'open3'
+require "awesome_print"
+require 'parse-ruby-client'
+require 'nexmo'
+require 'uuidtools'
 
-redis = Redis.new
-room = JSON.parse redis.get "room:#{ARGV[1]}"
+
+Parse.init(application_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI", api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7", quiet: true)
+
+
+# Usage: local_provision new_number template_number
+
+q = Parse::Query.new("Room")
+q.eq("name", ARGV[1])
+room = q.get.first
 
 settings = room["settings"]
 settings["SRC"] = ARGV[0]
@@ -18,4 +29,3 @@ settings.each {|k,v| ENV[k] = v}
 ENV.each {|k,v| "#{k} : #{v}"}
 
 system("ruby #{ARGV[2]}")
-

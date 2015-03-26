@@ -84,9 +84,13 @@ margin: auto;
 	font-family: arvo;
 	font-weight: 300;
 	letter-spacing: 6px;
+	color: #324D5B;
 }
 
-.h3_home{font-weight: 300;}
+.h3_home{
+	font-weight: 300;
+	color: #324D5B;
+}
 
 /*own carousel */
 
@@ -143,8 +147,8 @@ filter: alpha(opacity=95) !important;
 
 /* Button */
 .mybutton_standard {
-	border: 1px solid #fff;
-	color: #fff;
+	border: 1px solid #324D5B;
+	color: #324D5B;
 }
 
 .mybutton_cyano{
@@ -253,7 +257,7 @@ color: #ECEBEB;
 	padding-top: 50px; /* If you're making other pages, make sure there is 50px of padding to make sure the navbar doesn't overlap content! */
 	padding-bottom: 50px;
 	color: #f8f8f8;
-	background: url(../img/intro/intro_candidate_1.jpg) no-repeat center center;
+	/* background: url(../img/intro/intro_frog.jpg) no-repeat center center; */
 	background-size: cover;
 	text-align: center;
 }
@@ -1075,7 +1079,7 @@ color: #ECEBEB;
 		    background-image: none;
 			background-size: cover;
 			text-align: center;
-			background-color: #34495e;
+			/* background-color: #34495e; */
 		}
 
 		h1, .h1 {

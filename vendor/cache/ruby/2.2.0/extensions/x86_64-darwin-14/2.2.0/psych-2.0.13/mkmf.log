@@ -1,0 +1,71 @@
+find_header: checking for yaml.h... -------------------- yes
+
+"gcc -o conftest -I/Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0/x86_64-darwin14 -I/Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0/ruby/backward -I/Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0 -I.  -I/Users/thomashowe/.rvm/usr/include -I/usr/include -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT    -O3 -fno-fast-math -ggdb3 -Wall -Wextra -Wno-unused-parameter -Wno-parentheses -Wno-long-long -Wno-missing-field-initializers -Wunused-variable -Wpointer-arith -Wwrite-strings -Wdeclaration-after-statement -Wshorten-64-to-32 -Wimplicit-function-declaration -Wdivision-by-zero -Wdeprecated-declarations -Wextra-tokens  -fno-common -pipe conftest.c  -L/Users/thomashowe/.rvm/usr/lib -L/usr/lib -L. -L/Users/thomashowe/.rvm/rubies/ruby-2.2.0/lib -L. -fstack-protector -L/usr/local/lib -L/Users/thomashowe/.rvm/usr/lib -L/usr/lib      -lruby.2.2.0  -lpthread -ldl -lobjc "
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: int main(int argc, char **argv)
+4: {
+5:   return 0;
+6: }
+/* end */
+
+"gcc -E -I/Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0/x86_64-darwin14 -I/Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0/ruby/backward -I/Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0 -I.  -I/Users/thomashowe/.rvm/usr/include -I/usr/include -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT    -O3 -fno-fast-math -ggdb3 -Wall -Wextra -Wno-unused-parameter -Wno-parentheses -Wno-long-long -Wno-missing-field-initializers -Wunused-variable -Wpointer-arith -Wwrite-strings -Wdeclaration-after-statement -Wshorten-64-to-32 -Wimplicit-function-declaration -Wdivision-by-zero -Wdeprecated-declarations -Wextra-tokens  -fno-common -pipe  conftest.c -o conftest.i"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <yaml.h>
+/* end */
+
+--------------------
+
+find_library: checking for yaml_get_version() in -lyaml... -------------------- yes
+
+"gcc -o conftest -I/Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0/x86_64-darwin14 -I/Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0/ruby/backward -I/Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0 -I.  -I/Users/thomashowe/.rvm/usr/include -I/usr/include -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT    -O3 -fno-fast-math -ggdb3 -Wall -Wextra -Wno-unused-parameter -Wno-parentheses -Wno-long-long -Wno-missing-field-initializers -Wunused-variable -Wpointer-arith -Wwrite-strings -Wdeclaration-after-statement -Wshorten-64-to-32 -Wimplicit-function-declaration -Wdivision-by-zero -Wdeprecated-declarations -Wextra-tokens  -fno-common -pipe conftest.c  -L/Users/thomashowe/.rvm/usr/lib -L/usr/lib -L. -L/Users/thomashowe/.rvm/rubies/ruby-2.2.0/lib -L. -fstack-protector -L/usr/local/lib -L/Users/thomashowe/.rvm/usr/lib -L/usr/lib      -lruby.2.2.0 -lyaml  -lpthread -ldl -lobjc "
+conftest.c:13:57: error: use of undeclared identifier 'yaml_get_version'
+int t(void) { void ((*volatile p)()); p = (void ((*)()))yaml_get_version; return 0; }
+                                                        ^
+1 error generated.
+checked program was:
+/* begin */
+ 1: #include "ruby.h"
+ 2: 
+ 3: /*top*/
+ 4: extern int t(void);
+ 5: int main(int argc, char **argv)
+ 6: {
+ 7:   if (argc > 1000000) {
+ 8:     printf("%p", &t);
+ 9:   }
+10: 
+11:   return 0;
+12: }
+13: int t(void) { void ((*volatile p)()); p = (void ((*)()))yaml_get_version; return 0; }
+/* end */
+
+"gcc -o conftest -I/Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0/x86_64-darwin14 -I/Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0/ruby/backward -I/Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0 -I.  -I/Users/thomashowe/.rvm/usr/include -I/usr/include -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT    -O3 -fno-fast-math -ggdb3 -Wall -Wextra -Wno-unused-parameter -Wno-parentheses -Wno-long-long -Wno-missing-field-initializers -Wunused-variable -Wpointer-arith -Wwrite-strings -Wdeclaration-after-statement -Wshorten-64-to-32 -Wimplicit-function-declaration -Wdivision-by-zero -Wdeprecated-declarations -Wextra-tokens  -fno-common -pipe conftest.c  -L/Users/thomashowe/.rvm/usr/lib -L/usr/lib -L. -L/Users/thomashowe/.rvm/rubies/ruby-2.2.0/lib -L. -fstack-protector -L/usr/local/lib -L/Users/thomashowe/.rvm/usr/lib -L/usr/lib      -lruby.2.2.0 -lyaml  -lpthread -ldl -lobjc "
+conftest.c:13:15: warning: implicit declaration of function 'yaml_get_version' is invalid in C99 [-Wimplicit-function-declaration]
+int t(void) { yaml_get_version(); return 0; }
+              ^
+1 warning generated.
+checked program was:
+/* begin */
+ 1: #include "ruby.h"
+ 2: 
+ 3: /*top*/
+ 4: extern int t(void);
+ 5: int main(int argc, char **argv)
+ 6: {
+ 7:   if (argc > 1000000) {
+ 8:     printf("%p", &t);
+ 9:   }
+10: 
+11:   return 0;
+12: }
+13: int t(void) { yaml_get_version(); return 0; }
+/* end */
+
+--------------------
+

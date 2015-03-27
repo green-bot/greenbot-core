@@ -32,11 +32,11 @@ def fetch_session(string)
   m[1]
 end
 
-def send_email(msg, src, dst, key, label)
+def send_email(msg, email_recip, src, dst, key, label)
   email = {}
-  email["RECIPIENT"] = ENV['RECIPIENT']
+  email["RECIPIENT"] = email_recip
   email['SUBJECT'] = "Conversation : #{src} <=> #{dst} : #{label} : [#{key}]"
-  email["BODY"] = msg
+  email["BODY"] = "###:" + msg
   $r.lpush("OUTBOUND_EMAILS", email.to_json)
 end
 
@@ -46,12 +46,64 @@ s = Redis::Semaphore.new(
   :stale_client_timeout => POLLING_INTERVAL*2
 )
 
+#
+# Start of the main script
+#
 
+tell ENV['PROMPT_1']
+tell ENV['PROMPT_2']
+
+data_prompts = {}
+data_prompts['DATA_PROMPT_1'] = ENV['DATA_PROMPT_1'] unless ENV['DATA_PROMPT_1'].empty?
+data_prompts['DATA_PROMPT_2'] = ENV['DATA_PROMPT_2'] unless ENV['DATA_PROMPT_2'].empty?
+
+labels = []
+answers = {}
+data_prompts.each do |k,v|
+  answer = confirmed_gets(v)
+  answer.remember(k)
+  answers[k] = answer
+end
+
+
+destinations = ENV['CHOICE_DEST'].gsub(",","").split
+choices = ENV['CHOICES'].gsub(",","").split
+choice = select(ENV['CHOICES_PROMPT'], choices)
 master_script = false
 gmail = nil
-
 session_key = "TEXT2EMAIL_SESSION:#{ENV['SESSION_ID']}"
-send_email(ENV['INITIAL_MESSAGE'], ENV['SRC'], ENV['DST'], ENV['SESSION_ID'], "thomas, sales")
+
+tell "Thank you! Please wait as your request is forwarded to a live agent."
+
+recipient = destinations[choices.index(choice)]
+new_conversation_message = %{
+
+Hello!
+
+You have a new conversation!
+
+Source: #{ENV['SRC']}
+Destination: #{ENV['DST']}
+#{ENV['DATA_PROMPT_1']}: #{answers['DATA_PROMPT_1']}
+#{ENV['DATA_PROMPT_2']}: #{answers['DATA_PROMPT_2']}
+#{ENV['CHOICES_PROMPT']} : #{choice}
+
+You can respond by simply responding to this message. This email will be converted to
+a text message, which has size and length restrictions. For a better experience for
+the other party in this conversation, please keep your emails short and to the point.
+Also, we will look for three hash or pound signs (###) to mark the end of the message
+that will be converted to messaging.
+
+}
+
+send_email(
+  new_conversation_message,
+  recipient,
+  ENV['SRC'],
+  ENV['DST'],
+  ENV['SESSION_ID'],
+  choice
+  )
 
 # There's a chance the "MASTER_TEXT2EMAIL_SESSION" won't expire.
 # Let's expire that in a bit just to make sure it gets refreshed.
@@ -153,7 +205,12 @@ EventMachine.run do
       ready_readers = IO::select([$stdin], nil, nil, 1.0)
       if ready_readers
         msg = listen
-        send_email(msg, ENV['SRC'], ENV['DST'], ENV['SESSION_ID'], "sales, thomas mccarthy-howe" )
+        send_email(msg,
+          recipient,
+          ENV['SRC'],
+          ENV['DST'],
+          ENV['SESSION_ID'],
+          choice)
         print_and_flush("text2email: #{ENV['SESSION_ID']} just received #{msg} from stdin. Send as an email to recipient.")
       else
         print_and_flush "And not so much."

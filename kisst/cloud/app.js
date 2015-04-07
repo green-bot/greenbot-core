@@ -1,16 +1,34 @@
 
 // These two lines are required to initialize Express in Cloud Code.
 var express = require('express');
-var app = express();
+var parseExpressHttpsRedirect = require('parse-express-https-redirect');
+var parseExpressCookieSession = require('parse-express-cookie-session');
 var Stripe = require('stripe');
 
-// Global app configuration section
+
+
+
+var app = express();
 app.set('views', 'cloud/views');  // Specify the folder to find templates
-app.set('view engine', 'ejs');    // Set the template engine
+app.set('view engine', 'jade');    // Set the template engine
+app.use(express.cookieParser('SECRET_SIGNING_KEY'));
 app.use(express.bodyParser());    // Middleware for reading request body
+app.use(express.methodOverride());
+app.use(parseExpressHttpsRedirect());  // Require user to be on HTTPS.
+app.use(parseExpressCookieSession({
+  fetchUser: true,
+  key: 'image.sess',
+  cookie: {
+    maxAge: 3600000 * 24 * 30
+  }
+}));
+
+
+// Portal routing section
+app.use('/portal', require('cloud/portal'));
+
 
 app.post('/billing', function(req, res) {
-
   req_data = req.body
   console.log("Entered billing function -> " + req_data.type);
   console.log(req_data);
@@ -211,7 +229,6 @@ app.put('/room/return', function(req, res) {
   console.log(req.body);
   res.send("Success");
 })
-
 
 // Attach the Express app to Cloud Code.
 app.listen();

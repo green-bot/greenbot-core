@@ -1,0 +1,7 @@
+extends ./layout
+
+block rooms
+  This is in rooms.
+  ul
+    each room in rooms
+      li= room.get("name")

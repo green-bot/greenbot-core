@@ -1,0 +1,15 @@
+form#login(action='/login', method='post')
+    h2 Log In
+      |
+      label(for='username') Username
+      |
+      input(type='text', value='', name='username')
+      |
+      |
+      label(for='password') Password
+      |
+      input(type='password', value='', name='password')
+      |
+      |
+      .submit
+        button Log In

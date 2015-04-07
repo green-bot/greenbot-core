@@ -1,0 +1,145 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='utf-8')
+    meta(name='viewport', content='width=device-width, user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0')
+    meta(name='author', content='')
+    title Instant Inbound Customer Texting
+    // Bootstrap core CSS
+    link(href='/css/bootstrap.min.css', rel='stylesheet')
+    link(href='/css/bootstrap-switch.min.css', rel='stylesheet')
+    // Custom Google Web Font
+    link(href='/font-awesome/css/font-awesome.min.css', rel='stylesheet')
+    link(href='https://fonts.googleapis.com/css?family=Lato:100,300,400,700,900,100italic,300italic,400italic,700italic,900italic', rel='stylesheet', type='text/css')
+    link(href='https://fonts.googleapis.com/css?family=Arvo:400,700', rel='stylesheet', type='text/css')
+    // Custom CSS
+    link(href='/css/general.css', rel='stylesheet')
+    // Owl-Carousel
+    link(href='/css/custom.css', rel='stylesheet')
+    link(href='/css/owl.carousel.css', rel='stylesheet')
+    link(href='/css/owl.theme.css', rel='stylesheet')
+    link(href='/css/style.css', rel='stylesheet')
+    link(href='/css/animate.css', rel='stylesheet')
+    // Magnific Popup core CSS file
+    link(rel='stylesheet', href='/css/magnific-popup.css')
+    script(src='/js/modernizr-2.6.2.min.js')
+    // Modernizr /
+
+  body
+    .container-fluid
+      // Preloader
+      #preloader
+        #status
+
+      .col-md-12
+        // NavBar
+        nav.navbar-default(role='navigation')
+          .navbar-header
+            button.navbar-toggle(type='button', data-toggle='collapse', data-target='.navbar-ex1-collapse')
+              span.sr-only Toggle navigation
+            a.pull-left(href='#home')
+              img(height='60px', src="/img/frog-front-page.png")
+          .collapse.navbar-collapse.navbar-right.navbar-ex1-collapse
+            ul.nav.navbar-nav
+              li.menuItem
+                a(href='#convos') PASSWORD
+              li.menuItem
+                a(href='#config') ACCOUNT
+              li.menuItem
+                a(href='#notification') LOGOUT
+        .row.col-md-12
+          .text-center
+            a(data-toggle='collapse', href='#about_bot', aria-expanded='false', aria-controls='about_bot') ABOUT YOUR BOT
+        .row
+          #about_bot.col-md-12.collapse
+            .panel.panel-default
+              .panel-body
+                table.table
+                  tr
+                    td
+                      strong Identity
+                    td Thomas
+                  tr
+                    td
+                      strong Type
+                    td Information Bot
+                  tr
+                    td
+                      strong Owner Cell
+                    td (508) 362-3372
+                  tr
+                    td
+                      strong Notifications
+                    td ghostofbasho@gmail.com
+                  tr
+                    td
+                      strong Do Not Disturb
+                    td(data-handle-width='100px')
+                      input(type='checkbox', checked=true && 'checked', name='dnd', labelText="OFF")
+        .row.col-md-12
+          .text-center
+            a(data-toggle='collapse', href='#conversations', aria-expanded='false', aria-controls='conversations') CONVERSATIONS
+        .row
+          #conversations.col-md-12.collapse
+            .panel.panel-default
+              .panel-body
+                table.table.table-bordered
+                  tr
+                    th Date
+                    th Name
+                    th Data
+                    th
+                  tr
+                    td 6:00 PM Today
+                    td (617) 555-1212
+                    td
+                      ul
+                        li Name: Thomas Howe
+                        li Callback: Y
+                        li Interest: Sales
+                        li Other Number: (508) 555-1212
+                    td
+                      a(href="#") Transcript
+                  tr
+                    td 6:00 PM Today
+                    td (617) 555-1212
+                    td
+                      ul
+                        li Name: Thomas Howe
+                        li Callback: Y
+                        li Interest: Sales
+                        li Other Number: (508) 555-1212
+                    td
+                      a(href="#") Transcript
+        .row
+          .text-center
+            a(href="http://kisst.zendesk.com") SETTINGS
+        .row
+          .text-center
+            a(href="http://kisst.zendesk.com") CONNECTIONS
+        .row
+          .text-center
+            a(href="http://kisst.zendesk.com") SPREAD THE WEALTH
+        .row
+          .text-center
+            a(href="http://kisst.zendesk.com") HELP
+
+
+    // Bootstrap core JavaScript
+    // ==================================================
+    // Placed at the end of the document so the pages load faster
+  // JavaScript
+  script(src='/js/jquery-1.11.2.min.js')
+  script(src='/js/bootstrap.js')
+  script(src='/js/bootstrap-switch.js')
+  script(src='/js/owl.carousel.js')
+  script(src='/js/script.js')
+  script(src='/js/stickUp.min.js')
+  script(type='text/javascript', src='/js/jquery.corner.js')
+  script(src='/js/wow.min.js')
+  script(src='/js/classie.js')
+  script(src='/js/uiMorphingButton_inflow.js')
+  script(src='/js/jquery.magnific-popup.js')
+  script.
+    new WOW().init();
+    $("[name='dnd']").bootstrapSwitch();

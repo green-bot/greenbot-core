@@ -301,11 +301,6 @@ color: #ECEBEB;
 	letter-spacing: 1.5px;
 }
 
-.content-section-a {
-	background-color: #f8f8f8;
-	padding: 90px 0;
-}
-
 .content-section-b {
 	border-top: 1px solid #e7e7e7;
 	border-bottom: 1px solid #e7e7e7;
@@ -1262,4 +1257,10 @@ p.copyright {
 		display: none;
 	}
 
+}
+
+.iti-flag {background-image: url("/img/flags.png");}
+
+#cellNumber {
+	color: #324D5B;
 }

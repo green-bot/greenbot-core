@@ -1,0 +1,40 @@
+{{#if activity.isNew}}
+	<form class="form-horizontal" method="POST" action="/contact/{{activity.parentId}}/connections" data-pjax="#listDetails">
+{{else}}
+	<form class="form-horizontal" method="POST" action="/connections" data-pjax="#listDetails">
+{{/if}}
+
+<div class="modal-header">
+
+	{{>dialog_buttons}}
+
+	<h3 class="modal-title">
+		{{#if activity.isNew}}
+			New Connection
+		{{else}}
+			Edit Connection
+		{{/if}}
+	</h3>
+</div>
+
+<div class="modal-body">
+
+	<input type="hidden" name="_method" value="put">
+	<input type="hidden" name="_method" value="put">
+	<input type="hidden" name="contactId" value="{{activity.parentId}}">
+
+	{{>activity_form activity}}
+
+
+</div>
+</form>
+
+{{#unless activity.isNew}}
+<div class="modal-footer">
+	<button type="button" class="btn btn-danger btn-block"
+		onclick="bootcards.confirmDelete('connection'); return false;">
+		<i class="fa fa-trash-o"></i>
+		Delete Connection
+	</button>
+</div>
+{{/unless}}

@@ -1,0 +1,29 @@
+{{#if activity.isNew}}
+<form class="form-horizontal" method="POST" action="/conversations/{{company.id}}/connections" data-pjax="#listDetails">
+{{else}}
+<form class="form-horizontal" method="POST" action="/conversations/{{company.id}}/connections/{{activity.id}}" data-pjax="#listDetails">
+{{/if}}
+
+<div class="modal-header">
+
+	{{>dialog_buttons}}
+
+	<h3 class="modal-title">
+	{{#if activity.isNew}}
+		New Connection
+	{{else}}
+		Edit Connection
+	{{/if}}
+	</h3>
+
+</div>
+
+<div class="modal-body">
+
+	<input type="hidden" name="_method" value="put">
+
+	{{>activity_form activity}}
+
+</div>
+
+</form>

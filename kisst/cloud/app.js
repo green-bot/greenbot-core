@@ -1,16 +1,35 @@
-
+// Copyright (c) 2015, GreenBot
 // These two lines are required to initialize Express in Cloud Code.
 var express = require('express');
 var parseExpressHttpsRedirect = require('parse-express-https-redirect');
 var parseExpressCookieSession = require('parse-express-cookie-session');
 var Stripe = require('stripe');
 
+//routes
+var conversation 	= require('./routes/conversation');
+var connection 		= require('./routes/connection');
+var media 		= require('./routes/media');
+var config 	= require('./routes/config');
+var dashboard 	= require('./routes/dashboard');
+var snippets 	= require('./routes/docs');
+var pjson = require('./package.json');		//read the package.json file to get the current version
 
+var bc 			= require('./bootcards-functions');		//bootcards functions
+var http 	= require('http');
+var path 	= require('path');			//work with paths
+var pjax 	= require('express-pjax');	//express pjax (partial reloads)
+var hbs 	= require('express-hbs');	//express handlebars
+var moment	= require('moment');		//moment date formatting lib
 
 
 var app = express();
+
+
+app.engine( 'html', hbs.express3({
+	partialsDir : __dirname + '/views'
+}));
+app.set('view engine', 'html');
 app.set('views', 'cloud/views');  // Specify the folder to find templates
-app.set('view engine', 'jade');    // Set the template engine
 app.use(express.cookieParser('SECRET_SIGNING_KEY'));
 app.use(express.bodyParser());    // Middleware for reading request body
 app.use(express.methodOverride());
@@ -22,6 +41,114 @@ app.use(parseExpressCookieSession({
     maxAge: 3600000 * 24 * 30
   }
 }));
+//pjax middleware for partials
+app.use(pjax());
+
+//send session info to handlebars, check OS used to send correct stylesheet
+app.use(function(req, res, next){
+
+	var ua = req.headers['user-agent'];
+	req.session.isAndroid = (ua.match(/Android/i) != null);
+	req.session.isIos = (ua.match(/iPhone|iPad|iPod/i) != null);
+	req.session.isDev = (process.env.NODE_ENV !='production');
+	req.session.test = (process.env.NODE_ENV);
+
+	res.locals.session = req.session;
+
+	next();
+});
+
+app.use(express.favicon("public/favicon.ico"));
+app.use(express.urlencoded());
+app.use(express.methodOverride());
+app.use(app.router);
+
+var fiveDays = 5*86400000;
+
+//register a helper for date formatting using handlebars
+hbs.registerHelper("formatDate", function(datetime, format) {
+  if (moment) {
+    f = "ddd DD MMM YYYY HH:mm"
+    return moment(datetime).format(f);
+  }
+  else {
+    return datetime;
+  }
+});
+
+//helper to get the icon for a item type
+hbs.registerHelper("getIconForType", function(type) {
+	return bc.getIconForType(type);
+});
+
+//helper to get the number of data elements
+hbs.registerHelper('count', function(type) {
+	switch (type) {
+		case 'conversations':
+			return collected_data.length;
+		case 'contacts':
+			return contacts.length;
+		case 'connections':
+			return connections.length;
+		case 'data':
+			return 4;
+	}
+
+	return 0;
+});
+
+//helper to get the stylesheet for the current user agent
+hbs.registerHelper("getCSSforOS", function(session) {
+	var bootCardsBase = "/bower_components/bootcards/";
+	if (session.isAndroid) {
+		return '<link href="' + bootCardsBase + 'dist/css/bootcards-android.min.css" rel="stylesheet" type="text/css" />';
+	} else if (session.isIos) {
+		return '<link href="' + bootCardsBase + 'dist/css/bootcards-ios.min.css" rel="stylesheet" type="text/css" />';
+	} else {
+		return '<link href="' + bootCardsBase + 'dist/css/bootcards-desktop.min.css" rel="stylesheet" type="text/css" />';
+	}
+});
+
+hbs.registerHelper("isMobile", function(session) {
+	return '<script>var isDesktop = ' + (!session.isIos && !session.isAndroid) + ';</script>';
+});
+
+//helper to get the app version
+hbs.registerHelper("getAppVersion", function() {
+	return pjson.version;
+});
+
+//read sample data
+collected_data = [];
+connections = [];
+contacts = [];
+
+sampleData.read();
+
+//setup menu
+menu = [
+	{ id : 'dashboard', name : "Home", title : 'Home', icon : "fa-home", active : false, url : '/'},
+	{ id : 'conversations', name : "Conversations", title : 'Conversations', icon : "fa-building-o", active : false, url : '/conversations'},
+	{ id : 'config', name : "Settings", title : 'Settings', icon : "fa-gears", active : false, url : '/config'},
+	{ id : 'help', name : "Help", title : 'Help', icon : "fa-question-circle", active : false, url : 'http://kisst.zendesk.com'},
+	{ id : 'share', name : "Share", title : 'Share', icon : "fa-share", active : false, url : 'http://kisst.zendesk.com'},
+	{ id : 'logout', name : "Logout", title : 'Logout', icon : "fa-sign-out", active : false, url : '/logout'}
+];
+
+// development only
+if ('development' == app.get('env')) {
+  app.use(express.errorHandler());
+	console.log("In development mode");
+}
+
+//routes
+app.get('/', dashboard.list);
+app.get('/dashboard', dashboard.list);
+app.get('/conversations', conversation.list);
+app.get('/conversations/:id', conversation.read);
+app.get('/config', config.list);
+app.get('/config/edit', config.edit);
+
 
 
 // Portal routing section

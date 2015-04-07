@@ -1,0 +1,45 @@
+{{!< layout}}
+
+<div id="conversationCard">
+
+	<div class="panel panel-default">
+		<div class="panel-heading clearfix">
+			<h3 class="panel-title pull-left">Conversation Details</h3>
+		</div>
+		<div class="list-group">
+			<div class="list-group-item">
+				<img src="/images/David Ortriz.jpg" class="img-rounded pull-left"/>
+					<label>Calling Party</label>
+					<h4 class="list-group-item-heading">{{src}}</h4>
+			</div>
+			{{#if dst}}
+			<div class="list-group-item">
+				<label>Room</label>
+				<h4 class="list-group-item-heading">{{dst}}</h4>
+			</div>
+			{{/if}}
+			{{#if timestamp}}
+			<div class="list-group-item">
+				<label>When</label>
+				<h4 class="list-group-item-heading">{{timestamp}}</h4>
+			</div>
+			{{/if}}
+			{{#if collected_data}}
+				{{#each collected_data}}
+					<div class="list-group-item">
+						<label>{{this.key}}</label>
+						<h4 class="list-group-item-heading">{{this.v}}</h4>
+					</div>
+				{{/each}}
+			{{/if}}
+			{{#if transcript}}
+			<div class="list-group-item">
+				<label>Transcript</label>
+				{{#each transcript}}
+				<h4 class="list-group-item-heading">{{{this}}}</h4>
+				{{/each }}
+			</div>
+			{{/if}}
+		</div>
+	</div>
+	</div>

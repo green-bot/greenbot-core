@@ -1,0 +1,66 @@
+{{!< layout}}
+
+<div class="row">
+
+	<div class="bootcards-cards">
+
+		<div class="col-sm-6">
+
+			<div class="panel panel-default bootcards-summary">
+
+				<div class="panel-heading">
+					<h3 class="panel-title">Dashboard</h3>
+				</div>
+
+				<div class="panel-body">
+					<div class="row">
+						<div class="col-xs-6 col-sm-4">
+							<a class="bootcards-summary-item" href="/conversations" data-pjax="#main"
+							data-title="Conversations" style="padding-top:35px;">
+								<i class="fa fa-3x fa-building-o"></i>
+								<h4>
+									Conversations
+									<span class="label label-info">{{{count 'conversations'}}}</span>
+								</h4>
+							</a>
+						</div>
+						<div class="col-xs-6 col-sm-4">
+							<a class="bootcards-summary-item" href="/config" style="padding-top:35px;">
+								<i class="fa fa-3x fa-cogs"></i>
+								<h4>
+									Settings
+								</h4>
+							</a>
+						</div>
+						<div class="col-xs-6 col-sm-4">
+							<a class="bootcards-summary-item" href="http://kisst.zendesk.com" data-pjax="#main"
+							data-title="Help" style="padding-top:35px;">
+								<i class="fa fa-3x fa-question-circle"></i>
+								<h4>
+									Help
+								</h4>
+							</a>
+						</div>
+						<div class="col-xs-6 col-sm-4">
+							<a class="bootcards-summary-item" href="#" style="padding-top:35px;">
+								<i class="fa fa-3x fa-share"></i>
+								<h4>
+									Share
+								</h4>
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+
+		<div class="col-sm-6">
+
+			{{>data/closed_sales}}
+
+		</div>
+
+	</div>
+
+</div>

@@ -1,4 +1,4 @@
-var bc = require('../bootcards-functions.js');
+var bc = require('cloud/bootcards-functions');
 var moment	= require('moment');
 
 exports.list = function(req, res) {
@@ -15,7 +15,7 @@ exports.read = function(req, res) {
 
 	if (connection != null) {
 
-		
+
 
 		res.renderPjax( exports.getConnectionPartialRenderer(connection.type) , {
 		 	activities : connections,
@@ -24,7 +24,7 @@ exports.read = function(req, res) {
 		});
 
 	}
-	   
+
 }
 
 exports.edit = function(req, res) {
@@ -34,7 +34,7 @@ exports.edit = function(req, res) {
 	   	activity: bc.getConnectionById(req.params.id),
 	    menu: bc.getActiveMenu(menu, 'connections')
 	});
-   
+
 }
 
 /*a connection can be added to a contact or company*/
@@ -112,4 +112,3 @@ exports.getConnectionPartialRenderer = function(type) {
 	return renderWith;
 
 }
-

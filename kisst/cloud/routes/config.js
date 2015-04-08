@@ -1,4 +1,4 @@
-var bc = require('../bootcards-functions.js');
+var bc = require('cloud/bootcards-functions.js');
 var _ = require('underscore');
 
 exports.list = function(req, res){

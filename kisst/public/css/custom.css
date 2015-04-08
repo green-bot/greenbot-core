@@ -232,8 +232,8 @@ padding: 8px 12px;
 .demo-box:hover .demo-slide .bg{
 	background: #7fc242;
 }
-/* Images */
-.demo-images .demo-slide{
+/* img */
+.demo-img .demo-slide{
 	height: 40px;
 	width: 33.3333333%;
 }

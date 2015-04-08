@@ -1,0 +1,32 @@
+html
+  body
+    | {{!&lt; layout}}
+    .row
+      .col-sm-4.col-sm-offset-4.bootcards-cards
+        .panel.panel-default
+          .panel-heading.clearfix
+            h3.panel-title.pull-left Settings
+            | &#x9;&#x9;&#x9;&#x9;
+            a.btn.btn-success.pull-right(href='/settings', data-pjax='#main')
+              | Save
+          | &#x9;&#x9;&#x9;
+          .list-group
+            .list-group-item
+              label.list-group-item-text Password
+              | &#x9;&#x9;&#x9;&#x9;&#x9;
+              .list-group-item-heading
+                input.form-control(type='password', name='password')
+            | &#x9;&#x9;&#x9;&#x9;
+            .list-group-item
+              label.list-group-item-text Password Confirmation
+              | &#x9;&#x9;&#x9;&#x9;&#x9;
+              .list-group-item-heading
+                input.form-control(type='password', name='password_confirmation')
+            | &#x9;&#x9;&#x9;&#x9;{{#each config}}
+            | &#x9;&#x9;&#x9;&#x9;
+            .list-group-item
+              label.list-group-item-text {{this.key}}
+              | &#x9;&#x9;&#x9;&#x9;&#x9;
+              textarea.form-control(maxlength='150', name='{{this.key}}', cols='40', rows='4')
+                | {{this.v}}
+            | &#x9;&#x9;&#x9;&#x9;{{/each }}

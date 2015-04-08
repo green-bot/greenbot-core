@@ -1,0 +1,20 @@
+html
+  body
+    | {{!&lt; layout}}
+    .row
+      .col-sm-4.col-sm-offset-4.bootcards-cards
+        .panel.panel-default
+          .panel-heading.clearfix
+            h3.panel-title.pull-left Settings
+            | &#x9;&#x9;&#x9;&#x9;
+            a.btn.btn-primary.pull-right(href='/config/edit', data-pjax='#main')
+              i.fa.fa-pencil
+              | &#x9;&#x9;&#x9;&#x9;&#x9;Edit
+          | &#x9;&#x9;&#x9;
+          .list-group
+            | {{#each config}}
+            .list-group-item
+              p.list-group-item-text {{this.key}}
+              | &#x9;&#x9;&#x9;&#x9;&#x9;
+              h4.list-group-item-heading {{this.v}}
+            | &#x9;&#x9;&#x9;&#x9;{{/each }}

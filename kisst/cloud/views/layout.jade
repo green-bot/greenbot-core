@@ -1,145 +1,72 @@
-doctype html
+doctype 5
 html(lang='en')
   head
     meta(charset='utf-8')
-    meta(name='viewport', content='width=device-width, user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0')
-    meta(name='author', content='')
-    title Instant Inbound Customer Texting
-    // Bootstrap core CSS
+    meta(http-equiv='X-UA-Compatible', content='IE=edge')
+    link(rel='shortcut icon', href='/img/favicon.png')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui')
+    title KISST
+    link(href='//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css', rel='stylesheet')
+    link(href='//netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css', rel='stylesheet')
     link(href='/css/bootstrap.min.css', rel='stylesheet')
-    link(href='/css/bootstrap-switch.min.css', rel='stylesheet')
-    // Custom Google Web Font
-    link(href='/font-awesome/css/font-awesome.min.css', rel='stylesheet')
-    link(href='https://fonts.googleapis.com/css?family=Lato:100,300,400,700,900,100italic,300italic,400italic,700italic,900italic', rel='stylesheet', type='text/css')
-    link(href='https://fonts.googleapis.com/css?family=Arvo:400,700', rel='stylesheet', type='text/css')
-    // Custom CSS
-    link(href='/css/general.css', rel='stylesheet')
-    // Owl-Carousel
-    link(href='/css/custom.css', rel='stylesheet')
-    link(href='/css/owl.carousel.css', rel='stylesheet')
-    link(href='/css/owl.theme.css', rel='stylesheet')
-    link(href='/css/style.css', rel='stylesheet')
-    link(href='/css/animate.css', rel='stylesheet')
-    // Magnific Popup core CSS file
-    link(rel='stylesheet', href='/css/magnific-popup.css')
-    script(src='/js/modernizr-2.6.2.min.js')
-    // Modernizr /
+    link(href='//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.2/jquery-ui.css', rel='stylesheet')
+    link(href='/css/bootcards-desktop.min.css', rel="stylesheet")
+    link(href='/css/portal.css', rel='stylesheet')
+    link(href='//fonts.googleapis.com/css?family=Lato&subset=latin,latin-ext', rel='stylesheet')
 
+    // HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries
+    //if lt IE 9
+      script(src='https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js')
+      script(src='https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js')
+    script(src='/js/jquery-1.11.2.min.js')
+    script(src='/js/bootstrap.min.js')
+    script(src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js')
+    script(src='/js/bootcards.min.js')
+
+
+    block head
   body
-    .container-fluid
-      // Preloader
-      #preloader
-        #status
-
-      .col-md-12
-        // NavBar
-        nav.navbar-default(role='navigation')
+    nav.navbar.navbar-default.portal-nav
+      .container-fluid
+          // Brand and toggle get grouped for better mobile display
           .navbar-header
-            button.navbar-toggle(type='button', data-toggle='collapse', data-target='.navbar-ex1-collapse')
+            button.navbar-toggle.collapsed(type='button', data-toggle='collapse', data-target='#bs-example-navbar-collapse-1')
               span.sr-only Toggle navigation
-            a.pull-left(href='#home')
-              img(height='60px', src="/img/frog-front-page.png")
-          .collapse.navbar-collapse.navbar-right.navbar-ex1-collapse
+              |
+              span.icon-bar
+              |
+              span.icon-bar
+              |
+              span.icon-bar
+            a.navbar-brand(href='/portal') KISST
+          // Collect the nav links, forms, and other content for toggling
+          #bs-example-navbar-collapse-1.collapse.navbar-collapse
             ul.nav.navbar-nav
-              li.menuItem
-                a(href='#convos') PASSWORD
-              li.menuItem
-                a(href='#config') ACCOUNT
-              li.menuItem
-                a(href='#notification') LOGOUT
-        .row.col-md-12
-          .text-center
-            a(data-toggle='collapse', href='#about_bot', aria-expanded='false', aria-controls='about_bot') ABOUT YOUR BOT
-        .row
-          #about_bot.col-md-12.collapse
-            .panel.panel-default
-              .panel-body
-                table.table
-                  tr
-                    td
-                      strong Identity
-                    td Thomas
-                  tr
-                    td
-                      strong Type
-                    td Information Bot
-                  tr
-                    td
-                      strong Owner Cell
-                    td (508) 362-3372
-                  tr
-                    td
-                      strong Notifications
-                    td ghostofbasho@gmail.com
-                  tr
-                    td
-                      strong Do Not Disturb
-                    td(data-handle-width='100px')
-                      input(type='checkbox', checked=true && 'checked', name='dnd', labelText="OFF")
-        .row.col-md-12
-          .text-center
-            a(data-toggle='collapse', href='#conversations', aria-expanded='false', aria-controls='conversations') CONVERSATIONS
-        .row
-          #conversations.col-md-12.collapse
-            .panel.panel-default
-              .panel-body
-                table.table.table-bordered
-                  tr
-                    th Date
-                    th Name
-                    th Data
-                    th
-                  tr
-                    td 6:00 PM Today
-                    td (617) 555-1212
-                    td
-                      ul
-                        li Name: Thomas Howe
-                        li Callback: Y
-                        li Interest: Sales
-                        li Other Number: (508) 555-1212
-                    td
-                      a(href="#") Transcript
-                  tr
-                    td 6:00 PM Today
-                    td (617) 555-1212
-                    td
-                      ul
-                        li Name: Thomas Howe
-                        li Callback: Y
-                        li Interest: Sales
-                        li Other Number: (508) 555-1212
-                    td
-                      a(href="#") Transcript
-        .row
-          .text-center
-            a(href="http://kisst.zendesk.com") SETTINGS
-        .row
-          .text-center
-            a(href="http://kisst.zendesk.com") CONNECTIONS
-        .row
-          .text-center
-            a(href="http://kisst.zendesk.com") SPREAD THE WEALTH
-        .row
-          .text-center
-            a(href="http://kisst.zendesk.com") HELP
+              li.active
+                a(href='/portal/conversations')
+                  h4
+                    i.fa.fa-comments-o.fa-lg
+                    | Conversations
+              li
+                a(href='/portal/config')
+                  h4
+                    i.fa.fa-cogs.fa-lg
+                    | Settings
+              li
+                a(href='/portal/share')
+                  h4
+                    i.fa.fa-share-square-o.fa-lg
+                    | Share
+              li
+                a(href='http://kisst.zendesk.com')
+                  h4
+                    i.fa.fa-question.fa-lg
+                    | Help
+              li
+                a(href='/logout')
+                  h4
+                    i.fa.fa-sign-out.fa-lg
+                    | Sign Out
 
-
-    // Bootstrap core JavaScript
-    // ==================================================
-    // Placed at the end of the document so the pages load faster
-  // JavaScript
-  script(src='/js/jquery-1.11.2.min.js')
-  script(src='/js/bootstrap.js')
-  script(src='/js/bootstrap-switch.js')
-  script(src='/js/owl.carousel.js')
-  script(src='/js/script.js')
-  script(src='/js/stickUp.min.js')
-  script(type='text/javascript', src='/js/jquery.corner.js')
-  script(src='/js/wow.min.js')
-  script(src='/js/classie.js')
-  script(src='/js/uiMorphingButton_inflow.js')
-  script(src='/js/jquery.magnific-popup.js')
-  script.
-    new WOW().init();
-    $("[name='dnd']").bootstrapSwitch();
+    #main.container.bootcards-container
+      block content

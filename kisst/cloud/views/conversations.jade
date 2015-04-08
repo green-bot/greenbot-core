@@ -1,0 +1,11 @@
+extends ./layout
+
+block content
+  .row.col-sm-6
+    .list-group
+      .list-group-header
+        Conversations
+      each conversation in conversations
+        a.list-group-item.pjax(href='/portal/conversations/#{conversation.session_id}')
+          h4.list-group-item-heading #{conversation.src}
+          p.list-group-item-text #{conversation.display_timestamp}

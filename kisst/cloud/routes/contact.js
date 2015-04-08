@@ -1,6 +1,6 @@
-var bc = require('../bootcards-functions.js');
+var bc = require('cloud/bootcards-functions');
 var moment	= require('moment');
-var connection = require('./connection');
+var connection = require('cloud/connection');
 
 exports.list = function(req, res){
 
@@ -20,7 +20,7 @@ exports.read = function(req, res) {
 	   	contact: bc.getContactById(req.params.id),
 	    menu: bc.getActiveMenu(menu, 'contacts')
 	});
-   
+
 }
 
 exports.edit = function(req, res) {
@@ -30,7 +30,7 @@ exports.edit = function(req, res) {
 	   	menu: bc.getActiveMenu(menu, 'contacts'),
 		contact: bc.getContactById(req.params.id)
 	});
-   
+
 }
 
 exports.add = function(req, res) {
@@ -116,7 +116,7 @@ exports.editConnection = function(req, res) {
 	});
 }
 exports.addConnection = function(req, res) {
-	
+
 	var contact = bc.getContactById(req.params.id);
 
 	res.renderPjax('contact_activity_edit', {

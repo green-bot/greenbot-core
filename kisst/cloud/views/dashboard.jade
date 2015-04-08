@@ -1,7 +1,31 @@
 extends ./layout
 
-block rooms
-  This is in rooms.
-  ul
-    each room in rooms
-      li= room.get("name")
+block content
+  .row
+    .bootcards-cards
+      .col-sm-6
+        .panel.panel-default.bootcards-summary
+          .panel-heading
+            h3.panel-title Dashboard
+          .panel-body
+            .row
+              .col-xs-6.col-sm-4
+                a.bootcards-summary-item(href='/portal/conversations', data-pjax='#main', data-title='Conversations', style='padding-top:35px;')
+                  i.fa.fa-3x.fa-comments-o
+                  h4
+                    | Conversations
+              .col-xs-6.col-sm-4
+                a.bootcards-summary-item(href='/portal/config', style='padding-top:35px;')
+                  i.fa.fa-3x.fa-cogs
+                  h4
+                    | Settings
+              .col-xs-6.col-sm-4
+                a.bootcards-summary-item(href='http://kisst.zendesk.com', data-pjax='#main', data-title='Help', style='padding-top:35px;')
+                  i.fa.fa-3x.fa-question-circle
+                  h4
+                    | Help
+              .col-xs-6.col-sm-4
+                a.bootcards-summary-item(href='/portal/share', style='padding-top:35px;')
+                  i.fa.fa-3x.fa-share
+                  h4
+                    | Share

@@ -95,13 +95,22 @@ app.post("/login", function(req, res) {
 app.get('/logout', function(req, res) {
     Parse.User.logOut();
     console.log("Logged user out. Redirecting.");
-    res.redirect('/');
+    res.redirect('/portal');
   });
 
 app.get('/portal/conversations', conversation.list);
 app.get('/portal/conversations/:id', conversation.read);
 app.get('/portal/config', config.list);
 app.get('/portal/config/edit', config.edit);
+app.post('/portal/config/save', config.save);
+app.post('/reset_request', config.reset_request);
+
+app.get("/reset_page", function(req, res) {
+  res.render('reset_page');
+});
+app.get("/register", function(req, res) {
+  res.render('register');
+});
 
 app.post('/billing', function(req, res) {
   req_data = req.body

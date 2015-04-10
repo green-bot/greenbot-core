@@ -23,30 +23,23 @@ html(lang='en')
     script(src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js')
     script(src='/js/bootcards.min.js')
 
-
-    block head
-  body
-    .container
-      .row
-        .bootcards-cards
-          .row
-              form.form-horizontal(action="/login", method='post')
-                .panel.panel-default
-                  .panel-heading.clearfix
-                      h3.panel-title.pull-left KISST PORTAL
-                      .btn-group.pull-right
-                        button.btn.btn-primary
-                          i.fa.fa-sign-in
-                          |         Log In
-                  .modal-body
-                    .form-group
-                      label.control-label Username
-                      .col-sm-4
-                        input.form-control(type='text', value='', name='username')
-                    .form-group
-                      label.control-label Password
-                      .col-sm-4
-                        input.form-control(type='password', value='', name='password')
-                  .panel-footer
-                    small
-                      a(href="/reset_page") Forgot password?
+block content
+  .row
+    .col-sm-4.col-sm-offset-4.bootcards-cards
+        .panel.panel-default
+          .panel-heading.clearfix
+            a(href="/portal")
+              img.frontpage-logo(src="/img/frog-front-page.png")
+          .list-group
+            .list-group-item
+              form(method="POST", action="/reset_request")
+                label.list-group-item-text
+                  | We will send you an email to reset your password.
+                p
+                input(name="email")
+                input.pull-right(href='#', data-pjax='#main', type="submit", value="Send")
+            .list-group-item
+              p
+              p
+              a(href="/register")
+                | Have our service, but don't have a portal yet?

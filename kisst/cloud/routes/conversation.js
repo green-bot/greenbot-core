@@ -5,7 +5,7 @@ var requireUser = require('cloud/require-user');
 exports.list = function(req, res){
 	var currentUser = Parse.User.current();
 	var query = new Parse.Query("Session");
-	// query.equalTo("user", currentUser);
+	query.equalTo("room", currentUser.get("room"));
   query.find().then(function(usersData) {
 		var conversations = [];
 		_.each(usersData, function assemble(element, index, list) {

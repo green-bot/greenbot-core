@@ -91,6 +91,10 @@ a {
   background-color: #697B40;
 }
 
+.btn-primary {
+  background-color: #B5C78D;
+  font-family: "Lato", Helvetica, Arial, sans-serif!important;
+}
 .list-group-item label {
   color: #394C0F;
 }
@@ -142,6 +146,39 @@ body.fullscreen {
   width:100%;
   z-index:1000;
 }
+
+.frontpage-logo {
+  height: 100px;
+}
+
+.navbar-nav i {
+  padding-right: 10px;
+  padding-left: 20px;
+}
+
+.navbar-brand {
+  padding-top: 25px;
+}
+
+.panel-default {
+  border-top-color: #394C0F;
+  border-left-color: #394C0F;
+  border-right-color: #394C0F;
+  border-bottom-color: #394C0F;
+  border-bottom-width: 10px;
+}
+
+.panel-footer {
+  background-color: #B5C78D;
+}
+.panel-default .panel-heading {
+  background-color: #B5C78D;
+}
+
+table {
+  background-color: white;
+}
+
 
 body,
 h1,

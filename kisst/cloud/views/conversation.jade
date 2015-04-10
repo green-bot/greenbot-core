@@ -6,28 +6,42 @@ block content
       .panel.panel-default
         .panel-heading.clearfix
           h3.panel-title.pull-left Conversation Details
-        .list-group
-          .list-group-item
-            img.img-rounded.pull-left(src='/img/David Ortriz.jpg')
-            label Calling Party
-            h4.list-group-item-heading #{src}
-          .list-group-item
-            label Room
-            h4.list-group-item-heading #{dst}
-          .list-group-item
-            label When
-            h4.list-group-item-heading #{timestamp}
-          for data in collected_data
-            .list-group-item
-              label Collected Data : #{data.key}
-              h4.list-group-item-heading #{data.v}
-          .list-group-item Transcript
-            h4.list-group-item
-              table.table.table-bordered
-                tr
-                  th Who
-                  th Said
-                for line in transcript
-                  tr
-                    td= line.split("|")[1]
-                    td= line.split("|")[2]
+
+      .table-responsive
+        table.table.table-hover
+          thead
+            tr
+              th Label
+              th Value
+          tbody
+            tr
+              td Calling Party
+              td #{src}
+            tr
+              td Room
+              td #{dst}
+            tr
+              td When
+              td  #{timestamp}
+            for data in collected_data
+              tr
+                td #{data.key}
+                td #{data.v}
+
+  .row
+    #conversationCard
+      .panel.panel-default
+        .panel-heading.clearfix
+          h3.panel-title.pull-left Transcript
+
+      .table-responsive
+        table.table.table-hover
+          thead
+            tr
+              th Who
+              th Said
+          tbody
+            for line in transcript
+              tr
+                td= line.split("|")[1]
+                td= line.split("|")[2]

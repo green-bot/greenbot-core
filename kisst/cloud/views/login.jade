@@ -26,27 +26,26 @@ html(lang='en')
 
     block head
   body
-    .container
-      .row
-        .bootcards-cards
-          .row
-              form.form-horizontal(action="/login", method='post')
-                .panel.panel-default
-                  .panel-heading.clearfix
-                      h3.panel-title.pull-left KISST PORTAL
-                      .btn-group.pull-right
-                        button.btn.btn-primary
-                          i.fa.fa-sign-in
-                          |         Log In
-                  .modal-body
-                    .form-group
-                      label.control-label Username
-                      .col-sm-4
-                        input.form-control(type='text', value='', name='username')
-                    .form-group
-                      label.control-label Password
-                      .col-sm-4
-                        input.form-control(type='password', value='', name='password')
-                  .panel-footer
-                    small
-                      a(href="/reset_page") Forgot password?
+    .container-fluid
+      .bootcards-cards
+        .row
+            form.form-horizontal(action="/login", method='post')
+              .panel.panel-default
+                .panel-heading.clearfix
+                    h3.panel-title.pull-left KISST
+                    .btn-group.pull-right
+                      button.btn.btn-primary
+                        i.fa.fa-sign-in(style="color:white;")
+                          | Log In
+                .modal-body
+                  .form-group
+                    label.control-label Username
+                    .col-sm-4
+                      input.form-control(type='text', value='', name='username')
+                  .form-group
+                    label.control-label Password
+                    .col-sm-4
+                      input.form-control(type='password', value='', name='password')
+                .panel-footer
+                  small
+                    a(href="/reset_page") Forgot password?

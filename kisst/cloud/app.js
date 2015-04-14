@@ -81,7 +81,10 @@ app.get("/login", function(req, res) {
 
 // Making a "login" endpoint is SOOOOOOOO easy.
 app.post("/login", function(req, res) {
-  Parse.User.logIn(req.body.username, req.body.password).then(function() {
+  var username = req.body.username.trim().toLowerCase();
+  var password = req.body.password.trim();
+  console.log("Logging in " + username);
+  Parse.User.logIn(username, password).then(function() {
     // Login succeeded, redirect to homepage.
     // parseExpressCookieSession will automatically set cookie.
     res.redirect('/portal');
@@ -97,19 +100,59 @@ app.get('/logout', function(req, res) {
     console.log("Logged user out. Redirecting.");
     res.redirect('/portal');
   });
-
+app.get('/portal/config/owners', config.owners);
+app.get('/portal/config/owner_delete', config.owner_delete);
+app.post('/portal/config/owner_add', config.owner_add);
+app.get('/portal/config/notification_emails', config.notification_emails);
+app.get('/portal/config/notification_email_delete', config.notification_email_delete);
+app.post('/portal/config/notification_email_add', config.notification_email_add);
+app.get('/portal/config/type', config.type);
 app.get('/portal/conversations', conversation.list);
 app.get('/portal/conversations/:id', conversation.read);
 app.get('/portal/config', config.list);
 app.get('/portal/config/edit', config.edit);
 app.post('/portal/config/save', config.save);
 app.post('/reset_request', config.reset_request);
+app.get('/portal/settings', function(req, res) {
+  res.render('settings');
+});
+app.get('/portal/config/type_change/:id', config.type_change);
 
 app.get("/reset_page", function(req, res) {
   res.render('reset_page');
 });
 app.get("/register", function(req, res) {
   res.render('register');
+});
+app.post("/register_request", function(req, res){
+  console.log(req.body);
+  var email = req.body["email"];
+  var id = req.body["token"];
+  var password = req.body["password"];
+  var Room = Parse.Object.extend("Room");
+  var query = new Parse.Query(Room);
+  query.get(id).then(function(room) {
+    var user = new Parse.User();
+    user.set("username", email);
+    user.set("password", password);
+    user.set("room", room);
+    user.signUp(null, {
+      success: function(user) {
+        // Hooray! Let them use the app now.
+        res.redirect("/portal");
+      },
+      error: function(user, error) {
+        // Show the error message somewhere and let the user try again.
+        console.log("Failed to signup user");
+        console.log(error);
+        res.redirect("/register");
+      }
+      });
+    }, function(error) {
+    console.log("Failed to find room with that token");
+    res.redirect("/register");
+    }
+  );
 });
 
 app.post('/billing', function(req, res) {

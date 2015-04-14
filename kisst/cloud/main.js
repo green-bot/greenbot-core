@@ -1,8 +1,6 @@
 require('cloud/app.js');
 
 Parse.Cloud.afterSave("Room", function(request) {
-  console.log("Running after room save filter.");
-
   if (request.object.get("allocated") == false) {
     // This room is not allocated. Let's allocate it
     // by kicking off the "allocate room" job
@@ -25,8 +23,6 @@ Parse.Cloud.afterSave("Room", function(request) {
         console.error('Server returned text ' + httpResponse.text);
       }
     });
-  } else {
-    console.log("Room is already allocated.");
   }
 });
 

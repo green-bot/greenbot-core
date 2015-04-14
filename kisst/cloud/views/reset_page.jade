@@ -22,24 +22,27 @@ html(lang='en')
     script(src='/js/bootstrap.min.js')
     script(src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js')
     script(src='/js/bootcards.min.js')
+body
+  .container-fluid
+    .bootcards-cards
+      .row
+        form.form-horizontal(action="/reset_request", method="POST")
+          .panel.panel-default
+            .panel-heading.clearfix
+                h3.panel-title.pull-left KISST Password Reset
+            .modal-body
+              .form-group
+                label.control-label Account Email
+                .col-sm-4
+                  .input-group
+                    input.form-control(type='text', value='', placeholder="you@google.com", name='email')
+                    span.input-group-btn
+                      button.btn.btn-default
+                        i.fa.fa-envelope-o(style="color:white;", type="submit")
+                          | Reset
+            if error
+              p= error
 
-block content
-  .row
-    .col-sm-4.col-sm-offset-4.bootcards-cards
-        .panel.panel-default
-          .panel-heading.clearfix
-            a(href="/portal")
-              img.frontpage-logo(src="/img/frog-front-page.png")
-          .list-group
-            .list-group-item
-              form(method="POST", action="/reset_request")
-                label.list-group-item-text
-                  | We will send you an email to reset your password.
-                p
-                input(name="email")
-                input.pull-right(href='#', data-pjax='#main', type="submit", value="Send")
-            .list-group-item
-              p
-              p
-              a(href="/register")
-                | Have our service, but don't have a portal yet?
+            .panel-footer
+              small
+                a(href="/portal") Back to Login

@@ -43,9 +43,12 @@ block content
                         | Please give us that token, and an email for your account, and press send. We will send you a confirmation
                         | email where you can set your password.
                 .list-group-item
-                  label Token
-                  input(name="token")
-                .list-group-item
                   label Email
                   input(name="email")
+                .list-group-item
+                  label Password
+                  input(name="password", type="password")
+                .list-group-item
+                  label Token
+                  input(name="token")
                   input(href='#', data-pjax='#main', type="submit", value="Register")

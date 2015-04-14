@@ -1,0 +1,27 @@
+extends ./layout
+
+block content
+  .col-sm-6
+    .panel.panel-default
+      .bootcards-list
+        .panel-heading
+          span.title Notification Emails
+          ul.pull-right.no-list-dots
+            li
+              a(data-toggle="collapse", href="#new_email", aria-expanded="false", aria-controls="new_email")
+                i.fa.fa-plus-square.fa-2x
+
+        #new_email.collapse
+          .panel-body
+            form.form-horizontal(method="POST", action="/portal/config/notification_email_add")
+              .input-group
+                input.form-control(name="email", placeholder="Additional notification email")
+                span.input-group-btn
+                  button.btn.btn-primary
+                    i.fa.fa-plus-square.fa-lg
+        .list-group
+            each notification_email in notification_emails
+              .list-group-item
+                =notification_email
+                a(href='/portal/config/notification_email_delete?email=#{encodeURIComponent(notification_email)}', data-pjax='#main')
+                  i.fa.fa-trash-o.fa-lg

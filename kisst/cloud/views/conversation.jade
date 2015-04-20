@@ -1,0 +1,45 @@
+extends ./layout
+
+block content
+  .row.col-sm-6.col-md-8
+    #conversationCard
+      .panel.panel-default
+        .panel-heading.clearfix
+          h3.panel-title.pull-left Conversation Details
+        .table-responsive
+          table.table.table-bordered
+            thead
+              tr
+                th Label
+                th Value
+            tbody
+              tr
+                td Calling Party
+                td #{src}
+              tr
+                td Room
+                td #{dst}
+              tr
+                td When
+                td  #{timestamp}
+              for data in collected_data
+                tr
+                  td #{data.key}
+                  td #{data.v}
+
+  .row.col-sm-6.col-md-8
+    #conversationCard
+      .panel.panel-default
+        .panel-heading.clearfix
+          h3.panel-title.pull-left Transcript
+        .table-responsive
+          table.table.table-bordered
+            thead
+              tr
+                th Who
+                th Said
+            tbody
+              for line in transcript
+                tr
+                  td= line.split("|")[1]
+                  td= line.split("|")[2]

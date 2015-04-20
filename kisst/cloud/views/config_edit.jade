@@ -1,0 +1,20 @@
+extends ./layout
+
+block content
+  .row.col-sm-6
+    .bootcards-cards
+      form.form-horizontal(method="POST", action="/portal/config/save")
+        .panel.panel-default
+          .panel-heading.clearfix
+              h3.panel-title.pull-left Settings
+              .btn-group.pull-right
+                button.btn.btn-primary
+                  i.fa.fa-sign-in
+                  |   Save
+          .modal-body
+            each c in config
+              .form-group
+                label.col-xs-4.control-label= c.key
+                .col-xs-9
+                  textarea.form-control(type='text', name=c.key)
+                    =c.v

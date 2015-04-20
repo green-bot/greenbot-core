@@ -1,16 +1,161 @@
-
+// Copyright (c) 2015, GreenBot
 // These two lines are required to initialize Express in Cloud Code.
 var express = require('express');
-var app = express();
+var parseExpressHttpsRedirect = require('parse-express-https-redirect');
+var parseExpressCookieSession = require('parse-express-cookie-session');
 var Stripe = require('stripe');
 
-// Global app configuration section
+//routes
+var conversation 	= require('cloud/routes/conversation');
+var connection 		= require('cloud/routes/connection');
+var media 		= require('cloud/routes/media');
+var config 	= require('cloud/routes/config');
+var snippets 	= require('cloud/routes/docs');
+
+var bc 			= require('cloud/bootcards-functions');		//bootcards functions
+var http 	= require('http');
+var path 	= require('path');			//work with paths
+var pjax 	= require('cloud/express-pjax');	//express pjax (partial reloads)
+var app = express();
+
+app.set('view engine', 'jade');
 app.set('views', 'cloud/views');  // Specify the folder to find templates
-app.set('view engine', 'ejs');    // Set the template engine
+app.use(express.cookieParser('SECRET_SIGNING_KEY'));
 app.use(express.bodyParser());    // Middleware for reading request body
+app.use(express.methodOverride());
+app.use(parseExpressHttpsRedirect());  // Require user to be on HTTPS.
+app.use(parseExpressCookieSession({
+  fetchUser: true,
+  key: 'image.sess',
+  cookie: {
+    maxAge: 3600000 * 24 * 30
+  }
+}));
+
+app.use('/portal', function(req, res, next) {
+    console.log("Checking for logged in user");
+    if (Parse.User.current()) {
+      next();
+    } else {
+      res.render('login');
+    }
+  }
+);
+
+//pjax middleware for partials
+app.use(pjax());
+app.use(express.urlencoded());
+app.use(express.methodOverride());
+app.use(app.router);
+
+//read sample data
+collected_data = [];
+connections = [];
+contacts = [];
+
+//setup menu
+app.locals.menu = [
+	{ id : 'dashboard', name : "Home", title : 'Home', icon : "fa-home", active : false, url : '/'},
+	{ id : 'conversations', name : "Conversations", title : 'Conversations', icon : "fa-building-o", active : false, url : '/conversations'},
+	{ id : 'config', name : "Settings", title : 'Settings', icon : "fa-gears", active : false, url : '/config'},
+	{ id : 'help', name : "Help", title : 'Help', icon : "fa-question-circle", active : false, url : 'http://kisst.zendesk.com'},
+	{ id : 'share', name : "Share", title : 'Share', icon : "fa-share", active : false, url : 'http://kisst.zendesk.com'},
+	{ id : 'logout', name : "Logout", title : 'Logout', icon : "fa-sign-out", active : false, url : '/logout'}
+];
+
+// development only
+if ('development' == app.get('env')) {
+  app.use(express.errorHandler());
+	console.log("In development mode");
+}
+
+app.get('/portal', function(req, res) {
+  res.render('dashboard',
+    { menus: app.locals.menu}
+    );
+});
+
+app.get("/login", function(req, res) {
+  res.render('login');
+});
+
+// Making a "login" endpoint is SOOOOOOOO easy.
+app.post("/login", function(req, res) {
+  var username = req.body.username.trim().toLowerCase();
+  var password = req.body.password.trim();
+  console.log("Logging in " + username);
+  Parse.User.logIn(username, password).then(function() {
+    // Login succeeded, redirect to homepage.
+    // parseExpressCookieSession will automatically set cookie.
+    res.redirect('/portal');
+  },
+  function(error) {
+    // Login failed, redirect back to login form.
+    res.redirect("/login");
+  });
+});
+
+app.get('/logout', function(req, res) {
+    Parse.User.logOut();
+    console.log("Logged user out. Redirecting.");
+    res.redirect('/portal');
+  });
+app.get('/portal/config/owners', config.owners);
+app.get('/portal/config/owner_delete', config.owner_delete);
+app.post('/portal/config/owner_add', config.owner_add);
+app.get('/portal/config/notification_emails', config.notification_emails);
+app.get('/portal/config/notification_email_delete', config.notification_email_delete);
+app.post('/portal/config/notification_email_add', config.notification_email_add);
+app.get('/portal/config/type', config.type);
+app.get('/portal/conversations', conversation.list);
+app.get('/portal/conversations/:id', conversation.read);
+app.get('/portal/config', config.list);
+app.get('/portal/config/edit', config.edit);
+app.post('/portal/config/save', config.save);
+app.post('/reset_request', config.reset_request);
+app.get('/portal/settings', function(req, res) {
+  res.render('settings');
+});
+app.get('/portal/config/type_change/:id', config.type_change);
+
+app.get("/reset_page", function(req, res) {
+  res.render('reset_page');
+});
+app.get("/register", function(req, res) {
+  res.render('register');
+});
+app.post("/register_request", function(req, res){
+  console.log(req.body);
+  var email = req.body["email"];
+  var id = req.body["token"];
+  var password = req.body["password"];
+  var Room = Parse.Object.extend("Room");
+  var query = new Parse.Query(Room);
+  query.get(id).then(function(room) {
+    var user = new Parse.User();
+    user.set("username", email);
+    user.set("password", password);
+    user.set("room", room);
+    user.signUp(null, {
+      success: function(user) {
+        // Hooray! Let them use the app now.
+        res.redirect("/portal");
+      },
+      error: function(user, error) {
+        // Show the error message somewhere and let the user try again.
+        console.log("Failed to signup user");
+        console.log(error);
+        res.redirect("/register");
+      }
+      });
+    }, function(error) {
+    console.log("Failed to find room with that token");
+    res.redirect("/register");
+    }
+  );
+});
 
 app.post('/billing', function(req, res) {
-
   req_data = req.body
   console.log("Entered billing function -> " + req_data.type);
   console.log(req_data);
@@ -211,7 +356,6 @@ app.put('/room/return', function(req, res) {
   console.log(req.body);
   res.send("Success");
 })
-
 
 // Attach the Express app to Cloud Code.
 app.listen();

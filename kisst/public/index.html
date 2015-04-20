@@ -53,7 +53,7 @@
   			<ul class="list-inline intro-social-buttons">
   				<li id="cell" >
             <div class="input-group">
-              <input type="text" class="form-control" name="cellNumber" id="cellNumber" placeholder="Your Cell Number Configures KISST" required>
+              <input type="tel" name="cellNumber" id="cellNumber" required>
               <span class="input-group-addon"><i class="glyphicon glyphicon-ok form-control-feedback"></i></span>
             </div>
   				</li>
@@ -119,6 +119,7 @@
 		</div>
 	 </div>
   </div>
+
 
 
 <!-- Use it -->
@@ -251,8 +252,8 @@
 	<script src="js/script.js"></script>
   <script type="text/javascript" src="https://js.stripe.com/v2/"></script>
 	<script src="https://checkout.stripe.com/checkout.js"></script>
-	<!-- StikyMenu -->
 	<script src="js/stickUp.min.js"></script>
+  <script src="js/intlTelInput.min.js"></script>
 
 
 	<script type="text/javascript">
@@ -269,31 +270,14 @@
       }
     }
 
-    function validateOwnerCell() {
-      var phoneno = /^\+?([0-9]{2})\)?[-. ]?([0-9]{4})[-. ]?([0-9]{4})$/;
-      if ($("#cellNumber").val().match(phoneno)) {
-        return true;
-      }
-      else {
-        alert("Before purchase, please fill in your valid cell phone number. When your service is ready, it will text you.");
-        return false;
-      }
-    }
-
 	  jQuery(function($) {
 		$(document).ready( function() {
-      // Setup the opening video.
-
-    $('#homepageVideo').magnificPopup({
-        items: [
-          {
-        src: 'https://vimeo.com/122923135',
-        type: 'iframe' // this overrides default type
-          }
-      ]
-      });
-
-
+      $("#cellNumber").intlTelInput(
+        {
+        utilsScript: "/js/utils.js",
+        onlyCountries: ["us"]
+        }
+      );
       $('.navbar-default').stickUp();
 
       var ownerCell = getUrlParameter('src');
@@ -303,20 +287,20 @@
 
       var unl_stripe_options = {
     	    key: 'pk_live_8J0kapTsVLD9vRRQUrLvfIbI',
-    	    image: '/img/bot.png',
+    	    image: 'https://www.justkisst.me/img/frog-front-page.png',
           name: 'www.justkisst.me',
           description: 'KISST Monthly - Unlimited',
           amount: 3000,
           zipcode: true,
     	    token: function(token) {
-            token.owner_cell = $("#cellNumber").val();
+            token.owner_cell = $("#cellNumber").intlTelInput("getNumber", intlTelInputUtils.numberFormat.NATIONAL);
             token.plan_id = "KISST_UNL"
             token.reseller_string = getUrlParameter('reseller_string');
             token.session_id = getUrlParameter('session_id');
             token.dst = getUrlParameter('dst');
             $.ajax({
               type:    "POST",
-              url:     "/new_order",
+              url:     "https://www.justkisst.me/new_order",
               data:    token,
               success: function(data) {
                 console.log("Success, lets' pop");
@@ -331,29 +315,31 @@
 
   		  var unlHandler = StripeCheckout.configure(unl_stripe_options);
   		  $('#purchaseButton').on('click', function(e) {
-          if (validateOwnerCell() == true){
+          if ($("#cellNumber").intlTelInput("isValidNumber") == true){
             unlHandler.open();
             e.preventDefault();
+          } else {
+            alert("Please enter a valid cell phone number to purchase");
           }
   		  });
 
 
         var conv_stripe_options = {
             key: 'pk_live_8J0kapTsVLD9vRRQUrLvfIbI',
-            image: '/img/bot.png',
+            image: 'https://www.justkisst.me/img/frog-front-page.png',
             name: 'www.justkisst.me',
             description: 'KISST Monthly - 40 CONV',
             amount: 1500,
             zipcode: true,
             token: function(token) {
-              token.owner_cell = $("#cellNumber").val();
+              token.owner_cell = $("#cellNumber").intlTelInput("getNumber", intlTelInputUtils.numberFormat.E164);
               token.plan_id = "KISST_40"
               token.reseller_string = getUrlParameter('reseller_string');
               token.session_id = getUrlParameter('session_id');
               token.dst = getUrlParameter('dst');
               $.ajax({
                 type:    "POST",
-                url:     "/new_order",
+                url:     "https://www.justkisst.me/new_order",
                 data:    token,
                 success: function(data) {
                   console.log("Success, lets' pop");
@@ -367,9 +353,11 @@
           }
           var handler = StripeCheckout.configure(conv_stripe_options);
           $('#15purchaseButton').on('click', function(e) {
-            if (validateOwnerCell() == true){
+            if ($("#cellNumber").intlTelInput("isValidNumber") == true){
               handler.open();
               e.preventDefault();
+            } else {
+              alert("Please enter a valid cell phone number to purchase");
             }
           });
 

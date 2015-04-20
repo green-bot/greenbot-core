@@ -1,0 +1,63 @@
+html
+  body
+    form.form-horizontal(method='POST', action='/contacts/{{contact.id}}', data-pjax='#main')
+      .modal-header
+        | {{&gt;dialog_buttons}}
+        h4.modal-title
+          | {{#if contact.isNew}}
+          | Add Contact
+          | {{else}}
+          | Edit Contact
+          | {{/if}}
+      .modal-body
+        input(type='hidden', name='companyId', value='{{contact.companyId}}')
+        | &#x9;&#x9;
+        input(type='hidden', name='_method', value='put')
+        | &#x9;&#x9;
+        .form-group
+          label.col-xs-4.control-label First Name
+          | &#x9;&#x9;&#x9;
+          .col-xs-8
+            input.form-control(type='text', name='firstName', placeholder='First Name', value='{{contact.firstName}}')
+        | &#x9;&#x9;
+        .form-group
+          label.col-xs-4.control-label Last Name
+          | &#x9;&#x9;&#x9;
+          .col-xs-8
+            input.form-control(type='text', name='lastName', placeholder='Last Name', value='{{contact.lastName}}')
+        | &#x9;&#x9;
+        .form-group
+          label.col-xs-4.control-label Salutation
+          | &#x9;&#x9;&#x9;
+          .col-xs-8
+            input.form-control(type='text', name='salutation', placeholder='Salutation', value='{{contact.salutation}}')
+        | &#x9;&#x9;
+        .form-group
+          label.col-xs-4.control-label Title
+          | &#x9;&#x9;&#x9;
+          .col-xs-8
+            input.form-control(type='text', name='jobTitle', placeholder='Job Title', value='{{contact.jobTitle}}')
+        | &#x9;&#x9;
+        .form-group
+          label.col-xs-4.control-label Department
+          | &#x9;&#x9;&#x9;
+          .col-xs-8
+            input.form-control(type='text', name='department', placeholder='Department', value='{{contact.department}}')
+        | &#x9;&#x9;
+        .form-group
+          label.col-xs-4.control-label Phone
+          | &#x9;&#x9;&#x9;
+          .col-xs-8
+            input.form-control(type='text', name='phone', placeholder='Phone', value='{{contact.phone}}')
+        | &#x9;&#x9;
+        .form-group
+          label.col-xs-4.control-label Email
+          | &#x9;&#x9;&#x9;
+          .col-xs-8
+            input.form-control(type='email', name='email', placeholder='Email', value='{{contact.email}}')
+    | {{#unless contact.isNew}}
+    .modal-footer
+      button.btn.btn-danger.btn-block(type='button', onclick="bootcards.confirmDelete('contact'); return false;")
+        i.fa.fa-trash-o
+        | &#x9;&#x9;Delete Contact
+    | {{/unless}}

@@ -78,7 +78,7 @@ DEPENDENCIES
   gmail
   gmail_xoauth
   highline (>= 1.7.1)
-  io-console (= 0.4.2)
+  io-console
   json
   mail
   method_source

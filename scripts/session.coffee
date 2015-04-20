@@ -156,8 +156,8 @@ module.exports = (robot) ->
       for k,v of JSON.parse @collected_data
         @update_transcript "collected_data", "#{k}:#{v}"
       transcript_object=
-        transcript:      @transcript
-        transcript_key:  @transcript_key
+        transcript:       @transcript
+        transcript_key:   @session_id
       parse.insert 'Transcript', transcript_object, (err, response) =>
         if err
           callback("Could not create object.", null)
@@ -209,8 +209,10 @@ module.exports = (robot) ->
                 () =>
                   parse.addRelation("transcript", "Session", @session_object_id, "Transcript", @transcript_data_id,
                     () =>
-                        console.log("Object saved")
-                        callback(null, "Saved object"))))
+                      parse.addRelation("session", "CollectedData", @collected_data_object_id, "Session", @session_object_id,
+                        () =>
+                          console.log("Object saved")
+                          callback(null, "Saved object"))))
 
     delete_session: (callback) =>
       console.log("Ending session...")

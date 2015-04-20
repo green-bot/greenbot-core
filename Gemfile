@@ -13,7 +13,7 @@ gem 'gem-wrappers'
 gem 'gmail'
 gem 'gmail_xoauth'
 gem 'highline', ">=1.7.1"
-gem 'io-console', "0.4.2"
+gem 'io-console'
 gem 'json'
 gem 'mail'
 gem 'method_source'

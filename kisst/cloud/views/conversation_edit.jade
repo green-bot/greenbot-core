@@ -1,0 +1,73 @@
+html
+  body
+    form.form-horizontal(method='POST', action='/conversations/{{company.id}}', data-pjax='#main')
+      .modal-header
+        | {{&gt;dialog_buttons}}
+        h3.modal-title
+          | {{#if company.isNew}}
+          | New Conversation
+          | {{else}}
+          | Edit Conversation
+          | {{/if}}
+      .modal-body
+        input(type='hidden', name='_method', value='put')
+        | &#x9;
+        .form-group
+          label.col-xs-3.control-label Name
+          | &#x9;&#x9;
+          .col-xs-9
+            input.form-control(type='text', name='name', placeholder='Conversation name', value='{{company.name}}')
+        | &#x9;
+        .form-group
+          label.col-xs-3.control-label Type
+          | &#x9;&#x9;
+          .col-xs-9
+            select.form-control(name='type', value='{{company.type}}')
+              option(value='', selected='') Select a Type...
+              | &#x9;&#x9;&#x9;&#x9;
+              option(value='Prospect') Prospect
+              | &#x9;&#x9;&#x9;&#x9;
+              option(value='Customer') Customer
+              | &#x9;&#x9;&#x9;&#x9;
+              option(value='Inactive') Inactive
+        | &#x9;
+        .form-group
+          label.col-xs-3.control-label Website
+          | &#x9;&#x9;
+          .col-xs-9
+            input.form-control(type='url', name='website', placeholder='Website', value='{{company.website}}')
+        | &#x9;
+        .form-group
+          label.col-xs-3.control-label City
+          | &#x9;&#x9;
+          .col-xs-9
+            input.form-control(type='text', name='city', placeholder='City', value='{{company.city}}')
+        | &#x9;
+        .form-group
+          label.col-xs-3.control-label Country
+          | &#x9;&#x9;
+          .col-xs-9
+            input.form-control(type='text', name='country', placeholder='Country', value='{{company.country}}')
+        | &#x9;
+        .form-group
+          label.col-xs-3.control-label Location
+          | &#x9;&#x9;
+          .col-xs-9
+            input.form-control(type='text', name='location', placeholder='Location', value='{{company.location}}')
+        | &#x9;
+        .form-group
+          label.col-xs-3.control-label Logo
+          | &#x9;&#x9;
+          .col-xs-9
+            input#logo.hide(type='file', name='logo', placeholder='Logo', value='{{company.logo}}')
+            | &#x9;&#x9;&#x9;
+            button.btn.btn-default.btn-block(type='button')
+              label(for='logo')
+                i.fa.fa-plus
+                | &#x9;&#x9;&#x9;&#x9;&#x9;Add Logo
+    | {{#unless company.isNew}}
+    .modal-footer
+      button.btn.btn-danger.btn-block(type='button', onclick="bootcards.confirmDelete('company'); return false;")
+        i.fa.fa-trash-o
+        | &#x9;&#x9;Delete Conversation
+    | {{/unless}}

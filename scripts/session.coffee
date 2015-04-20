@@ -212,7 +212,7 @@ module.exports = (robot) ->
                       parse.addRelation("session", "CollectedData", @collected_data_object_id, "Session", @session_object_id,
                         () =>
                           console.log("Object saved")
-                          callback(null, "Saved object"))))
+                          callback(null, "Saved object")))))
 
     delete_session: (callback) =>
       console.log("Ending session...")

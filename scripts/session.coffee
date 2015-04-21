@@ -133,22 +133,25 @@ module.exports = (robot) ->
         @delete_session])
 
     send_goodbye: (callback) =>
-      base_link = @room.goodbye_link or "http://www.justkisst.me"
-      url = Url.parse(base_link, true)
-      url.query["src"] = @src
-      url.query["dst"] = @room_name
-      url.query["session_id"] = @session_id
-      url.query["reseller"] = @room.reseller
+      if @room.show_ad == true
+        base_link = @room.goodbye_link or "http://www.justkisst.me"
+        url = Url.parse(base_link, true)
+        url.query["src"] = @src
+        url.query["dst"] = @room_name
+        url.query["session_id"] = @session_id
+        url.query["reseller"] = @room.reseller
 
-      console.log("Using the closing link #{Url.format(url)}")
-      Bitly.shortenLink encodeURIComponent(Url.format(url)), (err, results) =>
-        console.log("Shortened info is #{results}")
-        throw err if err
-        # See http://code.google.com/p/bitly-api/wiki/ApiDocumentation for format of returned object
-        short_url = JSON.parse(results).data.url
-        # Do something with data
-        @handle_incoming_msg(@room.closing_message + short_url)
-        callback(null, "Saved object")
+        console.log("Using the closing link #{Url.format(url)}")
+        Bitly.shortenLink encodeURIComponent(Url.format(url)), (err, results) =>
+          console.log("Shortened info is #{results}")
+          throw err if err
+          # See http://code.google.com/p/bitly-api/wiki/ApiDocumentation for format of returned object
+          short_url = JSON.parse(results).data.url
+          # Do something with data
+          @handle_incoming_msg(@room.closing_message + short_url)
+          callback(null, "Saved object")
+      else
+        callback(null, "No goodbyes")
 
 
     save_transcript: (callback) =>

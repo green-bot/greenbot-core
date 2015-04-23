@@ -3,57 +3,64 @@
 #
 # basic_usage.rb
 #
-require "./lib/greenbot.rb"
-require "timeout"
+require './lib/greenbot.rb'
+require 'timeout'
 
 HOUR = 60 * 60
 timeout = ENV['CONVERSATION_TIMEOUT'].to_i || 4 * HOUR
 
+def ask_and_remember(prompt, desc)
+  response = ask(prompt)
+  response.remember(desc)
+  response
+end
+
+def confirm_and_remember(prompt, desc)
+  response = confirm(prompt)
+  response.remember(desc)
+  response
+end
+
 def collect_contact(prompt)
-  if confirm(prompt)
-    contact_me = true
-    contact_me.remember("contact_me")
-    name = ask("When we call, who should we ask for?")
-    name.remember("who_to_ask_for")
-    if confirm("Is there another number we should try?")
-      better_number = ask("Please enter that number with an area code")
-      better_number.remember("better_number")
-    end
-    tell "Thank you! We will have somebody contact you right away."
+  if confirm_and_remember(prompt, 'contact_me')
+    ask_and_remember('When we call, who should we ask for?', 'who_to_ask_for')
+    better = confirm_and_remember('Is there a better number?', 'try_alt_num')
+    ask_and_remember('What number should I call?', 'alt_number') if better
+    tell 'Thank you! We will have somebody contact you right away.'
   else
-    tell("No problem at all.")
-    contact_me = false
-    contact_me.remember("contact_me")
+    tell('No problem at all.')
   end
 end
 
 begin
-  Timeout::timeout(timeout) {
+  timeout(timeout) do
     tell ENV['PROMPT_1']
     tell ENV['PROMPT_2']
-    begin
+    collect_contact('Would you like someone to contact you?')
+    tell ENV['PURCHASE_PROMPT']
+    loop do
       tasks = %w(demos docs purchase contact reseller quit pricing )
-      my_task = select("How can I help?", tasks)
+      my_task = select('How can I help?', tasks)
       case my_task
-      when "demos"
+      when 'demos'
         tell ENV['DEMOS_PROMPT']
-      when "docs"
+      when 'docs'
         tell ENV['DOCS_PROMPT']
-      when "purchase"
+      when 'purchase'
         tell ENV['PURCHASE_PROMPT']
-      when "pricing"
+      when 'pricing'
         tell ENV['PRICING_PROMPT']
-      when "reseller"
+      when 'reseller'
         tell ENV['RESELLER_PROMPT']
-        collect_contact("Would you like to become a KISST reseller?")
-      when "contact"
-        collect_contact("Would you like someone to contact you?")
-      when "quit"
+        collect_contact('Would you like to become a KISST reseller?')
+      when 'contact'
+        collect_contact('Would you like someone to contact you?')
+      when 'quit'
         break
       end
-    end while true
-  }
-rescue Timeout::Error  => e
-  tell "If you want to restart this conversation, text us again!"
+    end
+  end
+rescue Timeout::Error
+  tell 'If you want to restart this conversation, text us again!'
 end
 tell ENV['SIGNATURE']

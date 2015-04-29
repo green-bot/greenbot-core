@@ -28,6 +28,7 @@ def fetch_session(string)
   # Sessions are kept between square brackets.
   m = /\[(.*)\]/.match(string)
 
+  return m if m.nil?
   # Return the match,if any. Nil means no match
   m[1]
 end
@@ -60,7 +61,7 @@ data_prompts['DATA_PROMPT_2'] = ENV['DATA_PROMPT_2'] unless ENV['DATA_PROMPT_2']
 labels = []
 answers = {}
 data_prompts.each do |k,v|
-  answer = confirmed_gets(v)
+  answer = ask(v)
   answer.remember(k)
   answers[k] = answer
 end
@@ -161,13 +162,24 @@ EventMachine.run do
         gmail.inbox.emails.each do |e|
           print_and_flush "Checking email: #{e.subject}"
           session_id = fetch_session(e.subject)
+          print_and_flush(e.inspect)
           if session_id
+            if e.multipart?
+              print_and_flush("multipart email")
+              text = ""
+              e.parts.each do |p|
+                text << p.body.decoded
+              end
+            else
+              text = e.body.decoded
+            end
             new_message = {
-              body:       e.parts.first.decoded,
+              body:       text,
               subject:    e.subject,
               from:       e.from,
               to:         e.to
             }
+
             $r.lpush(session_key, new_message.to_json)
             $r.expire(session_key, SESSION_EXPIRE)
           else

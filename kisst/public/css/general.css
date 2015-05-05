@@ -210,7 +210,12 @@ height:100%;
 }
 
 
-
+.vsm-show {
+  font-family: 'Roboto', sans-serif;
+  letter-spacing: 3px;
+  font-weight: 400 !important;
+  text-align: center;
+}
 
 @media screen and (min-width: 568px) {
   h1 {
@@ -223,13 +228,15 @@ height:100%;
     font-size: 48px;
     height: inherit;
   }
-
+  .vsm-show {
+    display: none;
+  }
 }
 
 
 @media screen and (max-width: 568px) {
   h1 {
-    font-size:30px;
+    font-size:24px;
   }
   h2 {
     font-size: 20px;
@@ -241,6 +248,31 @@ height:100%;
     align-content: center;
     flex-direction: column; 
     text-align: center;  
+  }
+  .vsm-show {
+    display: none;
+  }
+  
+@media screen and (max-width: 320px) {
+  h1 {
+    font-size:24px;
+  }
+  h2 {
+    font-size: 20px;
+  }
+  .front-image {
+    display: none;
+  }
+  .front-page {
+    display: none;
+  }
+  .front-page-text {
+    font-family: 'Roboto', sans-serif;
+    text-align: center;
+    width: 100%;
+  }
+  .vsm-show {
+    display: inline;
   }
 }
 

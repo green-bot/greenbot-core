@@ -208,9 +208,9 @@ you can use the generic selector below, but it's slower:
   border-top-color: #34495e !important;
 }
 body {
-	height: 100%;
-	width: 100%;
-  font-family: "Lato", Helvetica, Arial, sans-serif;
+  height: 100%;
+  width: 100%;
+  font-family: 'Roboto', sans-serif;
   font-size: 16px;
   line-height: 1.72222;
   color: #34495e;
@@ -1161,7 +1161,7 @@ label {
 .form-control {
   border: 2px solid #bdc3c7;
   color: #34495e;
-  font-family: "Lato", Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', sans-serif;
   font-size: 15px;
   line-height: 1.467;
   padding: 8px 12px;
@@ -2209,7 +2209,7 @@ select[multiple].navbar-form .btn {
 }
 .navbar-unread,
 .navbar-new {
-  font-family: "Lato", Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', sans-serif;
   background-color: #1abc9c;
   border-radius: 50%;
   color: #ffffff;
@@ -2729,7 +2729,7 @@ fieldset[disabled] .navbar-inverse .navbar-btn.active {
   background: transparent;
   border: none;
   color: #34495e;
-  font-family: "Lato", Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', sans-serif;
   font-size: 14px;
   margin: 0px;
   padding: 0 0 0 5px;
@@ -2801,7 +2801,7 @@ fieldset[disabled] .navbar-inverse .navbar-btn.active {
 .twitter-typeahead .tt-hint {
   border: 2px solid #bdc3c7;
   color: #34495e;
-  font-family: "Lato", Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', sans-serif;
   font-size: 15px;
   line-height: 1.467;
   padding: 8px 12px;
@@ -3971,7 +3971,7 @@ body.vjs-full-window {
   bottom: 4em;
   left: 1em;
   right: 1em;
-  font-family: "Lato", Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', sans-serif;
 }
 .video-js .vjs-text-track {
   display: none;

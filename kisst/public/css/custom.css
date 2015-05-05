@@ -43,7 +43,9 @@
 .btn-navbar span.icon-bar{
 	margin-top: 0px;
 }
-
+.intro-bottom {
+	margin-bottom: 20px;
+}
 /* Header  */
 
 #header{

@@ -1,92 +1,141 @@
-Slack = require('slack-node')
-WebSocketClient = require('websocket').client
+Readline = require 'readline'
+ShortUUID = require 'shortid'
+Redis = require "redis"
+Os = require("os")
+ChildProcess = require("child_process")
+Url = require("url")
+Request = require("request")
+Mailer = require("nodemailer")
+Moment = require("moment")
+Us = require("underscore")
+Wellknown = require("nodemailer-wellknown")
+Winston = require('winston')
+Papertrail = require('winston-papertrail').Papertrail
+Parse = require('node-parse-api').Parse
+Async = require('async')
+BitlyAPI = require('node-bitlyapi')
+Slack = require('slack-client')
 
 module.exports = (robot) ->
-  apiToken = "xoxp-2481386799-2817341451-3814901862-edb983"
-  announce_channel = "#chat_announce"
-  slack = new Slack(apiToken)
-  THROTTLE_RATE_MS = 1500
-  pending_msg_posts = []
+  options =
+    app_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI"
+    api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7"
+  parse = new Parse(options)
+  slack_clients = {} # Referenced by API token
+  clients_by_key = {}
+  session_keys_by_channel = {}
+  channels_by_session_keys = {}
 
-  client = new WebSocketClient
-  client.on 'connectFailed', (error) ->
-    console.log 'Connect Error!: ' + error.toString()
-    return
-  client.on 'connect', (connection) ->
-    console.log 'WebSocket Client Connected'
-    connection.on 'error', (error) ->
-      console.log 'Connection Error: ' + error.toString()
-      return
-    connection.on 'close', ->
-      console.log 'echo-protocol Connection Closed'
-      return
-    connection.on 'message', (message) ->
-      if message.type == 'utf8'
-        console.log 'Received: \'' + message.utf8Data + '\''
-        return
+  console.log("Slack script running")
 
-  slack.api('rtm.start',{},
-    (err, response) =>
-      console.log "Attempting connection to #{response.url}"
-      client.connect(response.url, 'slack-protocol');
-    )
+  # A helper function to tell us if an inbound chat message is a control
+  # message or a just a normal chat message.
+  # Control messages are used to assign bots to the appropriate rooms
+  is_control_message = (text) =>
+    [session_key, action] = text.split(" ")
+    session_keys = Us.keys(clients_by_key)
+    return false unless session_key in session_keys
+    return false unless action in ["start", "stop", "listen"]
+    return true
 
-  # Run a one second loop that checks to see if there are messages to be sent
-  # to chat. Wait one second after the request is made to avoid
-  # rate throttling issues.
-  setInterval(
-    () ->
-      # Check to see if there are messages to send to the chat room.
-      request = pending_msg_posts.shift()
-      if request?
-        slack.api(
-          'chat.postMessage',
-          {
-            text:   request.text
-            channel: request.channel
-            link_names: 1
+  session_announce_end = (session_key) ->
+    slack_client = clients_by_key[session_key]
+    slack_client.announce_channel.send("#{session_key} has just ended")
 
-          })
-    ,THROTTLE_RATE_MS)
+  # Every integratin needs a slack client. Then can be shared
+  # among sessions.
+  new_slack_client = (token, session_key, announce_channel) ->
+    autoReconnect = true
+    autoMark = true
+    slack_client = new Slack(token, autoReconnect, autoMark)
+    slack_client.announce_channel_name = announce_channel
+    slack_client.unannounced = []
+    slack_client.unannounced.push session_key if session_key?
 
+    slack_client.on 'loggedIn', =>
+      console.log("Slack client logged in")
+      slack_client.announce_channel = slack_client.getChannelByName(slack_client.announce_channel_name)
+      for session_key in slack_client.unannounced
+        slack_client.emit("announce", session_key)
+
+    slack_client.on 'announce', (session_key) =>
+      console.log("Announcing #{session_key}")
+      announcements = [
+        "New session #{session_key}
+        In any room that I'm listening in you can use the following commands: \n
+        To just listen, type '#{session_key} listen' \n
+        To start chatting, type '#{session_key} start' \n
+        To stop and go back to the bot, '#{session_key} stop'"
+      ]
+      for msg in announcements
+        slack_client.emit 'send', slack_client.announce_channel, msg
+
+    slack_client.on 'send', (channel, msg) ->
+      channel.send(msg)
+
+      #if not channel.send(msg)
+      #  process.nextTick () =>
+      #    console.log("Failed to send messsage. Trying again next tick.")
+      #    slack_client.emit('send', channel, msg)
+
+
+    slack_client.on 'message', (message) ->
+      channel = slack_client.getChannelGroupOrDMByID(message.channel)
+      {type, ts, text} = message
+      console.log("New chat arrived : #{text} from #{channel}")
+      unless is_control_message(text)
+        robot.emit("session:chat_arrived", session_keys_by_channel[channel], text)
+      else
+        [session_key, action] = text.split(" ")
+        switch action
+          when "start"
+            if session_key in Us.keys(clients_by_key)
+              session_keys_by_channel[channel] = session_key
+              channels_by_session_keys[session_key] = channel
+              channel.send("The conversation with #{session_key} is now in this room.")
+            else
+              console.log("No session here?")
+
+    slack_client.on 'error', (error) ->
+      console.error "Slack client error: #{JSON.stringify(error)}"
+
+    slack_client.login()
+    slack_client
+
+  robot.on "session:start", (session) ->
+    filter =
+      room:
+        __type: "Pointer"
+        className: "Room"
+        objectId: session.room.objectId
+      provider: 'slack'
+    parse.findMany 'Integrations', filter, (err, response) ->
+      if err?
+        console.log("Integration search turned up error")
+        console.log(err)
+      else
+        if response.results.count > 0
+          integration = response.results[0]
+          settings = JSON.parse(integration["settings"])
+          session_key = session.session_key
+          slack_client = slack_clients[integration.token]
+          unless slack_client
+            console.log("Creating new slack client with settings")
+            console.log(settings["announce_channel"])
+            slack_client = new_slack_client(integration.token, session_key, settings["announce_channel"])
+            slack_clients[integration.token] = slack_client
+            clients_by_key[session_key] = slack_client
+          else
+            clients_by_key[session_key] = slack_client
+            slack_client.emit("announce", session_key)
+        else
+          console.log("No slack integration defined for this room.")
 
   robot.on "session:inbound_msg", (session, msg) ->
-    console.log "Just received inbound message for #{session.session_key}:#{msg}"
-    request =
-      text:     "#{session.user.name}: #{msg}"
-      channel:  "#" + session.session_key
-    pending_msg_posts.push request
-
-
-  robot.on "session:outbound_msg", (session, msg) ->
-    console.log "Just received outbound message for #{session.session_key}:#{msg}"
-    request =
-      text:     "#{session.room}: #{msg}"
-      channel:  "#" + session.session_key
-    pending_msg_posts.push request
-
-  robot.on "session:start", (session) =>
-    console.log "New session just started #{session.session_key}:#{session.session_id}"
-    slack.api(
-      'channels.create',
-      {
-        name: session.session_key
-      })
-
-    request =
-      text:     "#{session.user.name} just started a conversation in #{session.room}, available at channel ##{session.session_key}"
-      channel:  announce_channel
-    pending_msg_posts.push request
-
-    request =
-      text:     "New session started"
-      channel:  "#" + session.session_key
-    pending_msg_posts.push request
-
+    session_key = session.session_key
+    channel = channels_by_session_keys[session_key]
+    slack_client = clients_by_key[session_key]
+    slack_client.emit 'send', channel, msg
 
   robot.on "session:end", (session) ->
-    console.log "Session just started #{session.session_key}:#{session.session_id}"
-    request =
-      text:     "Session ended"
-      channel:  "#" + session.session_key
-    pending_msg_posts.push request
+    session_announce_end(session.session_key)

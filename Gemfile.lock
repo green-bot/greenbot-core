@@ -22,7 +22,7 @@ GEM
     gmail_xoauth (0.4.1)
       oauth (>= 0.3.6)
     highline (1.7.1)
-    io-console (0.4.2)
+    io-console (0.4.3)
     json (1.8.2)
     mail (2.6.3)
       mime-types (>= 1.16, < 3)
@@ -45,7 +45,6 @@ GEM
     psych (2.0.13)
     rake (10.4.2)
     rdoc (4.2.0)
-      json (~> 1.4)
     redis (3.2.1)
     redis-semaphore (0.2.4)
       redis

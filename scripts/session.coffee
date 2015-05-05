@@ -133,28 +133,32 @@ module.exports = (robot) ->
         @delete_session])
 
     send_goodbye: (callback) =>
-      base_link = @room.goodbye_link or "http://www.justkisst.me"
-      url = Url.parse(base_link, true)
-      url.query["src"] = @src
-      url.query["dst"] = @room_name
-      url.query["session_id"] = @session_id
-      url.query["reseller"] = @room.reseller
+      if @room.show_ad == true
+        base_link = @room.goodbye_link or "http://www.justkisst.me"
+        url = Url.parse(base_link, true)
+        url.query["src"] = @src
+        url.query["dst"] = @room_name
+        url.query["session_id"] = @session_id
+        url.query["reseller"] = @room.reseller
 
-      console.log("Using the closing link #{Url.format(url)}")
-      Bitly.shortenLink encodeURIComponent(Url.format(url)), (err, results) =>
-        console.log("Shortened info is #{results}")
-        throw err if err
-        # See http://code.google.com/p/bitly-api/wiki/ApiDocumentation for format of returned object
-        short_url = JSON.parse(results).data.url
-        # Do something with data
-        @handle_incoming_msg(@room.closing_message + short_url)
-        callback(null, "Saved object")
+        console.log("Using the closing link #{Url.format(url)}")
+        Bitly.shortenLink encodeURIComponent(Url.format(url)), (err, results) =>
+          console.log("Shortened info is #{results}")
+          throw err if err
+          # See http://code.google.com/p/bitly-api/wiki/ApiDocumentation for format of returned object
+          short_url = JSON.parse(results).data.url
+          # Do something with data
+          @handle_incoming_msg(@room.closing_message + short_url)
+          callback(null, "Saved object")
+      else
+        callback(null, "No goodbyes")
 
 
     save_transcript: (callback) =>
       console.log("Saving transcript")
-      for k,v of JSON.parse @collected_data
-        @update_transcript "collected_data", "#{k}:#{v}"
+      if @collected_data?
+        for k,v of JSON.parse @collected_data
+          @update_transcript "collected_data", "#{k}:#{v}"
       transcript_object=
         transcript:       @transcript
         transcript_key:   @session_id
@@ -257,6 +261,7 @@ module.exports = (robot) ->
     handle_incoming_msg: (text) =>
       # If the message is a valid JSON object, treat it as if it were collected data
       # If so, stick it in a session_id in REDIS for somebody else to handle.
+      console.log("Working with #{text}")
       lines = text.toString().split("\n")
       for line in lines
         line = line.trim()
@@ -304,8 +309,8 @@ module.exports = (robot) ->
 
  #end Session Class
 
-  create_session = (msg, settings) ->
-    new_session = new Session(msg.message, settings)
+  create_session = (msg, room) ->
+    new_session = new Session(msg.message, room)
     console.log "New session #{new_session.session_key} (session_id #{new_session.session_id}) between #{new_session.user.name} and #{new_session.user.room}"
     robot.sessions[new_session.session_key] = new_session
 
@@ -329,7 +334,6 @@ module.exports = (robot) ->
       console.log("Looking for " + room_name)
       parse.findMany 'Room', { name: room_name }, (err, response) ->
         rooms = response.results
-        console.log JSON.stringify(rooms, null, 4)
         if err or (rooms.length == 0)
           console.log "Cannot setup room - no room defined"
         else
@@ -374,3 +378,8 @@ module.exports = (robot) ->
           console.log "Message sent successfully!"
           console.log "Server responded with \"%s\"", info.response
           return
+
+  robot.on "session:chat_arrived", (session_key, chat_msg) =>
+    session = robot.sessions[session_key]
+    session.handle_incoming_msg(chat_msg)
+    

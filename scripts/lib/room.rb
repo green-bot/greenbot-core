@@ -7,6 +7,14 @@ class Room
     load
   end
 
+  def load
+    q = Parse::Query.new("Room")
+    q.eq("name", @room_name)
+    @room = q.get.first
+    @settings = @room["settings"]
+    @valid = @settings ? true : false
+  end
+
   def self.create(room_name, options)
     new_room = Parse::Object.new("Room")
     options.each{|k,v| new_room[k] = v}
@@ -60,7 +68,24 @@ class Room
     @room.parse_delete
   end
 
+  def add_qty(amount)
+    @room["qty"] = Parse::Increment.new(amount)
+    @room.save
+  end
 
+  def subtract_qty(amount)
+    @room["qty"] = Parse::Increment.new(-amount)
+    @room.save
+  end
+
+  def qty
+    if @room["qty"].nil?
+      @room["qty"] = 0
+      @room.save
+    end
+    @room["qty"]
+  end
+  
   def trace
   end
 
@@ -75,13 +100,6 @@ class Room
     trace
   end
 
-  def load
-    q = Parse::Query.new("Room")
-    q.eq("name", @room_name)
-    @room = q.get.first
-    @settings = @room["settings"]
-    @valid = @settings ? true : false
-  end
 
   def env_settings
     @room["settings"].reject{|k,v| %w(AWAY AUTO_CHARGE auto_charge).include?(k) }

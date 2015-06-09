@@ -108,6 +108,7 @@ app.get('/portal/config/notification_email_delete', config.notification_email_de
 app.post('/portal/config/notification_email_add', config.notification_email_add);
 app.get('/portal/config/type', config.type);
 app.get('/portal/conversations', conversation.list);
+app.get('/portal/config/info', config.info);
 app.get('/portal/conversations/:id', conversation.read);
 app.get('/portal/config', config.list);
 app.get('/portal/config/edit', config.edit);
@@ -155,64 +156,6 @@ app.post("/register_request", function(req, res){
   );
 });
 
-app.post('/billing', function(req, res) {
-  req_data = req.body
-  console.log("Entered billing function -> " + req_data.type);
-  console.log(req_data);
-  Stripe.initialize('sk_live_CDYuW7Nsp4dtyKXT7ifjZ47q');
-
-  if(req_data.type == "customer.subscription.created"){
-    // First things first, get the customer record.
-    customer = Stripe.Customers.retrieve(req_data.data.object.customer,
-      {
-        success: function(customer) {
-          // OK, got the customer and the subscription.
-          console.log("customer.subscription.created");
-          console.log(JSON.stringify(customer, null, 4));
-          var Room = Parse.Object.extend("Room");
-          var room = new Room();
-          var notification_emails = [customer.email]
-          room.set("notification_emails", notification_emails);
-          var owners = [customer.metadata.owner_cell]
-          room.set("owners", owners);
-          room.set("owner_cmd", "ruby owner_settings.rb");
-          room.set("default_cmd", "ruby information.rb");
-          room.set("default_path", "scripts");
-          room.set("stripe_sub_id", req_data.data.object.id);
-          room.set("stripe_cust_id", customer.id);
-          room.set("settings",
-          {
-           "AWAY": "false",
-           "HOURS": "8am to 4pm",
-           "PROMPT_1": "Thank you for texting us! We love having you as a customer",
-           "PROMPT_2": "Heres a link to todays specials : http://bit.ly/15GmEEr ",
-           "SIGNATURE": "Thank you! Visit us on the web at www.google.com",
-           "SPECIALS": "Our prime rib dinner on Thursdays is to die for. $13.99 includes salad, and three sides.",
-           "ADDRESS": "3010 Main St, Barnstable, MA 02630"
-          });
-          room.set("allocated", false);
-          room.save(null, {
-            success: function(room) {
-              console.log(JSON.stringify(room, null, 4));
-              res.send("Success");
-            },
-            error: function(room, error) {
-              console.log("Room error:");
-              console.log(JSON.stringify(error, null, 4));
-              res.send("Subscription error.");
-            }
-          });
-        },
-        error: function(customer) {
-          console.log(JSON.stringify(customer, null, 4));
-          res.error("Uh oh, something went wrong");
-        }
-      });
-  } else {
-    res.send("Unhandled");
-  }
-})
-
 app.post('/new_order', function(req, res) {
   console.log("Entered new_order function ");
   console.log(req.body);
@@ -233,10 +176,79 @@ app.post('/new_order', function(req, res) {
     },
     error: function(httpResponse) {
       console.log(JSON.stringify(httpResponse.body, null, 4));
-      res.error("Uh oh, something went wrong");
+      res.send("Uh oh, something went wrong");
     }
   });
 })
+
+app.post('/billing', function(req, res) {
+  req_data = req.body
+  console.log("Entered billing function -> " + req_data.type);
+  console.log(req_data);
+  Stripe.initialize('sk_live_CDYuW7Nsp4dtyKXT7ifjZ47q');
+
+  if(req_data.type == "customer.subscription.created"){
+    // First things first, get the customer record.
+    customer = Stripe.Customers.retrieve(req_data.data.object.customer,
+      {
+        success: function(customer) {
+          // OK, got the customer and the subscription.
+          console.log("customer.subscription.created");
+          var Room = Parse.Object.extend("Room");
+          var room = new Room();
+          var notification_emails = [customer.email]
+          room.set("notification_emails", notification_emails);
+          var owners = [customer.metadata.owner_cell]
+          room.set("owners", owners);
+          room.set("owner_cmd", "ruby owner_settings.rb");
+          room.set("desc", customer.email);
+          room.set("default_cmd", "ruby default.rb");
+          room.set("default_path", "scripts");
+          room.set("stripe_sub_id", req_data.data.object.id);
+          room.set("stripe_cust_id", customer.id);
+          room.set("settings", { });
+          room.set("test_mode", false);
+          room.set("allocated", false);
+          room.set("mail_user", "no-reply@green-bot.com");
+          room.set("mail_pass", "gr33nb0t");
+          room.set("qty",100);
+          room.set("reseller", "74906");
+          room.save(null, {
+            success: function(room) {
+              // Created room. Now create user
+              console.log("Created room successfully");
+              var user = new Parse.User();
+              user.set("username", customer.email);
+              user.set("room", room);
+              user.signUp(null, {
+                success: function(user) {
+                  // Hooray! Let them use the app now.
+                  console.log("User signed up successfully");
+                  res.send("User successfully signed up.");
+                },
+                error: function(user, error) {
+                  // Show the error message somewhere and let the user try again.
+                  res.send("Create user error : "  + error.code + " " + error.message);
+                }});
+
+            },
+            error: function(room, error) {
+              console.log("Room error:");
+              console.log(JSON.stringify(error, null, 4));
+              res.send("Create room error.");
+            }
+          });
+        },
+        error: function(customer) {
+          res.send("Could not fetch customer from Stripe.");
+        }
+        });
+    }
+    else {
+      res.send("Unhandled");
+    }
+  })
+
 
 app.post('/server/alive', function(req, res) {
   console.log("Running server alive");

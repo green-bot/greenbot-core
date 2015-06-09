@@ -28,24 +28,24 @@ html(lang='en')
   body
     .container-fluid
       .bootcards-cards
-        .row
+        .row.col-md-4.col-md-offset-4
             form.form-horizontal(action="/login", method='post')
               .panel.panel-default
                 .panel-heading.clearfix
-                    h3.panel-title.pull-left KISST
+                    h3.panel-title.pull-left KISST PORTAL
                     .btn-group.pull-right
                       button.btn.btn-primary
-                        i.fa.fa-sign-in(style="color:white;")
-                          | Log In
+                        | Log In
                 .modal-body
                   .form-group
-                    label.control-label Username
-                    .col-sm-4
+                    .col-md-4
+                      label.control-label Username
+                    .col-md-8
                       input.form-control(type='text', value='', name='username')
                   .form-group
-                    label.control-label Password
-                    .col-sm-4
+                    .col-md-4
+                      label.control-label Password
+                    .col-md-8
                       input.form-control(type='password', value='', name='password')
-                .panel-footer
-                  small
+                .panel-footer.text-center
                     a(href="/reset_page") Forgot password?

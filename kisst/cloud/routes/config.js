@@ -1,6 +1,25 @@
 var bc = require('cloud/bootcards-functions.js');
 var _ = require('underscore');
 
+exports.info = function(req, res) {
+	var currentUser = Parse.User.current();
+	var room = currentUser.get("room");
+	room.fetch({
+		success: function(room) {
+			res.renderPjax('info', {
+				username: currentUser.get("username"),
+				email: currentUser.get("email"),
+				name: room.get("name"),
+				desc: room.get("desc")
+				});
+			},
+		error: function(error) {
+			console.log("Failed to get room.");
+			console.log(error);
+		}
+	});
+}
+
 exports.list = function(req, res) {
 	var currentUser = Parse.User.current();
 	var room = currentUser.get("room");

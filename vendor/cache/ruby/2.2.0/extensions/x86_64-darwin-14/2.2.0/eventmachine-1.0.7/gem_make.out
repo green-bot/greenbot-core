@@ -1,4 +1,4 @@
-/Users/thomashowe/.rvm/rubies/ruby-2.2.0/bin/ruby -r ./siteconf20150324-75677-qes9yr.rb extconf.rb 
+/Users/thomashowe/.rvm/rubies/ruby-2.2.0/bin/ruby -r ./siteconf20150604-88637-1os6tvb.rb extconf.rb
 creating Makefile
 
 make "DESTDIR=" clean
@@ -9,4 +9,4 @@ compiling rubymain.cpp
 linking shared-object fastfilereaderext.bundle
 
 make "DESTDIR=" install
-/usr/bin/install -c -m 0755 fastfilereaderext.bundle ./.gem.20150324-75677-1ew765p
+/usr/bin/install -c -m 0755 fastfilereaderext.bundle ./.gem.20150604-88637-1w033x0

@@ -1,4 +1,4 @@
-/Users/thomashowe/.rvm/rubies/ruby-2.2.0/bin/ruby -r ./siteconf20150324-75677-1oh6v1d.rb extconf.rb 
+/Users/thomashowe/.rvm/rubies/ruby-2.2.0/bin/ruby -r ./siteconf20150604-88637-9widdi.rb extconf.rb
 
 make "DESTDIR=" clean
 make: *** No rule to make target `clean'.  Stop.

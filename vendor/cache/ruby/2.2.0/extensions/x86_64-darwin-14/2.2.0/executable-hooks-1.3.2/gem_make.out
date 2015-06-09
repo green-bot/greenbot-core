@@ -1,6 +1,8 @@
-/Users/thomashowe/.rvm/rubies/ruby-2.2.0/bin/ruby -r ./siteconf20150324-75677-13xc7ow.rb extconf.rb 
-airbrake 4.1.0
+/Users/thomashowe/.rvm/rubies/ruby-2.2.0/bin/ruby -r ./siteconf20150604-89604-d56ggy.rb extconf.rb
+airbrake 4.2.1
 coderay 1.1.0
+oauth 0.4.7
+pry 0.10.1
 rake 10.4.2
 rdoc 4.2.0
 

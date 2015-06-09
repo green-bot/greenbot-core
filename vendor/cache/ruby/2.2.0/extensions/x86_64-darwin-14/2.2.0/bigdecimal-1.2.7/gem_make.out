@@ -1,4 +1,4 @@
-/Users/thomashowe/.rvm/rubies/ruby-2.2.0/bin/ruby -r ./siteconf20150324-75677-gsn1oq.rb extconf.rb 
+/Users/thomashowe/.rvm/rubies/ruby-2.2.0/bin/ruby -r ./siteconf20150604-88637-dmxo3j.rb extconf.rb
 checking for labs() in stdlib.h... yes
 checking for llabs() in stdlib.h... yes
 checking for struct RRational in ruby.h... no
@@ -13,5 +13,5 @@ compiling bigdecimal.c
 linking shared-object bigdecimal.bundle
 
 make "DESTDIR=" install
-/usr/bin/install -c -m 0755 bigdecimal.bundle ./.gem.20150324-75677-11r9aj1
+/usr/bin/install -c -m 0755 bigdecimal.bundle ./.gem.20150604-88637-1kmlzl2
 installing default bigdecimal libraries

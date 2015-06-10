@@ -1,3 +1,3 @@
-export PATH="/Users/thomashowe/.rvm/gems/ruby-2.2.0@greenbot/bin:/Users/thomashowe/.rvm/gems/ruby-2.2.0@global/bin:$PATH"
+export PATH="/Users/thomashowe/.rbenv/versions/2.2.2/bin:/usr/local/Cellar/rbenv/0.4.0/libexec:$PATH"
 export GEM_PATH="/Users/thomashowe/Documents/src/greenbot/vendor/cache/ruby/2.2.0"
 export GEM_HOME="/Users/thomashowe/Documents/src/greenbot/vendor/cache/ruby/2.2.0"

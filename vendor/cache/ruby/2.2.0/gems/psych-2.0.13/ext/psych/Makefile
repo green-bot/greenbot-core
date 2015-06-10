@@ -12,12 +12,12 @@ NULLCMD = :
 #### Start of system configuration section. ####
 
 srcdir = .
-topdir = /Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0
+topdir = /Users/thomashowe/.rbenv/versions/2.2.2/include/ruby-2.2.0
 hdrdir = $(topdir)
-arch_hdrdir = /Users/thomashowe/.rvm/rubies/ruby-2.2.0/include/ruby-2.2.0/x86_64-darwin14
+arch_hdrdir = /Users/thomashowe/.rbenv/versions/2.2.2/include/ruby-2.2.0/x86_64-darwin14
 PATH_SEPARATOR = :
 VPATH = $(srcdir):$(arch_hdrdir)/ruby:$(hdrdir)/ruby
-prefix = $(DESTDIR)/Users/thomashowe/.rvm/rubies/ruby-2.2.0
+prefix = $(DESTDIR)/Users/thomashowe/.rbenv/versions/2.2.2
 rubysitearchprefix = $(rubylibprefix)/$(sitearch)
 rubyarchprefix = $(rubylibprefix)/$(arch)
 rubylibprefix = $(libdir)/$(RUBY_BASE_NAME)
@@ -31,8 +31,8 @@ rubyhdrdir = $(includedir)/$(RUBY_VERSION_NAME)
 vendorarchdir = $(vendorlibdir)/$(sitearch)
 vendorlibdir = $(vendordir)/$(ruby_version)
 vendordir = $(rubylibprefix)/vendor_ruby
-sitearchdir = $(DESTDIR)./.gem.20150604-88637-1navu1x
-sitelibdir = $(DESTDIR)./.gem.20150604-88637-1navu1x
+sitearchdir = $(DESTDIR)./.gem.20150609-95616-1gvjohe
+sitelibdir = $(DESTDIR)./.gem.20150609-95616-1gvjohe
 sitedir = $(rubylibprefix)/site_ruby
 rubyarchdir = $(rubylibdir)/$(arch)
 rubylibdir = $(rubylibprefix)/$(ruby_version)
@@ -63,11 +63,11 @@ bindir = $(exec_prefix)/bin
 archdir = $(rubyarchdir)
 
 
-CC = gcc
-CXX = g++
-LIBRUBY = $(LIBRUBY_SO)
+CC = clang
+CXX = clang++
+LIBRUBY = $(LIBRUBY_A)
 LIBRUBY_A = lib$(RUBY_SO_NAME)-static.a
-LIBRUBYARG_SHARED = -l$(RUBY_SO_NAME)
+LIBRUBYARG_SHARED = 
 LIBRUBYARG_STATIC = -l$(RUBY_SO_NAME)-static -framework CoreFoundation
 empty =
 OUTFLAG = -o $(empty)
@@ -79,13 +79,13 @@ optflags = -O3 -fno-fast-math
 debugflags = -ggdb3
 warnflags = -Wall -Wextra -Wno-unused-parameter -Wno-parentheses -Wno-long-long -Wno-missing-field-initializers -Wunused-variable -Wpointer-arith -Wwrite-strings -Wdeclaration-after-statement -Wshorten-64-to-32 -Wimplicit-function-declaration -Wdivision-by-zero -Wdeprecated-declarations -Wextra-tokens
 CCDLFLAGS = -fno-common
-CFLAGS   = $(CCDLFLAGS) $(cflags)  -fno-common -pipe $(ARCH_FLAG)
+CFLAGS   = $(CCDLFLAGS)  -O3 -Wno-error=shorten-64-to-32  -pipe $(ARCH_FLAG)
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir)
 DEFS     = 
-CPPFLAGS =   -I/Users/thomashowe/.rvm/usr/include -I/usr/include -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT $(DEFS) $(cppflags)
+CPPFLAGS =  -I/Users/thomashowe/.rbenv/versions/2.2.2/include  -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT $(DEFS) $(cppflags)
 CXXFLAGS = $(CCDLFLAGS) $(cxxflags) $(ARCH_FLAG)
-ldflags  = -L. -fstack-protector -L/usr/local/lib -L/Users/thomashowe/.rvm/usr/lib -L/usr/lib 
-dldflags = -Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress -L/Users/thomashowe/.rvm/usr/lib -L/usr/lib  
+ldflags  = -L. -L/Users/thomashowe/.rbenv/versions/2.2.2/lib  -fstack-protector -L/usr/local/lib
+dldflags = -Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress 
 ARCH_FLAG = 
 DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
 LDSHARED = $(CC) -dynamic -bundle
@@ -94,7 +94,7 @@ AR = ar
 EXEEXT = 
 
 RUBY_INSTALL_NAME = $(RUBY_BASE_NAME)
-RUBY_SO_NAME = ruby.2.2.0
+RUBY_SO_NAME = ruby
 RUBYW_INSTALL_NAME = 
 RUBY_VERSION_NAME = $(RUBY_BASE_NAME)-$(ruby_version)
 RUBYW_BASE_NAME = rubyw
@@ -121,8 +121,8 @@ TOUCH = exit >
 
 preload = 
 
-libpath = /Users/thomashowe/.rvm/usr/lib /usr/lib . $(libdir)
-LIBPATH =  -L/Users/thomashowe/.rvm/usr/lib -L/usr/lib -L. -L$(libdir)
+libpath = . $(libdir)
+LIBPATH =  -L. -L$(libdir)
 DEFFILE = 
 
 CLEANFILES = mkmf.log
@@ -133,7 +133,7 @@ extout =
 extout_prefix = 
 target_prefix = 
 LOCAL_LIBS = 
-LIBS = $(LIBRUBYARG_SHARED) -lyaml  -lpthread -ldl -lobjc 
+LIBS =  -lyaml  -lpthread -ldl -lobjc 
 ORIG_SRCS = psych.c psych_emitter.c psych_parser.c psych_to_ruby.c psych_yaml_tree.c
 SRCS = $(ORIG_SRCS) 
 OBJS = psych.o psych_emitter.o psych_parser.o psych_to_ruby.o psych_yaml_tree.o

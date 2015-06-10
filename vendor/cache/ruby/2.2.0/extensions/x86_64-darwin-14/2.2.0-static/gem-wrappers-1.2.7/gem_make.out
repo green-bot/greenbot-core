@@ -1,0 +1,10 @@
+/Users/thomashowe/.rbenv/versions/2.2.2/bin/ruby -r ./siteconf20150609-95616-1qdijqn.rb extconf.rb
+
+make "DESTDIR=" clean
+make: *** No rule to make target `clean'.  Stop.
+
+make "DESTDIR="
+make: Nothing to be done for `all'.
+
+make "DESTDIR=" install
+make: Nothing to be done for `install'.

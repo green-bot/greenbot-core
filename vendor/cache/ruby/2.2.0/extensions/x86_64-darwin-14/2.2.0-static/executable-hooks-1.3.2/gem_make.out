@@ -1,0 +1,14 @@
+/Users/thomashowe/.rbenv/versions/2.2.2/bin/ruby -r ./siteconf20150609-95616-1k7e69x.rb extconf.rb
+airbrake 4.2.1
+coderay 1.1.0
+rake 10.4.2
+rdoc 4.2.0
+
+make "DESTDIR=" clean
+make: *** No rule to make target `clean'.  Stop.
+
+make "DESTDIR="
+make: Nothing to be done for `all'.
+
+make "DESTDIR=" install
+make: Nothing to be done for `install'.

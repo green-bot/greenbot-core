@@ -13,10 +13,10 @@ Gem::Specification.new do |s|
   s.email = ["nicolas.fouche@gmail.com"]
   s.homepage = "https://github.com/nfo/gmail_xoauth"
   s.rdoc_options = ["--charset=UTF-8"]
-  s.rubygems_version = "2.4.6"
+  s.rubygems_version = "2.4.5"
   s.summary = "Get access to Gmail IMAP and STMP via OAuth, using the standard Ruby Net libraries"
 
-  s.installed_by_version = "2.4.6" if s.respond_to? :installed_by_version
+  s.installed_by_version = "2.4.5" if s.respond_to? :installed_by_version
 
   if s.respond_to? :specification_version then
     s.specification_version = 3

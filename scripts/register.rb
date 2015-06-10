@@ -26,7 +26,7 @@ begin
     tell ENV['INFO_PROMPT']
     if spots_left < 1
       tell ENV['CLASS_FULL']
-      return
+      break
     end
 
     if confirm(ENV['REGISTER_PROMPT'])

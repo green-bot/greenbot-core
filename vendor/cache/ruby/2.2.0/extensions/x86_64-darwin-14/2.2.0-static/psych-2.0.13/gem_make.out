@@ -1,0 +1,17 @@
+/Users/thomashowe/.rbenv/versions/2.2.2/bin/ruby -r ./siteconf20150609-95616-xvvxgz.rb extconf.rb
+checking for yaml.h... yes
+checking for yaml_get_version() in -lyaml... yes
+creating Makefile
+
+make "DESTDIR=" clean
+
+make "DESTDIR="
+compiling psych.c
+compiling psych_emitter.c
+compiling psych_parser.c
+compiling psych_to_ruby.c
+compiling psych_yaml_tree.c
+linking shared-object psych.bundle
+
+make "DESTDIR=" install
+/usr/bin/install -c -m 0755 psych.bundle ./.gem.20150609-95616-1gvjohe

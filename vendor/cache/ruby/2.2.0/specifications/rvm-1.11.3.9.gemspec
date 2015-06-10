@@ -13,8 +13,8 @@ Gem::Specification.new do |s|
   s.email = ["wayneeseguin@gmail.com", "mpapis@gmail.com"]
   s.homepage = "http://rvm.io/"
   s.licenses = ["MIT"]
-  s.rubygems_version = "2.4.6"
+  s.rubygems_version = "2.4.5"
   s.summary = "RVM Ruby Gem Library"
 
-  s.installed_by_version = "2.4.6" if s.respond_to? :installed_by_version
+  s.installed_by_version = "2.4.5" if s.respond_to? :installed_by_version
 end

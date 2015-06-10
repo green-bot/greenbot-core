@@ -118,10 +118,15 @@ module.exports = (robot) ->
       # Setup callbacks for incoming data
       @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
       @process.on "exit", (code, signal) => @end_and_record_session()
+      @process.on "error", (err) =>
+        robot.emit "log", "Error thrown from session"
+        robot.emit "log", err
+      @process.stderr.on "data", (buffer) =>
+        robot.emit "log", "Received from stderr #{buffer}"
 
       # Tell the world that the blessed event has occured
       robot.emit "session:start", @
-      robot.emit "log", "New session started : #{@user}|#{@room_name}|#{@arguments}"
+      robot.emit "log", "New session started : #{JSON.stringify @user}|#{JSON.stringify @room_name}|#{@arguments}"
 
     end_and_record_session: () =>
       console.log "Ending and recording session #{@session_id}"
@@ -131,6 +136,12 @@ module.exports = (robot) ->
         @save_transcript,
         @save_session,
         @delete_session])
+
+    describe: () =>
+      console.log("Describing session : #{@session_id}")
+      console.log("ID: #{@process.pid}")
+      console.log("NAME: #{@process.title}")
+      console.log("UPTIME: #{@process.uptime}")
 
     send_goodbye: (callback) =>
       if @room.show_ad == true
@@ -280,6 +291,8 @@ module.exports = (robot) ->
 
 
     send_cmd_to_session: (cmd ) =>
+      robot.emit "log", "Tried to send cmd #{cmd} to a disconnected session" if @process.connected
+      @describe
       @process.stdin.write("#{cmd}\n")
       @update_transcript(@src, cmd)
       robot.emit("session:inbound_msg", @, cmd)
@@ -311,14 +324,17 @@ module.exports = (robot) ->
 
   create_session = (msg, room) ->
     new_session = new Session(msg.message, room)
-    console.log "New session #{new_session.session_key} (session_id #{new_session.session_id}) between #{new_session.user.name} and #{new_session.user.room}"
+    robot.emit "log", "New session #{new_session.session_key} (session_id #{new_session.session_id}) between #{new_session.user.name} and #{new_session.user.room}"
     robot.sessions[new_session.session_key] = new_session
 
 
   robot.hear /(.*)/i, (msg) =>
+    console.log "Just heard #{JSON.stringify msg.message}"
     session_key = msg.message.user.name.toLowerCase() + "_" + msg.message.room.toLowerCase()
     session = robot.sessions[session_key]
     if session
+      robot.emit 'log', "This is a current session."
+      session.describe()
       clean_text = msg.message.text.trim().toLowerCase()
       switch clean_text
         when "/quit"
@@ -345,13 +361,14 @@ module.exports = (robot) ->
       #Add the collected data. That's a great idea.
       console.log("Session ended. Who do we have to tell?")
       if session.room.webhook_url?
-        console.log "Completed. Notifying #{session.settings.webhook_url}"
-        Request.get "#{session.settings.webhook_url}?session_id=#{session.session_id}", null,
-          (error, response, body) =>
-            if error
-              console.log "Webhook returned error"
-              console.log body
-              console.log error
+        console.log "Completed. Notifying #{session.room.webhook_url}"
+        Request
+        .post session.room.webhook_url
+        .form session
+        .on 'response', (response) =>
+          console.log(response.statusCode) // 200
+          console.log(response.headers['content-type']) // 'image/png'
+
       if session.room.notification_emails?
         # Create a SMTP transporter object
         console.log("Sending notification email")
@@ -382,4 +399,3 @@ module.exports = (robot) ->
   robot.on "session:chat_arrived", (session_key, chat_msg) =>
     session = robot.sessions[session_key]
     session.handle_incoming_msg(chat_msg)
-    

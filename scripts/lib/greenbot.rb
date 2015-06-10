@@ -1,4 +1,6 @@
 require "rubygems"
+require "bundler/setup"
+
 require "highline/import"
 require "yaml"
 require "json"

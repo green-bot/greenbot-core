@@ -1,7 +1,7 @@
 /*
 Theme: Flatfy Theme
 Author: Andrea Galanti
-Bootstrap Version 
+Bootstrap Version
 Build: 1.0
 http://www.andreagalanti.it
 */
@@ -210,7 +210,6 @@ you can use the generic selector below, but it's slower:
 body {
   height: 100%;
   width: 100%;
-  font-family: 'Roboto', sans-serif;
   font-size: 16px;
   line-height: 1.72222;
   color: #34495e;
@@ -330,7 +329,7 @@ li{list-style-type:none}
 }
 @media (min-width: 768px) {
   .lead {
-	
+
   }
 }
 small,
@@ -4718,11 +4717,11 @@ footer p {
 /* All Mobile Sizes (devices and browser) */
 	@media only screen and (max-width: 767px) {
 		p{text-align: center;}
-		
+
 		h1, .h1 {
 			font-size: 50px;
 		}
-		
+
 		h3, .h3 {
 			font-size: 20px;
 			text-align:center
@@ -4749,27 +4748,27 @@ footer p {
 	}
 
 	@media only screen and (min-width: 768px) and (max-width: 959px) {
-		
-		
+
+
 		h1, .h1 {
 			font-size: 50px;
 		}
-		
+
 		h3, .h3 {
 			font-size: 20px;
-			
+
 		}
 		.col-sm-4 {margin-bottom: 120px; text-align:center;}
-		
+
 		.col-sm-5 {margin-top:120px}
 		.box-ct{text-align:center}
-		
+
 		.box-icon{margin: 0 auto;}
 		address{margin-top:80px;}
 		.address{text-align:center}
 		.footer-banner{display:none}
-		
-		
-		
-		
+
+
+
+
 	}

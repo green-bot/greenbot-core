@@ -16,10 +16,10 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/mikel/mail"
   s.licenses = ["MIT"]
   s.rdoc_options = ["--exclude", "lib/mail/values/unicode_tables.dat"]
-  s.rubygems_version = "2.4.6"
+  s.rubygems_version = "2.4.5"
   s.summary = "Mail provides a nice Ruby DSL for making, sending and reading emails."
 
-  s.installed_by_version = "2.4.6" if s.respond_to? :installed_by_version
+  s.installed_by_version = "2.4.5" if s.respond_to? :installed_by_version
 
   if s.respond_to? :specification_version then
     s.specification_version = 4

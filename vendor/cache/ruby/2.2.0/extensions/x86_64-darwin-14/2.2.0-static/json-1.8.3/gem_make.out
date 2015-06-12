@@ -1,0 +1,9 @@
+/Users/thomashowe/.rbenv/versions/2.2.2/bin/ruby -r ./siteconf20150609-95616-1b8hllu.rb extconf.rb
+creating Makefile
+
+make "DESTDIR=" clean
+
+make "DESTDIR="
+make: Nothing to be done for `all'.
+
+make "DESTDIR=" install

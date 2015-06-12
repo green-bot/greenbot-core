@@ -1,0 +1,21 @@
+extends ./layout
+
+block content
+  .row.col-sm-6.col-md-8
+    .panel.panel-default
+      .panel-heading.clearfix
+        h3.panel-title.pull-left Information
+      .list-group
+        .list-group-item
+          h4.list-group-item-heading Username
+          p.list-group-item-text #{username}
+        if email
+          .list-group-item
+            h4.list-group-item-heading Email
+            p.list-group-item-text #{email}
+        .list-group-item
+          h4.list-group-item-heading Name
+          p.list-group-item-text #{name}
+        .list-group-item
+          h4.list-group-item-heading Description
+          p.list-group-item-text #{desc}

@@ -15,10 +15,10 @@ Gem::Specification.new do |s|
   s.files = ["ext/wrapper_generator/extconf.rb"]
   s.homepage = "https://github.com/rvm/gem-wrappers"
   s.licenses = ["Apache 2.0"]
-  s.rubygems_version = "2.4.6"
+  s.rubygems_version = "2.4.5"
   s.summary = "Create gem wrappers for easy use of gems in cron and other system locations."
 
-  s.installed_by_version = "2.4.6" if s.respond_to? :installed_by_version
+  s.installed_by_version = "2.4.5" if s.respond_to? :installed_by_version
 
   if s.respond_to? :specification_version then
     s.specification_version = 4

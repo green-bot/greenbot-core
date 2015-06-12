@@ -1,3 +1,0 @@
-export PATH="/usr/local/heroku/bin:/Users/thomashowe/.rbenv/shims:$PATH"
-export GEM_PATH="/Users/thomashowe/Documents/src/greenbot/vendor/cache/ruby/2.0.0"
-export GEM_HOME="/Users/thomashowe/Documents/src/greenbot/vendor/cache/ruby/2.0.0"

@@ -17,10 +17,10 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/mpapis/executable-hooks"
   s.licenses = ["Apache 2.0"]
   s.post_install_message = "# In case of problems run the following command to update binstubs:\ngem regenerate_binstubs\n"
-  s.rubygems_version = "2.4.6"
+  s.rubygems_version = "2.4.5"
   s.summary = "Hook into rubygems executables allowing extra actions to be taken before executable is run."
 
-  s.installed_by_version = "2.4.6" if s.respond_to? :installed_by_version
+  s.installed_by_version = "2.4.5" if s.respond_to? :installed_by_version
 
   if s.respond_to? :specification_version then
     s.specification_version = 4

@@ -1,4 +1,4 @@
-doctype 5
+doctype html
 html(lang='en')
   head
     meta(charset='utf-8')
@@ -38,6 +38,11 @@ html(lang='en')
           #bs-example-navbar-collapse-1.collapse.navbar-collapse
             ul.nav.navbar-nav
               li.active
+                a(href='/portal/config/info')
+                  h4
+                    i.fa.fa-info.fa-lg
+                    | Information
+              li
                 a(href='/portal/conversations')
                   h4
                     i.fa.fa-comments-o.fa-lg
@@ -60,3 +65,5 @@ html(lang='en')
 
     #main.container.bootcards-container
       block content
+
+    block dialogs

@@ -15,8 +15,8 @@ Gem::Specification.new do |s|
   s.extensions = ["extconf.rb"]
   s.files = ["extconf.rb"]
   s.homepage = "http://www.ruby-lang.org"
-  s.rubygems_version = "2.4.6"
+  s.rubygems_version = "2.4.5"
   s.summary = "Arbitrary-precision decimal floating-point number library."
 
-  s.installed_by_version = "2.4.6" if s.respond_to? :installed_by_version
+  s.installed_by_version = "2.4.5" if s.respond_to? :installed_by_version
 end

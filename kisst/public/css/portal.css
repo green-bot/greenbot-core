@@ -1,4 +1,8 @@
 /* Colors from http://paletton.com/#uid=52k0u0kfmgt9kq-delBkIdZpzae */
+html,body {
+height:100%;
+font-family: 'Source Sans Pro', sans-serif;
+}
 
 .color-primary-0 { color: #697B40 }	/* Main Primary color */
 .color-primary-1 { color: #B5C78D }
@@ -111,7 +115,6 @@ body {
 
 .btn-primary {
    background-color: #394C0F;
-  font-family: "Lato", Helvetica, Arial, sans-serif!important;
 }
 .btn-primary:hover {
    background-color: #394C0F;
@@ -230,21 +233,4 @@ a.list-group-item:before {
       border-radius: 0;
       color:white;
       overflow:auto;
-}
-
-
-body,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-.h1,
-.h2,
-.h3,
-.h4,
-.h5,
-.h6 {
-    font-family: "Lato", Helvetica, Arial, sans-serif!important;
 }

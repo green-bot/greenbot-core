@@ -1,0 +1,17 @@
+/Users/thomashowe/.rbenv/versions/2.2.2/bin/ruby -r ./siteconf20150609-95616-qj2l5p.rb extconf.rb
+checking for labs() in stdlib.h... yes
+checking for llabs() in stdlib.h... yes
+checking for struct RRational in ruby.h... no
+checking for rb_rational_num() in ruby.h... yes
+checking for rb_rational_den() in ruby.h... yes
+creating Makefile
+
+make "DESTDIR=" clean
+
+make "DESTDIR="
+compiling bigdecimal.c
+linking shared-object bigdecimal.bundle
+
+make "DESTDIR=" install
+/usr/bin/install -c -m 0755 bigdecimal.bundle ./.gem.20150609-95616-1mj9985
+installing default bigdecimal libraries

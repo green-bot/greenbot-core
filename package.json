@@ -19,6 +19,7 @@
     "hubot-heroku-keepalive": "0.0.4",
     "hubot-maps": "0.0.1",
     "hubot-nexmo": "*",
+    "hubot-bw" : "*",
     "hubot-pugme": "^0.1.0",
     "hubot-redis-brain": "0.0.2",
     "hubot-rules": "^0.1.0",

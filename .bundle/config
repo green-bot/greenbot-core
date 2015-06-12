@@ -1,4 +1,5 @@
 ---
 BUNDLE_PATH: vendor/cache
 BUNDLE_DISABLE_SHARED_GEMS: '1'
-BUNDLE_CLEAN: true
+BUNDLE_CLEAN: 'true'
+BUNDLE_BIN: bin

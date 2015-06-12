@@ -26,7 +26,7 @@ template_room = Room.new(@template_room_name)
 Room.create(@new_room, template_room.options)
 
 
-unless @network == "tsg"
+if @network == "nexmo"
   #Now, do the nexmo part
   nexmo = Nexmo::Client.new
   nexmo.update_number( {

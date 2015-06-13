@@ -362,12 +362,10 @@ module.exports = (robot) ->
       console.log("Session ended. Who do we have to tell?")
       if session.room.webhook_url?
         console.log "Completed. Notifying #{session.room.webhook_url}"
-        Request
-        .post session.room.webhook_url
-        .form session
-        .on 'response', (response) =>
-          console.log(response.statusCode) // 200
-          console.log(response.headers['content-type']) // 'image/png'
+        Request.post(session.room.webhook_url).form(session)
+          .on 'response', (response) =>
+            console.log(response.statusCode) 
+            console.log(response.headers['content-type']) 
       else
         console.log "No webhook_url"
         console.log JSON.stringify session.room

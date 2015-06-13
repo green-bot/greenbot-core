@@ -40,7 +40,8 @@ module.exports = (robot) ->
 
   session_announce_end = (session_key) ->
     slack_client = clients_by_key[session_key]
-    slack_client.announce_channel.send("#{session_key} has just ended")
+    if slack_client?
+      slack_client.announce_channel.send("#{session_key} has just ended")
 
   # Every integratin needs a slack client. Then can be shared
   # among sessions.
@@ -135,7 +136,8 @@ module.exports = (robot) ->
     session_key = session.session_key
     channel = channels_by_session_keys[session_key]
     slack_client = clients_by_key[session_key]
-    slack_client.emit 'send', channel, msg
+    if slack_client?
+      slack_client.emit 'send', channel, msg
 
   robot.on "session:end", (session) ->
     session_announce_end(session.session_key)

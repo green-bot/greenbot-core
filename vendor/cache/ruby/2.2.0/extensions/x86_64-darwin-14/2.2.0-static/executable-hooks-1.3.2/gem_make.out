@@ -1,6 +1,8 @@
-/Users/thomashowe/.rbenv/versions/2.2.2/bin/ruby -r ./siteconf20150609-95616-1k7e69x.rb extconf.rb
+/Users/thomashowe/.rbenv/versions/2.2.2/bin/ruby -r ./siteconf20150612-40556-1p5qxmt.rb extconf.rb 
 airbrake 4.2.1
 coderay 1.1.0
+oauth 0.4.7
+pry 0.10.1
 rake 10.4.2
 rdoc 4.2.0
 

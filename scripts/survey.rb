@@ -27,11 +27,11 @@ begin
     data_prompts['DATA_PROMPT_10'] = ENV['DATA_PROMPT_10'] if ENV['DATA_PROMPT_10']
 
     data_prompts.each do |k,v|
-      answer = confirmed_gets(v)
+      answer = ask(v)
       answer.remember(k)
     end
+    tell ENV['SIGNATURE']
   }
 rescue Timeout::Error  => e
   tell "If you want to restart this conversation, text us again!"
 end
-tell ENV['SIGNATURE']

@@ -12,16 +12,17 @@ begin
     tell ENV['PROMPT_1']
     tell ENV['PROMPT_2']
 
-    data_prompts = {}
-    data_prompts['DATA_PROMPT_1'] = ENV['DATA_PROMPT_1'] unless ENV['DATA_PROMPT_1'].empty?
-    data_prompts['DATA_PROMPT_2'] = ENV['DATA_PROMPT_2'] unless ENV['DATA_PROMPT_2'].empty?
-    data_prompts['DATA_PROMPT_3'] = ENV['DATA_PROMPT_3'] unless ENV['DATA_PROMPT_3'].empty?
 
-    data_prompts.each do |k,v|
-      answer = confirmed_gets(v)
-      answer.remember(k)
+    name = confirmed_gets(ENV['NAME_PROMPT']) if ENV['NAME_PROMPT']
+    prompts = %w( DATA_PROMPT_1 DATA_PROMPT_2 DATA_PROMPT_3)
+    data_prompts = []
+    prompts.each do |p|
+      if ENV[p].size > 0
+        answer = ask(ENV[p])
+        answer.remember(p)
+      end
     end
-
+    
     answer = confirm(ENV['QUESTION_PROMPT'])
     answer.remember("ANSWER")
     if answer

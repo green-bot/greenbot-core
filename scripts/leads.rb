@@ -6,21 +6,25 @@ require "timeout"
 
 HOUR = 60 * 60
 timeout = ENV['CONVERSATION_TIMEOUT'].to_i || 4 * HOUR
-
+CONFIRMATION_PROMPT = ENV['CONFIRMATION_PROMPT'] || "Would you like someone to contact you?"
+NAME_PROMPT = ENV['NAME_PROMPT'] || "When we call, who should we ask for?"
+OTHER_CONTACT_CONFIRM = ENV['OTHER_CONTACT'] || "Is there another number we should try?"
+OTHER_CONTACT_PROMPT = ENV['OTHER_CONTACT_PROMPT'] || "Please enter that number with an area code"
+NOTE_PROMPT = ENV['NOTE_PROMPT'] || "How can we help you? Please use as many messages as you need."
 begin
   Timeout::timeout(timeout) {
     tell ENV['PROMPT_1']
     tell ENV['PROMPT_2']
-    if confirm("Would you like someone to contact you?")
-      contact_me = true
-      contact_me.remember("remember_me")
-      name = ask("When we call, who should we ask for?")
-      name.remember("who_to_ask_for")
-      if confirm("Is there another number we should try?")
-        better_number = ask("Please enter that number with an area code")
-        better_number.remember("better_number")
+    if confirm(CONFIRMATION_PROMPT)
+      confirmed = true
+      confirmed.remember("confirmed")
+      name = ask(NAME_PROMPT)
+      name.remember("name")
+      if confirm(OTHER_CONTACT_CONFIRM)
+        other_contact = ask(OTHER_CONTACT_PROMPT)
+        better_number.remember("other_contact")
       end
-      issue = note("How can we help you? Please use as many messages as you need.")
+      issue = note(NOTE_PROMPT)
     else
       tell("No problem at all.")
     end

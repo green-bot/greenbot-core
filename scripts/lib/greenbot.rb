@@ -120,7 +120,7 @@ def note(prompt)
       tell "Note taking mode complete."
     else
       note << response
-      response = ask("Currently in note taking mode. Send as many messages as you like, send a message with a single character to end note taking. ")
+      response = ask("Still listening here. Send as many messages as you like, send a Q to end. ")
     end
   end while not complete
   return note

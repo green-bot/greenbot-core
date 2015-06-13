@@ -28,7 +28,7 @@ GEM
     method_source (0.8.2)
     mime-types (2.6.1)
     minitest (5.7.0)
-    multi_json (1.11.0)
+    multi_json (1.11.1)
     multipart-post (2.0.0)
     nexmo (3.0.0)
     oauth (0.4.7)
@@ -93,3 +93,6 @@ DEPENDENCIES
   slop
   test-unit
   uuidtools
+
+BUNDLED WITH
+   1.10.3

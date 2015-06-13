@@ -17,10 +17,10 @@ begin
     data_prompts = []
     prompts.each do |p|
       unless ENV[p].nil?
-        answer = ask(p)
+        answer = ask(ENV[p])
         answer.remember(p)
       end
-    end    
+    end
     tell ENV['SIGNATURE']
   }
 rescue Timeout::Error  => e

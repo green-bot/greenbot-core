@@ -22,7 +22,7 @@ begin
       name.remember("name")
       if confirm(OTHER_CONTACT_CONFIRM)
         other_contact = ask(OTHER_CONTACT_PROMPT)
-        better_number.remember("other_contact")
+        other_contact.remember("other_contact")
       end
       issue = note(NOTE_PROMPT)
     else

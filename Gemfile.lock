@@ -22,7 +22,6 @@ GEM
     gmail_xoauth (0.4.1)
       oauth (>= 0.3.6)
     highline (1.7.2)
-    io-console (0.4.3)
     json (1.8.3)
     mail (2.6.3)
       mime-types (>= 1.16, < 3)
@@ -73,7 +72,6 @@ DEPENDENCIES
   gmail
   gmail_xoauth
   highline (>= 1.7.1)
-  io-console
   json
   mail
   method_source

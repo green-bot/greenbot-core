@@ -368,6 +368,9 @@ module.exports = (robot) ->
         .on 'response', (response) =>
           console.log(response.statusCode) // 200
           console.log(response.headers['content-type']) // 'image/png'
+      else
+        console.log "No webhook_url"
+        console.log JSON.stringify session.room
 
       if session.room.notification_emails?
         # Create a SMTP transporter object

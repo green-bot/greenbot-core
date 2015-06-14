@@ -25,6 +25,7 @@ begin
         other_contact.remember("other_contact")
       end
       issue = note(NOTE_PROMPT)
+      issue.remember("note")
     else
       tell("No problem at all.")
     end

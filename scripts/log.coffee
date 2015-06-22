@@ -8,3 +8,4 @@ module.exports = (robot) ->
 
   robot.on "log", (string) ->
     logger.info string
+    console.log string

@@ -106,6 +106,7 @@ app.post('/portal/config/owner_add', config.owner_add);
 app.get('/portal/config/notification_emails', config.notification_emails);
 app.get('/portal/config/notification_email_delete', config.notification_email_delete);
 app.post('/portal/config/notification_email_add', config.notification_email_add);
+app.post('/portal/config/notification_creds_update', config.notification_creds_update);
 app.get('/portal/config/type', config.type);
 app.get('/portal/conversations', conversation.list);
 app.get('/portal/config/info', config.info);

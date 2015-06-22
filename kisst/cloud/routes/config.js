@@ -207,8 +207,12 @@ exports.notification_emails = function(req, res) {
 	room.fetch({
 		success: function(room) {
 			var notification_emails = room.get("notification_emails");
+			var mail_user = room.get("mail_user");
+			var mail_pass = room.get("mail_pass");
 			res.render('notification_emails', {
-				notification_emails: notification_emails
+				notification_emails: notification_emails,
+				mail_user: mail_user,
+				mail_pass: mail_pass
 				});
 			},
 		error: function(error) {
@@ -255,7 +259,7 @@ exports.notification_email_add = function(req, res) {
 	room.fetch({
 		success: function(room) {
 			var notification_emails = room.get("notification_emails");
-			var notification_email = req.body.email
+			var notification_email = req.body.email;
 			notification_emails.push(notification_email);
 			room.set("notification_emails", notification_emails);
 			room.save({
@@ -274,6 +278,40 @@ exports.notification_email_add = function(req, res) {
 		}
 	});
 }
+exports.notification_creds_update = function(req, res) {
+	var currentUser = Parse.User.current();
+	var room = currentUser.get("room");
+	room.fetch({
+		success: function(room) {
+			console.log("Fetched room successfully");
+			console.log("About to save user name " + req.body.mail_user);
+			console.log("About to save user name " + req.body.mail_pass);
+			room.set("mail_user", req.body.mail_user);
+			room.set("mail_pass", req.body.mail_pass);
+			room.save({
+				success: function() {
+					console.log("Saved room successfully");
+					res.redirect('/portal/settings');
+				},
+				error: function() {
+					console.log("Could not save room.");
+					res.redirect('/portal/config/notification_emails');
+				}
+			});
+			},
+		error: function(error) {
+			console.log("Failed to get notification_emails.");
+			console.log(error);
+			res.redirect('/portal/config');
+		}
+	});
+}
+
+
+
+
+
+
 exports.type = function(req, res) {
 	var currentUser = Parse.User.current();
 	var room = currentUser.get("room");

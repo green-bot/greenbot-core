@@ -1,7 +1,7 @@
 extends ./layout
 
 block content
-  .col-sm-6
+  .col-sm-6.col-sm-offset-3
     .panel.panel-default
       .bootcards-list
         .panel-heading
@@ -9,7 +9,7 @@ block content
           ul.pull-right.no-list-dots
             li
               a(data-toggle="collapse", href="#new_email", aria-expanded="false", aria-controls="new_email")
-                i.fa.fa-plus-square.fa-2x
+                i.fa.fa-plus-square
 
         #new_email.collapse
           .panel-body
@@ -25,3 +25,22 @@ block content
                 =notification_email
                 a(href='/portal/config/notification_email_delete?email=#{encodeURIComponent(notification_email)}', data-pjax='#main')
                   i.fa.fa-trash-o.fa-lg
+
+    .panel.panel-default
+      form.form-horizontal(method="POST", action="/portal/config/notification_creds_update")
+        .bootcards-list
+          .panel-heading
+            span.title GMail Settings
+              ul.pull-right.no-list-dots
+                li
+                  button
+                    span.panel-default
+                      i.fa.fa-sign-in.panel-default
+                      |   Save
+          .panel-body
+            .input-group
+              label.col-xs-4.control-label User
+              input.form-control(name="mail_user", value=mail_user, placeholder="GMail User Name")
+            .input-group
+              label.col-xs-4.control-label Password
+              input.form-control(name="mail_pass", value=mail_pass, placeholder="GMail Password", type="password")

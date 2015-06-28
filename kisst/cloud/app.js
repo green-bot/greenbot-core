@@ -113,6 +113,7 @@ app.get('/portal/config/info', config.info);
 app.get('/portal/conversations/:id', conversation.read);
 app.get('/portal/config', config.list);
 app.get('/portal/config/edit', config.edit);
+app.get('/portal/config/network', config.network_type);
 app.post('/portal/config/save', config.save);
 app.post('/reset_request', config.reset_request);
 app.get('/portal/settings', function(req, res) {

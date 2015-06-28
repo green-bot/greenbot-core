@@ -1,0 +1,21 @@
+extends ./layout
+
+block content
+  .row.col-sm-6
+    .bootcards-list
+      .panel.panel-default.bootcards-summary
+        .panel-heading.clearfix
+          h3.panel-title.pull-left Networks
+        .panel-body
+          h4
+            | You can attach your KISST service to other networks!
+          .row
+            each network in networks
+              .col-xs-6.col-sm-6
+                a.bootcards-summary-item
+                  i.fa.fa-3x.fa-plug
+                  h4= network
+                    if network == current_network
+                      span.label.label-info
+                        | current
+                        i.fa.fa-check

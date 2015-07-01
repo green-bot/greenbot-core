@@ -34,7 +34,6 @@ Parse = require('node-parse-api').Parse
 Async = require('async')
 BitlyAPI = require('node-bitlyapi')
 
-
 module.exports = (robot) ->
   robot.sessions = {}
   redis_client = Redis.createClient()
@@ -53,7 +52,7 @@ module.exports = (robot) ->
     STR_PAD_RIGHT = 2
     STR_PAD_BOTH = 3
 
-    constructor: (message, room)->
+    constructor: (message, room, @visitor, @visitor_settings)->
       # The variables that make up a Session
       @user = message.user    # This is the user structure from hubot.
       @src = @user.name.toLowerCase()
@@ -144,43 +143,44 @@ module.exports = (robot) ->
 
     delete_session: (callback) =>
       delete robot.sessions[@session_key]
+      robot.emit "session:end", @session_key
       #Add the collected data. That's a great idea.
       @log "Session ended. Who do we have to tell?"
-      if session.room.webhook_url?
+      if @room.webhook_url?
         @log "Completed. Notifying #{session.room.webhook_url}"
-        Request.post(session.room.webhook_url).form(session)
+        Request.post(@room.webhook_url).form(session)
           .on 'response', (response) ->
             @log response.statusCode
             @log response.headers['content-type']
       else
-        log "No webhook_url"
-        log JSON.stringify session.room
+        @log "No webhook_url"
+        @log JSON.stringify @room
 
-      if session.room.notification_emails?
+      if @room.notification_emails?
         # Create a SMTP transporter object
-        log "Sending notification email"
+        @log "Sending notification email"
         transporter = Mailer.createTransport(
           service: "gmail"
           auth:
-            user: session.room.mail_user
-            pass: session.room.mail_pass
+            user: @room.mail_user
+            pass: @room.mail_pass
         )
         # Message object
-        recipients = session.room.notification_emails.join(",")
+        recipients = @room.notification_emails.join(",")
         message =
-          from: session.room.mail_user
+          from: @room.mail_user
           to: recipients
           subject: "Conversation Complete"
-          text: session.transcript
+          text: @transcript
 
-        log "Sending Mail to #{recipients}"
-        transporter.sendMail message, (error, info) ->
+        @log "Sending Mail to #{recipients}"
+        transporter.sendMail message, (error, info) =>
           if error
-            log "Error occurred"
-            log error.message
+            @log "Error occurred"
+            @log error.message
             return
-          log "Message sent successfully!"
-          log "Server responded with \"%s\"", info.response
+          @log "Message sent successfully!"
+          @log "Server responded with \"%s\"", info.response
           return
       callback(null, "No goodbyes")
 
@@ -191,6 +191,9 @@ module.exports = (robot) ->
       env.DST = @user.room
       for attrname of @room.settings
         env[attrname] = @room.settings[attrname]
+      for key, value of @visitor_settings
+        env[key] = value
+      @log "Settings: #{JSON.stringify env}"
       return env
 
     is_owner: () ->
@@ -214,9 +217,6 @@ module.exports = (robot) ->
     handle_incoming_msg: (text) =>
       # If the message is JSON, treat it as if it were collected data
       # If so, stick it in a session_id in REDIS for somebody else to handle.
-      robot.emit "session:egress_msg",
-          session: @session_id
-          text: text
 
       @log "Working with #{text}"
       lines = text.toString().split("\n")
@@ -224,8 +224,8 @@ module.exports = (robot) ->
         line = line.trim()
         if @is_json_string line
           msg =
-            session:  @session_id
-            data:     line
+            session:  @
+            collected_data:     line
           robot.emit "session:data", msg
         else
           # It's not JSON, gotta be a message.
@@ -235,10 +235,9 @@ module.exports = (robot) ->
           # like Nexmo, this is a one message per second rate.
           if line.length > 0
             robot.send @user, line
-            msg =
-              session:  @session_id
-              data:     line
-            robot.emit "session:egress_msg", msg
+            robot.emit "session:egress_msg",
+                session: @
+                text: line
 
     send_cmd_to_session: (cmd ) =>
       log "Error cmd #{cmd} to a disconnected session" if @process.connected
@@ -246,24 +245,25 @@ module.exports = (robot) ->
       @process.stdin.write("#{cmd}\n")
       robot.emit("session:inbound_msg", @, cmd)
 
-  create_session = (msg, room) ->
-    new_session = new Session(msg.message, room)
+  create_session = (msg, room, visitor, visitor_settings) ->
+    new_session = new Session(msg.message, room, visitor, visitor_settings)
     robot.sessions[new_session.session_key] = new_session
 
 
   robot.hear /(.*)/i, (msg) ->
-    session_key = msg.message.user.name.toLowerCase() +
-      "_" + msg.message.room.toLowerCase()
+    visitor_name = msg.message.user.name.toLowerCase()
+    room_name = msg.message.room.toLowerCase()
+    session_key =  visitor + "_" + room_name
     session = robot.sessions[session_key]
+    clean_text = msg.message.text.trim().toLowerCase()
     if session
-      clean_text = msg.message.text.trim().toLowerCase()
       switch clean_text
         when "/quit"
           session.process.kill("SIGHUP")
         else
           robot.emit "log", "Sending #{msg.message.text}"
           robot.emit "session:ingress_msg",
-              session: session_key
+              session: session
               text: msg.message.text
 
           session.send_cmd_to_session(msg.message.text)
@@ -272,15 +272,68 @@ module.exports = (robot) ->
       # If there are not, then create an empty template for this room
       # That allows the named owner the ability to set it up.
       robot.emit "log", "Starting a new session"
-      room_name =  "#{msg.message.room.toLowerCase()}"
-      parse.findMany 'Rooms', { name: room_name }, (err, response) ->
-        rooms = response.results
-        if err or (rooms.length == 0)
-          robot.emit "log", "Cannot setup room - no room defined"
-        else
-          room = rooms.shift()
-          robot.emit "log", "Found room #{room.name}"
-          create_session(msg, room)
+      visitor_settings = {}
+      visitor = null
+
+      Async.series [
+        (callback) ->
+          parse.findMany 'Visitors', { name: visitor_name }, (err, response) ->
+            visitors = response.results
+            robot.emit "log", "Visitors :#{ JSON.stringify response.results}"
+            if visitors.length == 0
+              # This is a new visitor. Make him
+              visitor_data =
+                name: visitor_name
+                anonymous: false
+              parse.insert 'Visitors', visitor_data, (err, response) ->
+                visitor = response.results
+                robot.emit "log", "New visitor : #{JSON.stringify visitor}"
+                callback null, true
+            else
+              [visitor, ...] = visitors
+              robot.emit "log", "Returning visitor : #{JSON.stringify visitor}"
+              parse.findMany 'VisitorData',
+                visitor:
+                  __type: "Pointer"
+                  className: "Visitors"
+                  objectId: visitor.objectId
+                , (err, response) ->
+                  if err
+                    robot.emit "log", "Setting error : #{err}"
+                  else
+                    settings = response.results
+                    robot.emit "log", "Settings: #{JSON.stringify settings}"
+                    for setting in settings
+                      visitor_settings[setting.key] = setting.value
+                  callback null, true
+        , (callback) ->
+          parse.findMany 'Rooms', { name: room_name}, (err, response) ->
+            rooms = response.results
+            robot.emit "log", "Found rooms : #{JSON.stringify rooms}"
+            # We support /commands on startup as well.
+            # If they say /help, or /rooms, give them a list of them
+            help_commands = ["help", "?", "rooms", "/help", "/rooms"]
+            if clean_text in help_commands
+              avail_rooms = (room.keyword for room in rooms)
+              msg.reply "Supported options: #{avail_rooms.toString()}"
+              return
+            if err or (rooms.length == 0)
+              robot.emit "log", "Cannot setup room - no room defined"
+            else
+              keywords = (room.keyword for room in rooms)
+              robot.emit "log", "Found keywords: #{keywords} for #{clean_text}"
+              if clean_text in keywords
+                room = (room for room in rooms when room.keyword is clean_text)
+                robot.emit "log", "Found room #{room.desc} for #{clean_text}"
+              unless room?
+                # No room matched. Use the default room
+                room = (room for room in rooms when room.default)
+              unless room?
+                # No default room? Take the first room we found.
+                [room,...] = rooms
+              robot.emit "log", "Found room #{room.name}"
+              create_session(msg, room, visitor, visitor_settings)
+      ]
 
   robot.on "session:chat_arrived", (session_key, chat_msg) ->
     session = robot.sessions[session_key]

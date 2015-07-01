@@ -1,97 +1,119 @@
-# Description
+# Description : Records the session data
 #
-# Session connects users with shell scripts. All inbound messages are handled by
-# this script, and each inbound message is sent to an arbitrary unix shell
-# script for handling. When a user sends his first message, Session will create
-# a new process and run the specified script, saving pointers to stdin, stdout
-# and stderr. Session will then pass this message into the script through stdin.
-# Any more messages from that user will be passed into the same script. If the
-# script sends messages back out, this script will forward those to the original
-# user. When the script ends, the session will also end, and the first new
-# message from that user will create a new session. Every session is identified
-# by a unique short session_id; scripts that write data to a JSON file with that
-# will be collected by this script. # As a convenience, and for further
-# processing, Session will emits events to handle session life cycle (start and
-# finish), messaging in the session (stdin, stdout, stderr) and listen for any
-# JSON file and emit that as an event as well. # Configuration: command_path:
-# The default path of the file to be executed. command: The command line to
-# execute # Notes: - This script will listen for all messages, and disregards
-# any naming of the bot, etc. In short, I don't think it will play all that well
-# with other scripts. YMMV
 # Author: howethomas
 #
 
 Parse = require('node-parse-api').Parse
+Async = require('async')
+_ = require('underscore')
+
 module.exports = (robot) ->
   options =
     app_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI"
     api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7"
   parse = new Parse(options)
+  active_sessions = {}
+  active_transcripts = {}
 
-  fetch_session = (session_key) ->
-    query = {
-      where: {
-        sessionId: session_key
-      }
-    }
-    robot.emit "log", "Looking for session " + session_key
-    robot.emit "log", "with query " + JSON.stringify query
-    parse.find "Sessions", query, (err,response) ->
-        if err || response.results.length == 0
-          robot.emit "log", "Cannot find session with key #{session_key}"
+  visitor_data_q = Async.queue (task, callback) ->
+    parse.insert "VisitorData",
+      visitor:
+        __type: "Pointer"
+        className: "Visitors"
+        objectId: task.visitor_id
+      key: task.key
+      value: task.value,
+      (err, response) ->
+        if err
+          robot.emit "log", "Error with visitor data save : #{err} #{response}"
         else
-          robot.emit "log", "Fetched response : " + JSON.stringify response
-          robot.emit "log", "Fetched session : " + JSON.stringify session
-          session = response[0]
-          return session
+          robot.emit "log", "Rembered : #{task.key} as #{task.value}"
+        callback()
 
+  update_q = Async.queue (task, callback) ->
+    sessionId = task.session.session_id
+    robot.emit "log", "New task for for session #{sessionId}"
 
-  robot.on "session:start", (session) ->
-    session_object=
-      room:
-        __type:     'Pointer'
-        className:  'Rooms'
-        objectId:   session.room.objectId
-      sessionId:  session.session_id
-      src:        session.src
-      language:   session.room.language
-    robot.emit "log", "Creating session #{JSON.stringify session_object}"
-    parse.insert 'Sessions', session_object, (err, response) ->
-      if err
-        robot.emit "log", "Threw error during data save : #{err} #{response}"
-      else
-        robot.emit "log", "New session started ; #{session.session_id}"
+    unless sessionId of active_sessions
+      robot.emit "log", "New session with key #{task.session.session_id}"
+      session_object=
+        room:
+          __type:     'Pointer'
+          className:  'Rooms'
+          objectId:   task.session.room.objectId
+        sessionId:  sessionId
+        src:        task.session.src
+        language:   task.session.room.language
+      parse.insert 'Sessions', session_object, (err, response) ->
+        if err
+          robot.emit "log", "Threw error with data save : #{err} #{response}"
+        else
+          robot.emit "log", "New session started: #{task.session.session_id}"
+          robot.emit "log", "Assigned objectId : #{response.objectId}"
+          active_sessions[sessionId] = response.objectId
+        callback()
+    else
+      robot.emit "log", "Updating session data: #{sessionId}"
+      objectId = active_sessions[sessionId]
+      transcript = active_transcripts[sessionId] ? []
+      update = {}
+
+      if task.ingress_msg?
+        new_line =
+          direction: "ingress"
+          text: task.ingress_msg
+        transcript.push(new_line)
+        update["transcript"] = JSON.stringify transcript
+      if task.egress_msg?
+        new_line =
+          direction: "egress"
+          text: task.egress_msg
+        transcript.push(new_line)
+        update["transcript"] = JSON.stringify transcript
+      if task.collected_data?
+        update["collected_data"] = task.collected_data
+      robot.emit "log", "Updating transcript : #{JSON.stringify transcript}"
+      active_transcripts[sessionId] = transcript
+      robot.emit "log", "Updating #{objectId} with #{JSON.stringify update}"
+      parse.update "Sessions", objectId, update,
+        (err, response) ->
+          if err
+            robot.emit "log", "Unable error #{sessionId} #{err}"
+          else
+            robot.emit "log", "Updated session #{sessionId}"
+            robot.emit "log", JSON.stringify response
+        callback()
+  , 1
+
 
   robot.on "session:ingress_msg", (msg) ->
-    session = fetch_session msg.session
-    new_line =
-      ingress: true
-      text: msg.text
-    transcript = session.transcript ? [ ]
-    transcript.push(new_line)
-    parse.update "Sessions", session.objectId,
-      { transcript: transcript }, (err, response) ->
-        if err
-          robot.emit "log",
-            "Unable to update ingress msg #{err}"
+    new_task =
+      session: msg.session
+      ingress_msg: msg.text
+    update_q.push new_task
 
   robot.on "session:egress_msg", (msg) ->
-    session = fetch_session msg.session
-    new_line =
-      ingress: false
-      text: msg.text
-    transcript = session.transcript ? [ ]
-    transcript.push(new_line)
-    parse.update "Sessions", session.objectId,
-      { transcript: transcript }, (err, response) ->
-        if err
-          robot.emit "log",
-            "Unable to update ingress msg #{err}"
-
+    new_task =
+      session: msg.session
+      egress_msg: msg.text
+    update_q.push new_task
 
   robot.on "session:data", (msg) ->
-    session = fetch_session msg.session
-    parse.update "Sessions", session.objectId,
-      { data: msg.data }, (err, response) ->
-        if err
-          robot.emit "log", "Unable to update data #{err}"
+    new_task =
+      session: msg.session
+      collected_data: msg.collected_data
+    update_q.push new_task
+    individual_parts = JSON.parse msg.collected_data
+    for key, value of individual_parts
+      unless key == "SESSION_ID"
+        visitor_data_task =
+          visitor_id: msg.session.visitor.objectId
+          key: key
+          value: value
+        visitor_data_q.push visitor_data_task
+        robot.emit "log", "Data task: #{JSON.stringify visitor_data_task}"
+
+  robot.on "session:end", (sessionId) ->
+    delete active_sessions[sessionId]
+    delete active_transcripts[sessionId]
+    robot.emit "log", "Removed session #{sessionId} from lc"

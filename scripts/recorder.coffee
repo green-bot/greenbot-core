@@ -32,8 +32,6 @@ module.exports = (robot) ->
 
   update_q = Async.queue (task, callback) ->
     sessionId = task.session.session_id
-    robot.emit "log", "New task for for session #{sessionId}"
-
     unless sessionId of active_sessions
       robot.emit "log", "New session with key #{task.session.session_id}"
       session_object=
@@ -48,12 +46,9 @@ module.exports = (robot) ->
         if err
           robot.emit "log", "Threw error with data save : #{err} #{response}"
         else
-          robot.emit "log", "New session started: #{task.session.session_id}"
-          robot.emit "log", "Assigned objectId : #{response.objectId}"
           active_sessions[sessionId] = response.objectId
         callback()
     else
-      robot.emit "log", "Updating session data: #{sessionId}"
       objectId = active_sessions[sessionId]
       transcript = active_transcripts[sessionId] ? []
       update = {}
@@ -72,16 +67,11 @@ module.exports = (robot) ->
         update["transcript"] = JSON.stringify transcript
       if task.collected_data?
         update["collected_data"] = task.collected_data
-      robot.emit "log", "Updating transcript : #{JSON.stringify transcript}"
       active_transcripts[sessionId] = transcript
-      robot.emit "log", "Updating #{objectId} with #{JSON.stringify update}"
       parse.update "Sessions", objectId, update,
         (err, response) ->
           if err
             robot.emit "log", "Unable error #{sessionId} #{err}"
-          else
-            robot.emit "log", "Updated session #{sessionId}"
-            robot.emit "log", JSON.stringify response
         callback()
   , 1
 

@@ -54,6 +54,7 @@ module.exports = (robot) ->
 
     constructor: (message, room, @visitor, @visitor_settings)->
       # The variables that make up a Session
+      @transcript = ""
       @user = message.user    # This is the user structure from hubot.
       @src = @user.name.toLowerCase()
       @room_name = message.room.toLowerCase() # this is a string.
@@ -109,6 +110,9 @@ module.exports = (robot) ->
     log: (text) ->
       robot.emit "log", "#{@session_id}:#{text}"
 
+    transcribe: (line) ->
+      @transcript += line
+
     describe: () =>
       @log "Describing session : #{@session_id}"
       @log "ID: #{@process.pid}"
@@ -154,7 +158,6 @@ module.exports = (robot) ->
             @log response.headers['content-type']
       else
         @log "No webhook_url"
-        @log JSON.stringify @room
 
       if @room.notification_emails?
         # Create a SMTP transporter object
@@ -180,7 +183,7 @@ module.exports = (robot) ->
             @log error.message
             return
           @log "Message sent successfully!"
-          @log "Server responded with \"%s\"", info.response
+          @log "Server responded with #{info.response}"
           return
       callback(null, "No goodbyes")
 
@@ -215,8 +218,6 @@ module.exports = (robot) ->
     handle_incoming_msg: (text) =>
       # If the message is JSON, treat it as if it were collected data
       # If so, stick it in a session_id in REDIS for somebody else to handle.
-
-      @log "Working with #{text}"
       lines = text.toString().split("\n")
       for line in lines
         line = line.trim()
@@ -236,6 +237,7 @@ module.exports = (robot) ->
             robot.emit "session:egress_msg",
                 session: @
                 text: line
+            @transcribe("#{@room_name}:#{line}\n")
 
     send_cmd_to_session: (cmd ) =>
       log "Error cmd #{cmd} to a disconnected session" if @process.connected
@@ -264,7 +266,7 @@ module.exports = (robot) ->
           robot.emit "session:ingress_msg",
               session: session
               text: msg.message.text
-
+          session.transcribe("#{visitor_name}:#{msg.message.text}\n")
           session.send_cmd_to_session(msg.message.text)
     else
       # This is a new session. See if there are settings defined for it.
@@ -276,41 +278,12 @@ module.exports = (robot) ->
 
       Async.series [
         (callback) ->
-          parse.findMany 'Visitors', { where: {name: visitor_name }}, (err, response) ->
-            visitors = response.results
-            if visitors.length == 0
-              # This is a new visitor. Make him
-              visitor_data =
-                name: visitor_name
-                anonymous: false
-              parse.insert 'Visitors', visitor_data, (err, response) ->
-                visitor = response.results
-                robot.emit "log", "New visitor : #{JSON.stringify visitor}"
-                callback null, true
-            else
-              visitor = visitors[0]
-              robot.emit "log", "Returning visitor : #{JSON.stringify visitor}"
-              parse.findMany 'VisitorData',
-                visitor:
-                  __type: "Pointer"
-                  className: "Visitors"
-                  objectId: visitor.objectId
-                , (err, response) ->
-                  if err
-                    robot.emit "log", "Setting error : #{err}"
-                  else
-                    settings = response.results
-                    robot.emit "log", "Settings: #{JSON.stringify settings}"
-                    for setting in settings
-                      visitor_settings[setting.key] = setting.value
-                  callback null, true
-        , (callback) ->
           robot.emit "log", "Looking for a room named #{room_name}"
           parse.findMany 'Rooms',
             name: room_name
             , (err, response) ->
               rooms = response.results
-              robot.emit "log", "Found rooms : #{JSON.stringify rooms}"
+              robot.emit "log", "Found #{rooms.length} rooms"
               # We support /commands on startup as well.
               # If they say /help, or /rooms, give them a list of them
               help_commands = ["help", "?", "rooms", "/help", "/rooms"]

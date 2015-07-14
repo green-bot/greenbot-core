@@ -8,7 +8,7 @@ class Room
   end
 
   def load
-    q = Parse::Query.new("Room")
+    q = Parse::Query.new("Rooms")
     q.eq("name", @room_name)
     @room = q.get.first
     @settings = @room["settings"]
@@ -16,18 +16,18 @@ class Room
   end
 
   def self.create(room_name, options)
-    new_room = Parse::Object.new("Room")
+    new_room = Parse::Object.new("Rooms")
     options.each{|k,v| new_room[k] = v}
     new_room["name"] = room_name
     new_room.save
   end
 
   def self.scripts
-    scripts = Parse::Query.new("Script").get
+    scripts = Parse::Query.new("Scripts").get
   end
 
   def assign(script_object_id)
-    q = Parse::Query.new("Script")
+    q = Parse::Query.new("Scripts")
     q.eq("objectId", script_object_id)
     script = q.get.first
     @room['default_cmd'] = script['default_cmd']
@@ -85,7 +85,7 @@ class Room
     end
     @room["qty"]
   end
-  
+
   def trace
     puts $room.inspect if ENV['DEVELOPER'] == "true"
   end

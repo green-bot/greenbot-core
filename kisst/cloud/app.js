@@ -16,6 +16,7 @@ var bc 			= require('cloud/bootcards-functions');		//bootcards functions
 var http 	= require('http');
 var path 	= require('path');			//work with paths
 var pjax 	= require('cloud/express-pjax');	//express pjax (partial reloads)
+
 var app = express();
 
 app.set('view engine', 'jade');
@@ -113,6 +114,8 @@ app.get('/portal/config/info', config.info);
 app.get('/portal/conversations/:id', conversation.read);
 app.get('/portal/config', config.list);
 app.get('/portal/config/edit', config.edit);
+app.get('/portal/config/network', config.network_type);
+app.get('/portal/config/assign', config.number_assign);
 app.post('/portal/config/save', config.save);
 app.post('/reset_request', config.reset_request);
 app.get('/portal/settings', function(req, res) {

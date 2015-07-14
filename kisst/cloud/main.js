@@ -1,6 +1,6 @@
 require('cloud/app.js');
 
-Parse.Cloud.afterSave("Room", function(request) {
+Parse.Cloud.afterSave("Rooms", function(request) {
   if (request.object.get("allocated") == false) {
     // This room is not allocated. Let's allocate it
     // by kicking off the "allocate room" job
@@ -22,6 +22,43 @@ Parse.Cloud.afterSave("Room", function(request) {
         console.error('After save request failed with response code ' + httpResponse.status);
         console.error('Server returned text ' + httpResponse.text);
       }
+    });
+  } else {
+    console.log("Saving new setting");
+    var Settings = Parse.Object.extend("Settings");
+    var query = new Parse.Query(Settings);
+    var script = request.object.get("script");
+    var room = request.object;
+    console.log("Script ID is " + script.id);
+    console.log("Room ID is " + room.id);
+    var room_ptr = {
+      __type: "Pointer",
+      className: "Rooms",
+      objectId: room.id
+    };
+    var script_ptr = {
+      __type: "Pointer",
+      className: "Scripts",
+      objectId: script.id
+    };
+    query.equalTo("room", room_ptr);
+    query.equalTo("script", script_ptr);
+    query.find().then(function(settings) {
+      return Parse.Object.destroyAll(settings);
+    }).then(function(result) {
+      console.log("script is " + JSON.stringify(script));
+      var settings = new Settings();
+      settings.set("room", room_ptr);
+      settings.set("script", script_ptr);
+      settings.set("name", room.get("name"));
+      settings.set("settings", room.get("settings"));
+      settings.set("user", room.get("user"));
+      settings.set("template", false);
+      return settings.save();
+    }).then(function(results){
+        console.log("Created new setting");
+    }, function (error) {
+        console.log("Error in new setting " + error.message);
     });
   }
 });

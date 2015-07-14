@@ -322,16 +322,19 @@ module.exports = (robot) ->
                 robot.emit "log", "Cannot setup room - no room defined"
               else
                 keywords = (room.keyword for room in rooms)
+                selected_room = null
                 robot.emit "log", " Avail keywords: #{keywords},
                                     Looking for #{clean_text}"
                 if clean_text in keywords
                   selected_room = candidate for candidate in rooms when candidate.keyword == clean_text
                   robot.emit "log", "Found keyword room #{selected_room.desc}"
-                unless room?
+                unless selected_room?
                   # No room matched. Use the default room
-                  selected_room = (room for room in rooms when room.default)
-                  robot.emit "log", "Using default room - no match"
-                unless room?
+                  for room in rooms
+                    if room.default
+                      robot.emit "log", "Found default room : #{room.desc}"
+                      selected_room = room
+                unless selected_room?
                   # No default room? Take the first room we found.
                   selected_room = rooms[0]
                   robot.emit "log", "No default room - use first"

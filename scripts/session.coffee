@@ -191,9 +191,6 @@ module.exports = (robot) ->
       env.DST = @user.room
       for attrname of @room.settings
         env[attrname] = @room.settings[attrname]
-      # for key, value of @visitor_settings
-      #  env[key] = value
-      @log "Settings: #{JSON.stringify env}"
       return env
 
     is_owner: () ->
@@ -280,7 +277,6 @@ module.exports = (robot) ->
         (callback) ->
           parse.findMany 'Visitors', { where: {name: visitor_name }}, (err, response) ->
             visitors = response.results
-            robot.emit "log", "Visitors :#{ JSON.stringify response.results}"
             if visitors.length == 0
               # This is a new visitor. Make him
               visitor_data =
@@ -324,7 +320,7 @@ module.exports = (robot) ->
               keywords = (room.keyword for room in rooms)
               robot.emit "log", "Found keywords: #{keywords} for #{clean_text}"
               if clean_text in keywords
-                room = (room for room in rooms when room.keyword is clean_text)
+                room = room for room in rooms when room.keyword == clean_text
                 robot.emit "log", "Found room #{room.desc} for #{clean_text}"
               unless room?
                 # No room matched. Use the default room

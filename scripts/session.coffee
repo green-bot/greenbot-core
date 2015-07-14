@@ -191,8 +191,8 @@ module.exports = (robot) ->
       env.DST = @user.room
       for attrname of @room.settings
         env[attrname] = @room.settings[attrname]
-      for key, value of @visitor_settings
-        env[key] = value
+      # for key, value of @visitor_settings
+      #  env[key] = value
       @log "Settings: #{JSON.stringify env}"
       return env
 
@@ -253,7 +253,8 @@ module.exports = (robot) ->
   robot.hear /(.*)/i, (msg) ->
     visitor_name = msg.message.user.name.toLowerCase()
     room_name = msg.message.room.toLowerCase()
-    session_key =  visitor + "_" + room_name
+    session_key =  visitor_name + "_" + room_name
+    robot.emit "log", "Looking for existing session #{session_key}"
     session = robot.sessions[session_key]
     clean_text = msg.message.text.trim().toLowerCase()
     if session
@@ -277,7 +278,7 @@ module.exports = (robot) ->
 
       Async.series [
         (callback) ->
-          parse.findMany 'Visitors', { name: visitor_name }, (err, response) ->
+          parse.findMany 'Visitors', { where: {name: visitor_name }}, (err, response) ->
             visitors = response.results
             robot.emit "log", "Visitors :#{ JSON.stringify response.results}"
             if visitors.length == 0
@@ -290,7 +291,7 @@ module.exports = (robot) ->
                 robot.emit "log", "New visitor : #{JSON.stringify visitor}"
                 callback null, true
             else
-              [visitor, ...] = visitors
+              visitor = visitors[0]
               robot.emit "log", "Returning visitor : #{JSON.stringify visitor}"
               parse.findMany 'VisitorData',
                 visitor:
@@ -307,7 +308,7 @@ module.exports = (robot) ->
                       visitor_settings[setting.key] = setting.value
                   callback null, true
         , (callback) ->
-          parse.findMany 'Rooms', { name: room_name}, (err, response) ->
+          parse.findMany 'Rooms', { where: {name: room_name}}, (err, response) ->
             rooms = response.results
             robot.emit "log", "Found rooms : #{JSON.stringify rooms}"
             # We support /commands on startup as well.
@@ -330,7 +331,7 @@ module.exports = (robot) ->
                 room = (room for room in rooms when room.default)
               unless room?
                 # No default room? Take the first room we found.
-                [room,...] = rooms
+                room = rooms[0]
               robot.emit "log", "Found room #{room.name}"
               create_session(msg, room, visitor, visitor_settings)
       ]

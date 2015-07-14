@@ -103,15 +103,6 @@ module.exports = (robot) ->
       session: msg.session
       collected_data: msg.collected_data
     update_q.push new_task
-    individual_parts = JSON.parse msg.collected_data
-    for key, value of individual_parts
-      unless key == "SESSION_ID"
-        visitor_data_task =
-          visitor_id: msg.session.visitor.objectId
-          key: key
-          value: value
-        visitor_data_q.push visitor_data_task
-        robot.emit "log", "Data task: #{JSON.stringify visitor_data_task}"
 
   robot.on "session:end", (sessionId) ->
     delete active_sessions[sessionId]

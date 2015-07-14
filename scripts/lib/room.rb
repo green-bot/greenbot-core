@@ -2,16 +2,17 @@
 
 class Room
 
-  def initialize(room_name)
-    @room_name = room_name.downcase
+  def initialize(room_id)
+    @room_id = room_id
     load
   end
 
   def load
     q = Parse::Query.new("Rooms")
-    q.eq("name", @room_name)
+    q.eq("objectId", @room_id)
     @room = q.get.first
     @settings = @room["settings"]
+    @room_name = @room["name"]
     @valid = @settings ? true : false
   end
 

@@ -189,6 +189,7 @@ module.exports = (robot) ->
       env.SESSION_ID = @session_id
       env.SRC = @src
       env.DST = @user.room
+      env.ROOM_OBJECT_ID = @room.objectId
       for attrname of @room.settings
         env[attrname] = @room.settings[attrname]
       return env
@@ -304,32 +305,38 @@ module.exports = (robot) ->
                       visitor_settings[setting.key] = setting.value
                   callback null, true
         , (callback) ->
-          parse.findMany 'Rooms', { where: {name: room_name}}, (err, response) ->
-            rooms = response.results
-            robot.emit "log", "Found rooms : #{JSON.stringify rooms}"
-            # We support /commands on startup as well.
-            # If they say /help, or /rooms, give them a list of them
-            help_commands = ["help", "?", "rooms", "/help", "/rooms"]
-            if clean_text in help_commands
-              avail_rooms = (room.keyword for room in rooms)
-              msg.reply "Supported options: #{avail_rooms.toString()}"
-              return
-            if err or (rooms.length == 0)
-              robot.emit "log", "Cannot setup room - no room defined"
-            else
-              keywords = (room.keyword for room in rooms)
-              robot.emit "log", "Found keywords: #{keywords} for #{clean_text}"
-              if clean_text in keywords
-                room = room for room in rooms when room.keyword == clean_text
-                robot.emit "log", "Found room #{room.desc} for #{clean_text}"
-              unless room?
-                # No room matched. Use the default room
-                room = (room for room in rooms when room.default)
-              unless room?
-                # No default room? Take the first room we found.
-                room = rooms[0]
-              robot.emit "log", "Found room #{room.name}"
-              create_session(msg, room, visitor, visitor_settings)
+          robot.emit "log", "Looking for a room named #{room_name}"
+          parse.findMany 'Rooms',
+            name: room_name
+            , (err, response) ->
+              rooms = response.results
+              robot.emit "log", "Found rooms : #{JSON.stringify rooms}"
+              # We support /commands on startup as well.
+              # If they say /help, or /rooms, give them a list of them
+              help_commands = ["help", "?", "rooms", "/help", "/rooms"]
+              if clean_text in help_commands
+                avail_rooms = (room.keyword for room in rooms)
+                msg.reply "Supported options: #{avail_rooms.toString()}"
+                return
+              if err or (rooms.length == 0)
+                robot.emit "log", "Cannot setup room - no room defined"
+              else
+                keywords = (room.keyword for room in rooms)
+                robot.emit "log", " Avail keywords: #{keywords},
+                                    Looking for #{clean_text}"
+                if clean_text in keywords
+                  selected_room = candidate for candidate in rooms when candidate.keyword == clean_text
+                  robot.emit "log", "Found keyword room #{selected_room.desc}"
+                unless room?
+                  # No room matched. Use the default room
+                  selected_room = (room for room in rooms when room.default)
+                  robot.emit "log", "Using default room - no match"
+                unless room?
+                  # No default room? Take the first room we found.
+                  selected_room = rooms[0]
+                  robot.emit "log", "No default room - use first"
+                robot.emit "log", "Using room #{selected_room.objectId}"
+                create_session(msg, selected_room, visitor, visitor_settings)
       ]
 
   robot.on "session:chat_arrived", (session_key, chat_msg) ->

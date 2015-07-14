@@ -196,7 +196,8 @@ end
 
 
 room_name = ENV['DST']
-$room = Room.new(room_name)
+room_id = ENV['ROOM_OBJECT_ID']
+$room = Room.new(room_id)
 $room.set_environment
 
 session_id = ENV['SESSION_ID'] || UUIDTools::UUID.random_create.to_s

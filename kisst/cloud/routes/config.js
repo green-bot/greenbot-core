@@ -340,6 +340,40 @@ exports.network_type = function(req, res) {
 	});
  }
 
+exports.number_assign = function(req, res) {
+	var currentUser = Parse.User.current();
+	var room = currentUser.get("room");
+	var default_cmd;
+	var current_name;
+	var icon_class;
+	var desc;
+	var current_network;
+	room.fetch().then (function (room) {
+		current_name = room.get("name");
+		var Did = Parse.Object.extend("dids");
+		var query = new Parse.Query(Did);
+		query.equalTo("did", current_name);
+		return query.find();
+	}).then(function(dids) {
+		did = dids[0];
+		current_network = did.get("network");
+		var Network = Parse.Object.extend("Networks");
+		var query = new Parse.Query(Network);
+		return query.find();
+	}).then(function(results) {
+		var network_names = _.map(results, function(network) {
+			return network.get("name");
+		});
+		console.log(JSON.stringify(network_names));
+		res.render('networks', {
+			networks: network_names,
+			current_network: current_network,
+			current_name: current_name
+		});
+	});
+ }
+
+
 exports.type = function(req, res) {
 	var currentUser = Parse.User.current();
 	var room = currentUser.get("room");

@@ -1,0 +1,14 @@
+extends ./layout
+
+block content
+  .row.col-sm-6
+    .bootcards-cards
+      .panel.panel-default
+        .panel-heading.clearfix
+          h3.panel-title.pull-left Available Numbers
+
+        .list-group
+          each number in numbers
+            .list-group-item
+              a(href="/portal/config/assign?number=#{number}")
+                h4.list-group-item-heading #{number}

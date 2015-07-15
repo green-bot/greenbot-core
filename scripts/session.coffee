@@ -279,7 +279,7 @@ module.exports = (robot) ->
       Async.series [
         (callback) ->
           robot.emit "log", "Looking for a room named #{room_name}"
-          parse.findMany 'Rooms',
+          parse.find 'Rooms',
             name: room_name
             , (err, response) ->
               rooms = response.results

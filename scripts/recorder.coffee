@@ -1,7 +1,17 @@
-# Description : Records the session data
+# Description:
+#   Handles logging.
 #
-# Author: howethomas
+# Dependencies:
+#   Winston, Papertrail
 #
+# Configuration:
+#   Done through ports
+#
+#
+# Author:
+#   Thomas Howe
+#
+
 
 Parse = require('node-parse-api').Parse
 Async = require('async')

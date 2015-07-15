@@ -280,9 +280,13 @@ module.exports = (robot) ->
         (callback) ->
           robot.emit "log", "Looking for a room named #{room_name}"
           parse.find 'Rooms',
-            where: 
+            where:
               name: room_name
             , (err, response) ->
+              if err
+                robot.emit "log", "Err in find rooms #{err}:#{response}"
+                callback()
+                return
               rooms = response.results
               robot.emit "log", "Found #{rooms.length} rooms"
               # We support /commands on startup as well.

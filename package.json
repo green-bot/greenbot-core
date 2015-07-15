@@ -31,6 +31,7 @@
     "hubot-youtube": "^0.1.2",
     "install": "^0.1.8",
     "irc": "^0.3.9",
+    "memwatch-next": "^0.2.7",
     "minitest": "^0.2.0",
     "moment": "^2.9.0",
     "monitor": "^0.6.10",

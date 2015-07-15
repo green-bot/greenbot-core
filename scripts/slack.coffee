@@ -1,3 +1,17 @@
+# Description:
+#   Handles logging.
+#
+# Dependencies:
+#   Winston, Papertrail
+#
+# Configuration:
+#   Done through ports
+#
+#
+# Author:
+#   Thomas Howe
+#
+
 Readline = require 'readline'
 ShortUUID = require 'shortid'
 Redis = require "redis"
@@ -105,12 +119,13 @@ module.exports = (robot) ->
 
   robot.on "session:start", (session) ->
     filter =
-      room:
-        __type: "Pointer"
-        className: "Room"
-        objectId: session.room.objectId
-      provider: 'slack'
-    parse.findMany 'Integrations', filter, (err, response) ->
+      where:
+        room:
+          __type: "Pointer"
+          className: "Room"
+          objectId: session.room.objectId
+        provider: 'slack'
+    parse.find 'Integrations', filter, (err, response) ->
       if err?
         console.log("Integration search turned up error")
         console.log(err)

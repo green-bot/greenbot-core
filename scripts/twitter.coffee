@@ -1,3 +1,17 @@
+# Description:
+#   Handles logging.
+#
+# Dependencies:
+#   Winston, Papertrail
+#
+# Configuration:
+#   Done through ports
+#
+#
+# Author:
+#   Thomas Howe
+#
+
 shortId = require 'shortid'
 
 module.exports = (robot) ->
@@ -8,14 +22,14 @@ module.exports = (robot) ->
     console.log "#{key} = #{value}" for key, value of obj
 
   should_reply= (tweet) ->
-    console.log "Discarding tweet, not from a user." unless tweet.user? 
+    console.log "Discarding tweet, not from a user." unless tweet.user?
     return false unless tweet.user?
     console.log "Discarding tweet, my profile is not set." unless my_profile?
     return false unless my_profile?
     console.log "Discarding tweet, I apparently sent this message." if tweet.user.screen_name == my_profile.screen_name
     return false if tweet.user.screen_name == my_profile.screen_name
 
-    wordList = robot.brain.get("wordList") or  ["sucks", "help"] 
+    wordList = robot.brain.get("wordList") or  ["sucks", "help"]
     mentioned = false
     return false unless tweet.text?
     tweet_array = tweet.text.split(" ")
@@ -41,4 +55,3 @@ module.exports = (robot) ->
       robot.emit("update_status", "@#{tweet.user.screen_name}:#{reply_text}. #{shortId.generate()}")
 
   console.log "Twitter script running."
-  

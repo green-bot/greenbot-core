@@ -280,7 +280,8 @@ module.exports = (robot) ->
         (callback) ->
           robot.emit "log", "Looking for a room named #{room_name}"
           parse.find 'Rooms',
-            name: room_name
+            where: 
+              name: room_name
             , (err, response) ->
               rooms = response.results
               robot.emit "log", "Found #{rooms.length} rooms"

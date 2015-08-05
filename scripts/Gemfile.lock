@@ -93,6 +93,3 @@ DEPENDENCIES
   slop
   test-unit
   uuidtools
-
-BUNDLED WITH
-   1.10.3

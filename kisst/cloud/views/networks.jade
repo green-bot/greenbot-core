@@ -8,14 +8,14 @@ block content
           h3.panel-title.pull-left Networks
         .panel-body
           h4
-            | You can attach your KISST service to other networks!
+            | Current Attached Network
           .row
             each network in networks
               .col-xs-6.col-sm-6
-                a.bootcards-summary-item(href="/portal/config/assign?network=#{network}")
+                a.bootcards-summary-item(href="/portal/config/#{network.name}")
                   i.fa.fa-3x.fa-plug
-                  h4= network
-                    if network == current_network
+                  h4= network.name
+                    if network.current
                       span.label.label-info
                         | current
                         i.fa.fa-check

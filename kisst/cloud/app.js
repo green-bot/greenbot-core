@@ -92,7 +92,8 @@ app.post("/login", function(req, res) {
   },
   function(error) {
     // Login failed, redirect back to login form.
-    res.redirect("/login");
+    console.log('Unable to login : ' + error.message)
+    res.redirect('/login');
   });
 });
 

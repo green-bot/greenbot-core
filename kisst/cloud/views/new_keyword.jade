@@ -1,0 +1,43 @@
+extends ./layout
+
+block content
+  .row.col-sm-6
+    .bootcards-list
+      .panel.panel-default.bootcards-summary
+        .panel-heading.clearfix
+          h3.panel-title.pull-left Types
+        .panel-body
+          h4
+            | Your KISST service can do all sorts of jobs. If you want to change its
+            | job, pick a new one below. You will lose the prompts from the old setting,
+            | and you will have to specify them again.
+          .row
+            each s in scripts
+              .col-xs-6.col-sm-6
+                a.bootcards-summary-item(data-toggle="modal", data-target="##{s.name}", href="#")
+                  i.fa.fa-3x(class=s.icon_class)
+                  h4= s.name
+                    if s.cmd == default_cmd
+                      span.label.label-info
+                        | current
+                        i.fa.fa-check
+
+block dialogs
+  each s in scripts
+    .modal.fade.active(role='dialog', id= '#{s.name}', tabindex='-1')
+      .modal-dialog
+        .modal-body
+          .container
+            .row.col-sm-10
+              .bootcards-list
+                .panel.panel-default.bootcards-summary
+                  .panel-heading.clearfix
+                    h3.panel-title.pull-left Conversation : #{s.name}
+                  .panel-body
+                    h4
+                      #{s.name}
+                    p
+                      !{s.desc}
+                    .text-center
+                      a.btn.btn-primary(href="/portal/config/type_change/#{s.id}") Set As Conversation
+                      a.btn.btn-primary(data-dismiss="modal", data-target="##{s.name}") Cancel

@@ -98,24 +98,6 @@ app.get('/portal', function (req, res) {
   })
 })
 
-// Making a "login" endpoint is SOOOOOOOO easy.
-app.post("/login", function(req, res) {
-  var username = req.body.username.trim().toLowerCase();
-  var password = req.body.password.trim();
-  console.log("Logging in " + username);
-  Parse.User.logIn(username, password).then(function() {
-    // Login succeeded, redirect to homepage.
-    // parseExpressCookieSession will automatically set cookie.
-    res.redirect('/portal');
-  },
-  function(error) {
-    // Login failed, redirect back to login form.
-    console.log('Unable to login : ' + error.message)
-    res.redirect('/login');
-  });
-});
-
-
 // Making a 'login' endpoint is SOOOOOOOO easy.
 app.post('/login', function (req, res) {
   var username = req.body.username.trim()
@@ -173,19 +155,23 @@ app.post('/login', function (req, res) {
 app.get('/logout', function (req, res) {
   Parse.User.logOut()
   console.log('Logged user out. Redirecting.')
-  res.redirect('/login')
+  res.redirect('/portal')
 })
 app.get('/portal/config/owners', config.owners)
 app.get('/portal/config/owner_delete', config.owner_delete)
+
 app.post('/portal/config/owner_add', config.owner_add)
 app.get('/portal/config/notification_emails', config.notification_emails)
 app.get('/portal/config/notification_email_delete', config.notification_email_delete)
 app.post('/portal/config/notification_email_add', config.notification_email_add)
 app.post('/portal/config/notification_creds_update', config.notification_creds_update)
+
 app.get('/portal/config/type', config.type)
 app.get('/portal/conversations', conversation.list)
-app.get('/portal/config/info', config.info)
+app.get('/portal/conversations/download', conversation.download_csv)
 app.get('/portal/conversations/:id', conversation.read)
+
+app.get('/portal/config/info', config.info)
 app.get('/portal/config', config.list)
 app.get('/portal/config/edit', config.edit)
 app.post('/portal/config/save', config.save)
@@ -200,7 +186,6 @@ app.get('/portal/config/add_number', network.add_number)
 app.get('/portal/config/nexmo', function (req, res) {
   res.render('nexmo')
 })
-
 app.get('/reset_page', function (req, res) {
   res.render('reset_page')
 })

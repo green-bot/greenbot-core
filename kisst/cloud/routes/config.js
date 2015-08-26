@@ -372,32 +372,40 @@ exports.notification_creds_update = function (req, res) {
 exports.type = function (req, res) {
   var Rooms = Parse.Object.extend('Rooms')
   var query = new Parse.Query(Rooms)
+  var currentUser = Parse.User.current()
   var default_cmd
   var current_name
   query.get(req.cookies.roomId)
     .then(function (room) {
       default_cmd = room.get('default_cmd')
-      var Script = Parse.Object.extend('Script')
-      var query = new Parse.Query(Script)
-      query.ascending('name')
-      return query.find()
+      var Script = Parse.Object.extend('Scripts')
+      var global_query = new Parse.Query(Script)
+      global_query.equalTo('global', true)
+      var user_query = new Parse.Query(Script)
+      user_query.equalTo('user', currentUser)
+      var main_query = new Parse.Query.or(global_query, user_query)
+      main_query.ascending('name')
+      return main_query.find()
     })
     .then(function (elements) {
       var display_settings = []
       _.each(elements, function (element, index, list) {
-        var item = {
-          name: element.get('name'),
-          cmd: element.get('default_cmd'),
-          id: element.id,
-          active: false,
-          icon_class: element.get('icon_class'),
-          desc: element.get('desc')
+        if (element.get('global') === true ||
+            currentUser.id === element.get('user').id) {
+          var item = {
+            name: element.get('name'),
+            cmd: element.get('default_cmd'),
+            id: element.id,
+            active: false,
+            icon_class: element.get('icon_class'),
+            desc: element.get('desc')
+          }
+          if (default_cmd === item.cmd) {
+            item.active = true
+            current_name = item.name
+          }
+          display_settings.push(item)
         }
-        if (default_cmd === item.cmd) {
-          item.active = true
-          current_name = item.name
-        }
-        display_settings.push(item)
       })
       res.render('types', {
         scripts: display_settings,

@@ -1,18 +1,30 @@
-require "rubygems"
-require "bundler/setup"
+require 'rubygems'
+require 'bundler/setup'
 
-require "highline/import"
-require "yaml"
-require "json"
+require 'highline/import'
+require 'yaml'
+require 'json'
 require 'redis'
-require "uuidtools"
+require 'uuidtools'
 require 'airbrake'
 require 'parse-ruby-client'
+require 'timeout'
 require './lib/room'
 
 Parse.init(application_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI", api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7", quiet: true)
-class SessionData
 
+if ENV['DEVELOPER'] == "true"
+  FIVE_MINUTES = 5
+  HALF_AN_HOUR = 30
+  MESSAGE_PACE = 1
+else
+  FIVE_MINUTES = 5*60
+  HALF_AN_HOUR = 30*60
+  MESSAGE_PACE = 3.1415
+end
+
+# Handles the collection and remembering of data
+class SessionData
   attr_accessor :collected_data
   def initialize(session_id = nil)
     session_data_path = "./session_data/"
@@ -48,6 +60,7 @@ class SessionData
   end
 end
 
+# Extends ruby object to remember and forget them
 class Object
   def remember(label)
     $session.remember(label, self)
@@ -57,6 +70,7 @@ class Object
   end
 end
 
+# Helper classes
 def confirm(prompt)
   positives = %w(yes sure OK yep)
   negatives = %w(no nope noway)
@@ -99,15 +113,41 @@ def listen
   gets.chomp
 end
 
-def ask(prompt)
+def ask(prompt, first_timeout = FIVE_MINUTES, second_timeout = HALF_AN_HOUR)
   puts prompt
   $stdout.flush
-  gets.chomp
+
+  # Wait for the first timeout.
+  # if the gets.chomp returns, we exit the block, return value, no worry
+  # If not, we repeat the prompt
+  answered = false
+  begin
+    Timeout::timeout(first_timeout) do
+      answer = gets.chomp
+      answered = true
+    end
+  rescue Timeout::Error
+    puts prompt
+  end
+  return answer if answered
+
+  begin
+    Timeout::timeout(second_timeout) do
+      answer = gets.chomp
+      answered = true
+    end
+  rescue Timeout::Error
+    puts "Thank you for contacting us. Closing this conversation, feel free to message us again to start again "
+    exit
+  end
+  return answer if answered
 end
 
-def tell(prompt)
+
+def tell(prompt, pace = MESSAGE_PACE)
   puts prompt
   $stdout.flush
+  sleep pace
 end
 
 def note(prompt)

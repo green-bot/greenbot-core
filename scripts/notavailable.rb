@@ -4,6 +4,4 @@
 # basic_usage.rb
 #
 require "./lib/greenbot.rb"
-require "timeout"
-
 tell "I'm sorry, but this bot is not currently available. "

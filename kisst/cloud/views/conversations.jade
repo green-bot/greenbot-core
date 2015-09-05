@@ -6,6 +6,9 @@ block content
       .panel.panel-default
         .panel-heading.clearfix
           h3.panel-title.pull-left Conversations
+          h3.panel-title.pull-right
+            a.pjax(href='/portal/conversations/download')
+              | Download as CSV
         .panel-body
           each conversation in conversations
             .list-group

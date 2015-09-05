@@ -6,8 +6,6 @@
 require './lib/greenbot.rb'
 require 'timeout'
 
-HOUR = 60 * 60
-timeout = ENV['CONVERSATION_TIMEOUT'].to_i || 4 * HOUR
 
 def ask_and_remember(prompt, desc)
   response = ask(prompt)
@@ -32,35 +30,30 @@ def collect_contact(prompt)
   end
 end
 
-begin
-  timeout(timeout) do
-    tell ENV['PROMPT_1']
-    tell ENV['PROMPT_2']
-    collect_contact('Would you like someone to contact you?')
+tell ENV['PROMPT_1']
+tell ENV['PROMPT_2']
+collect_contact('Would you like someone to contact you?')
+tell ENV['PURCHASE_PROMPT']
+loop do
+  tasks = %w(demos docs purchase contact reseller quit pricing )
+  my_task = select('How can I help?', tasks)
+  case my_task
+  when 'demos'
+    tell ENV['DEMOS_PROMPT']
+  when 'docs'
+    tell ENV['DOCS_PROMPT']
+  when 'purchase'
     tell ENV['PURCHASE_PROMPT']
-    loop do
-      tasks = %w(demos docs purchase contact reseller quit pricing )
-      my_task = select('How can I help?', tasks)
-      case my_task
-      when 'demos'
-        tell ENV['DEMOS_PROMPT']
-      when 'docs'
-        tell ENV['DOCS_PROMPT']
-      when 'purchase'
-        tell ENV['PURCHASE_PROMPT']
-      when 'pricing'
-        tell ENV['PRICING_PROMPT']
-      when 'reseller'
-        tell ENV['RESELLER_PROMPT']
-        collect_contact('Would you like to become a KISST reseller?')
-      when 'contact'
-        collect_contact('Would you like someone to contact you?')
-      when 'quit'
-        break
-      end
-    end
+  when 'pricing'
+    tell ENV['PRICING_PROMPT']
+  when 'reseller'
+    tell ENV['RESELLER_PROMPT']
+    collect_contact('Would you like to become a KISST reseller?')
+  when 'contact'
+    collect_contact('Would you like someone to contact you?')
+  when 'quit'
+    break
   end
-rescue Timeout::Error
-  tell 'If you want to restart this conversation, text us again!'
+end
 end
 tell ENV['SIGNATURE']

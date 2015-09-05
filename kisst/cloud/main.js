@@ -1,6 +1,19 @@
 require('cloud/app.js');
 
+Parse.Cloud.beforeSave("Rooms", function(request, response) {
+  // Lets make sure that the key word is one word,
+  // and all lower case.
+
+  console.log ("Looking for upcased keywords like " + request.object.get("keyword"))
+  var keyword = request.object.get("keyword")
+  var final_keyword = keyword.toLowerCase().replace(/\s+/g, '')
+  request.object.set('keyword', final_keyword)
+  response.success()
+  console.log ("Sure hope this looks better " + final_keyword)
+})
+
 Parse.Cloud.afterSave("Rooms", function(request) {
+
   if (request.object.get("allocated") == false) {
     // This room is not allocated. Let's allocate it
     // by kicking off the "allocate room" job

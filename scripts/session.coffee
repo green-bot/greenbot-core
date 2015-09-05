@@ -35,7 +35,6 @@ Async = require('async')
 BitlyAPI = require('node-bitlyapi')
 _ = require('underscore')
 
-
 module.exports = (robot) ->
   robot.sessions = {}
   redis_client = Redis.createClient()
@@ -191,14 +190,14 @@ module.exports = (robot) ->
       callback(null, "No goodbyes")
 
     command_settings: () ->
-      env = _.clone process.env
-      env.SESSION_ID = @session_id
-      env.SRC = @src
-      env.DST = @user.room
-      env.ROOM_OBJECT_ID = @room.objectId
+      env_settings = _.clone(process.env)
+      env_settings.SESSION_ID = @session_id
+      env_settings.SRC = @src
+      env_settings.DST = @user.room
+      env_settings.ROOM_OBJECT_ID = @room.objectId
       for attrname of @room.settings
-        env[attrname] = @room.settings[attrname]
-      return env
+        env_settings[attrname] = @room.settings[attrname]
+      return env_settings
 
     is_owner: () ->
       @log "Thinking I'm #{@src}"

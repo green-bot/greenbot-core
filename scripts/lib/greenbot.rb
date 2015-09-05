@@ -114,8 +114,7 @@ def listen
 end
 
 def ask(prompt, first_timeout = FIVE_MINUTES, second_timeout = HALF_AN_HOUR)
-  puts prompt
-  $stdout.flush
+  tell(prompt, 0)
 
   # Wait for the first timeout.
   # if the gets.chomp returns, we exit the block, return value, no worry
@@ -128,7 +127,7 @@ def ask(prompt, first_timeout = FIVE_MINUTES, second_timeout = HALF_AN_HOUR)
       answered = true
     end
   rescue Timeout::Error
-    puts prompt
+    tell(prompt, 0)
   end
   return answer if answered
 
@@ -138,7 +137,7 @@ def ask(prompt, first_timeout = FIVE_MINUTES, second_timeout = HALF_AN_HOUR)
       answered = true
     end
   rescue Timeout::Error
-    puts "Thank you for contacting us. Closing this conversation, feel free to message us again to start again "
+    tell('Thank you for contacting us. Closing this conversation, feel free to message us again to start again',0)
     exit
   end
   return answer if answered

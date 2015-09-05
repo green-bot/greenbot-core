@@ -33,6 +33,8 @@ Us = require("underscore.string")
 Parse = require('node-parse-api').Parse
 Async = require('async')
 BitlyAPI = require('node-bitlyapi')
+_ = require('underscore')
+
 
 module.exports = (robot) ->
   robot.sessions = {}
@@ -70,6 +72,7 @@ module.exports = (robot) ->
       @command = @arguments[0]
       @arguments.shift()
       @env = @command_settings()
+      @log "Running with environment: #{@env}"
       # send the inital message to the script
       @env.INITIAL_MESSAGE = message
       opts =
@@ -188,7 +191,7 @@ module.exports = (robot) ->
       callback(null, "No goodbyes")
 
     command_settings: () ->
-      env = process.env
+      env = _.clone process.env
       env.SESSION_ID = @session_id
       env.SRC = @src
       env.DST = @user.room

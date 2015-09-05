@@ -121,6 +121,7 @@ def ask(prompt, first_timeout = FIVE_MINUTES, second_timeout = HALF_AN_HOUR)
   # if the gets.chomp returns, we exit the block, return value, no worry
   # If not, we repeat the prompt
   answered = false
+  answer = ''
   begin
     Timeout::timeout(first_timeout) do
       answer = gets.chomp

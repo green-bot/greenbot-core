@@ -30,16 +30,19 @@ block content
       form.form-horizontal(method="POST", action="/portal/config/notification_creds_update")
         .bootcards-list
           .panel-heading
-            span.title GMail Settings
+            span.title Notification Settings
               ul.pull-right.no-list-dots
                 li
                   button
                     span.panel-default
-                      i.fa.fa-sign-in.panel-default
+                      i.fa.fa-sign-in
                       |   Save
           .panel-body
             .input-group
-              label.col-xs-4.control-label User
+              label.col-xs-4.control-label Webhook URL
+              input.form-control(name="webhook", value=webhook, placeholder="Conversation Complete POST URL")
+            .input-group
+              label.col-xs-4.control-label Account
               input.form-control(name="mail_user", value=mail_user, placeholder="GMail User Name")
             .input-group
               label.col-xs-4.control-label Password

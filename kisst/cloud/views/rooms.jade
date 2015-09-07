@@ -1,0 +1,18 @@
+extends ./layout
+
+block content
+  .row
+    .bootcards-cards
+      .panel.panel-default.bootcards-summary
+        .panel-heading
+          h3.panel-title Account Rooms
+        .panel-body
+          .row
+            each room in rooms
+              .col-sm-3
+                a.bootcards-summary-item(href='/portal/config/change_room?id=#{room.id}', style='padding-top:35px;')
+                  i.fa.fa-3x.fa-tags-o
+                  h4
+                    | #{room.name}
+                  h4
+                    | Keyword #{room.keyword}

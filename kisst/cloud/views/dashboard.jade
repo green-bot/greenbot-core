@@ -5,7 +5,7 @@ block content
     .bootcards-cards
       .panel.panel-default.bootcards-summary
         .panel-heading
-          h3.panel-title Dashboard
+          h3.panel-title Dashboard - #{current_room} : #{current_keyword}
         .panel-body
           .row
             .col-sm-3
@@ -24,6 +24,11 @@ block content
                 h4
                   | Settings
             .col-sm-3
+              a.bootcards-summary-item(href='/portal/config/rooms', data-pjax='#main', data-title='Help', style='padding-top:35px;')
+                i.fa.fa-3x.fa-exchange
+                h4
+                  | Switch Room
+            .col-sm-3
               a.bootcards-summary-item(href='http://kisst.zendesk.com', data-pjax='#main', data-title='Help', style='padding-top:35px;')
                 i.fa.fa-3x.fa-question-circle
                 h4
@@ -33,3 +38,6 @@ block content
                 i.fa.fa-3x.fa-sign-out
                 h4
                   | Sign Out
+        .panel-footer
+          small.pull-left
+            Currently Room: #{roomName}, keyword #{selectedKeyword}

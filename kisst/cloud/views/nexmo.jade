@@ -3,12 +3,23 @@ extends ./layout
 block content
   .row.col-sm-6
     .bootcards-cards
-      .panel.panel-default
-        .panel-heading.clearfix
-          h3.panel-title.pull-left Available Numbers
-
-        .list-group
-          each number in numbers
-            .list-group-item
-              a(href="/portal/config/assign?number=#{number}")
-                h4.list-group-item-heading #{number}
+      form.form-horizontal(method='POST', action='/portal/config/network_update')
+        .panel.panel-default
+          .panel-heading.clearfix
+              h3.panel-title.pull-left Nexmo Settings
+              .btn-group.pull-right
+                button.btn.btn-primary
+                  i.fa.fa-sign-in
+                  |   Save
+          .modal-body
+            .form-group
+              label.col-xs-4.control-label
+                | API Key
+              .col-xs-9
+                input.form-control(type='password', name='api_key')
+            .form-group
+              label.col-xs-4.control-label
+                | API Secret
+              .col-xs-9
+                input.form-control(type='password', name='api_secret')
+                input(type='hidden', name='network_name', value='nexmo')

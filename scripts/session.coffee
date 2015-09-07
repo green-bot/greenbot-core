@@ -27,6 +27,7 @@ Os = require("os")
 ChildProcess = require("child_process")
 Url = require("url")
 Request = require("request")
+Request.debug = true
 Mailer = require("nodemailer")
 Moment = require("moment")
 Us = require("underscore.string")
@@ -71,7 +72,7 @@ module.exports = (robot) ->
       @command = @arguments[0]
       @arguments.shift()
       @env = @command_settings()
-      @log "Running with environment: #{@env}"
+      @log "Running with environment: #{JSON.stringify @env}"
       # send the inital message to the script
       @env.INITIAL_MESSAGE = message
       opts =
@@ -125,10 +126,14 @@ module.exports = (robot) ->
       @log "Ending and recording session #{@session_id}"
       Async.series([
         @send_goodbye,
+        @send_webhook,
+        @send_email,
         @delete_session])
 
     send_goodbye: (callback) =>
+      @log "Looking for an ad to show"
       if @room.show_ad == true
+        @log "We have an ad"
         base_link = @room.goodbye_link or "http://www.justkisst.me"
         url = Url.parse(base_link, true)
         url.query["src"] = @src
@@ -145,22 +150,36 @@ module.exports = (robot) ->
           @handle_incoming_msg(@room.closing_message + short_url)
           callback(null, "Saved object")
       else
+        @log "No ads to show"
         callback(null, "No goodbyes")
 
-    delete_session: (callback) =>
-      delete robot.sessions[@session_key]
-      robot.emit "session:end", @session_key
-      #Add the collected data. That's a great idea.
-      @log "Session ended. Who do we have to tell?"
-      if @room.webhook_url?
-        @log "Completed. Notifying #{session.room.webhook_url}"
-        Request.post(@room.webhook_url).form(session)
-          .on 'response', (response) ->
+    send_webhook: (callback) =>
+      @log "Sending a webhook to #{@room.webhook_url}" if !! @room.webhook_url
+      if !! @room.webhook_url
+        webhook_options =
+          form:  
+            transcript: @transcript
+            room_id: @room.objectId
+            script_id: @room.script.objectId
+            settings: @room.settings
+            data: @collected_data 
+        if !! @room.webhook_authtoken
+          webhook_options.headers = 
+            Authorization: @room.webhook_authtoken
+
+        @log "Sending JSON as #{JSON.stringify webhook_options}"
+        Request.post(@room.webhook_url, webhook_options)
+        .on 'response', (response) => 
+            @log "Completed."
             @log response.statusCode
             @log response.headers['content-type']
+            callback(null, "Sent hook")
       else
         @log "No webhook_url"
+        callback(null, "No webhook")
 
+    send_email: (callback) =>
+      @log "Sending emails"
       if @room.notification_emails?
         # Create a SMTP transporter object
         @log "Sending notification email"
@@ -186,7 +205,17 @@ module.exports = (robot) ->
             return
           @log "Message sent successfully!"
           @log "Server responded with #{info.response}"
-          return
+          callback(null, "Mail sent")
+      else
+        @log "No notification emails"
+        callback(null, "No mails to send")
+
+ 
+    delete_session: (callback) =>
+      @log "Session ended. Who do we have to tell?"
+      delete robot.sessions[@session_key]
+      robot.emit "session:end", @session_key
+      #Add the collected data. That's a great idea.
       callback(null, "No goodbyes")
 
     command_settings: () ->
@@ -224,6 +253,7 @@ module.exports = (robot) ->
       for line in lines
         line = line.trim()
         if @is_json_string line
+          @collected_data = JSON.parse line
           msg =
             session:  @
             collected_data:     line

@@ -422,7 +422,7 @@ exports.type_change = function (req, res) {
   query.get(req.cookies.roomId)
     .then(function (foundRoom) {
       room = foundRoom
-      var Script = Parse.Object.extend('Script')
+      var Script = Parse.Object.extend('Scripts')
       var query = new Parse.Query(Script)
       return query.get(req.params.id)
     })

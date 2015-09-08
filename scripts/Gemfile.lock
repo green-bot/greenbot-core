@@ -95,6 +95,3 @@ DEPENDENCIES
   table_print
   test-unit
   uuidtools
-
-BUNDLED WITH
-   1.10.6

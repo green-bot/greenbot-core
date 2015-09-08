@@ -149,7 +149,7 @@ app.post('/login', function (req, res) {
     }, function (error) {
       console.log('Failed to get room.')
       console.log(error)
-      res.redirect('/login')
+      res.redirect('/portal')
     })
 })
 app.get('/logout', function (req, res) {

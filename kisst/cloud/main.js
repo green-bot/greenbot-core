@@ -5,11 +5,14 @@ Parse.Cloud.beforeSave("Rooms", function(request, response) {
   // and all lower case.
 
   console.log ("Looking for upcased keywords like " + request.object.get("keyword"))
-  var keyword = request.object.get("keyword")
+  var keyword = ''
+  if (request.object.get("keyword")){
+    var keyword = request.object.get("keyword")
+  }
   var final_keyword = keyword.toLowerCase().replace(/\s+/g, '')
   request.object.set('keyword', final_keyword)
+  console.log("Sure hope this looks better "+final_keyword)
   response.success()
-  console.log ("Sure hope this looks better " + final_keyword)
 })
 
 Parse.Cloud.afterSave("Rooms", function(request) {

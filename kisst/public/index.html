@@ -64,7 +64,7 @@
                 <a href="#whatis" class="btn action-button" data-wow-delay="1.2s">
                   <span class="network-name">SHOW ME</span>
                 </a>
-                <a href="#purchase" class="btn action-button" data-wow-delay="1.2s">
+                <a href="#purchase" class="btn action-button" data-wow-delay="1.2s" data-toggle="modal" data-target="#purchase">
                   <span class="network-name">PURCHASE</span>
                 </a>
               </div>
@@ -75,28 +75,55 @@
       </div>
     </div>
     <div>
-      <div class="visible-xs mobile-body">
-          <div class="row text-center">
-            <img class="mobile-image" src="/img/wasp-beer.png" alt="">
-          </div>
-          <div class="mobile-footer">
-            <div class="text-center">
-              <h1>
-                ANSWER CUSTOMER'S TEXTS
-                <br>AUTOMATICALLY
+    <div class="visible-xs mobile-body">
+        <div class="row text-center">
+          <img class="mobile-image" src="/img/wasp-beer.png" alt="">
+        </div>
+        <div class="mobile-footer">
+          <div class="text-center">
+            <h1>
+              ANSWER CUSTOMER'S TEXTS
+              <br>AUTOMATICALLY
 
-              </h1>
-              <a href="#whatis" class="btn action-button" data-wow-delay="1.2s">
-                <span class="network-name">SHOW ME</span>
-              </a>
-              <a href="#purchase" class="btn action-button" data-wow-delay="1.2s">
-                <span class="network-name">PURCHASE</span>
-              </a>
-            </div>
+            </h1>
+            <a href="#whatis" class="btn action-button" data-wow-delay="1.2s">
+              <span class="network-name">SHOW ME</span>
+            </a>
+            <a href="#purchase" class="btn action-button" data-wow-delay="1.2s" data-toggle="modal" data-target="#purchase">
+              <span class="network-name">PURCHASE</span>
+            </a>
+          </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Modal -->
+<div class="modal fade" id="purchase" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Get Your Bot Today!</h4>
+      </div>
+      <div class="modal-body">
+        <script type="text/javascript" src="https://snap2.formstack.com/forms/js.php/untitled_form_2">
+        </script>
+        <noscript>
+          <a href="https://snap2.formstack.com/forms/untitled_form_2" title="Online Form">
+            Online Form - KISST web form
+          </a>
+        </noscript>
+        <div style="text-align:right; font-size:x-small;">
+          <a href="http://www.formstack.com?utm_source=jsembed&utm_medium=product&utm_campaign=product+branding&fa=h,2152788" title="HTML Form Builder">
+            HTML Form Builder
+          </a>
         </div>
       </div>
     </div>
-
+  </div>
+</div>
+  
+  
   <nav class="navbar-default" role="navigation">
     <div class="container">
       <div class="navbar-header">
@@ -118,7 +145,7 @@
         <ul class="nav navbar-nav navbar-right">
           <li class="menuItem"><a href="#whatis" data-toggle="collapse" data-target=".navbar-ex1-collapse">What is KISST?</a></li>
           <li class="menuItem"><a href="#uses" data-toggle="collapse" data-target=".navbar-ex1-collapse">Conversations</a></li>
-          <li class="menuItem"><a href="#purchase" data-toggle="collapse" data-target=".navbar-ex1-collapse">Purchase</a></li>
+          <li class="menuItem"><a href="#purchase" data-toggle="modal" data-target="#purchase">Purchase</a></li>
           <li class="menuItem"><a href="/portal" data-toggle="collapse" data-target=".navbar-ex1-collapse">Sign In</a></li>
           <li class="menuItem"><a href="#contact_us" data-toggle="collapse" data-target=".navbar-ex1-collapse">Contact</a></li>
           <li class="menuItem"><a href="#contact_us"><strong>Text our bot at +1 (218) 325-5075</strong></a></li>
@@ -248,50 +275,6 @@
     </div>
   </div>
 
-  <div class="container full-screen">
-    <div class="row">
-          <div id="purchase" class="col-xs-12 purchase-section" style="border-top: 0">
-      <div class="col-xs-12 col-md-5 col-md-offset-3 text-center wrap_title">
-        <h1>Purchase Now</h1>
-        <p class="lead" style="margin-top:0">Your KISST number is Available in Seconds with Any Major Credit Card</p>
-        <ul class="list-group">
-          <li class="list-group-item">
-            <h4> Step 1: Your Cell Number
-            </h4>
-            <button type="button" id="step1" class="btn btn-danger btn-circle" disabled="disabled">
-              <i class="fa fa-mobile fa-3x"></i>
-            </button>
-            <p>
-              When your KISST service is ready, she will text you on your mobile number. You can configure your service using text messaging, or with our easy to use mobile web portal.
-            </p>
-            <input type="tel" id="cellNumber" value="" placeholder="XXX-XXX-XXXX" required="required" title="A valid phone number is required." class="text-center">
-          </li>
-          <li class="list-group-item">
-            <h4> Step 2: Payment
-            </h4>
-            <button type="button" id="step2" class="btn btn-default btn-circle" disabled="disabled"><i class="fa fa-usd fa-3x"></i></button>
-            <p>
-              After providing us with your cell, purchase a KISST number using any major credit card for $30/month. Plan includes our unlimited, single channel messaging plan.
-            </p>
-            <input type="submit" value="Purchase KISST" id="purchaseButton" class="btn  btn-lg mybutton_standard wow swing wow fadeIn">
-            <p class="terms-links">
-              <a href="/terms.pdf">Terms of Service</a>, <a href="/privacy.pdf">Privacy Policy</a>, <a href="/usepolicy.pdf">Acceptable Use Policy</a>
-            </p>
-
-          </li>
-          <li class="list-group-item">
-            <h4> Step 3: Conversations!
-            </h4>
-            <button type="button" id="step3" class="btn btn-default btn-circle" disabled="disabled"><i class="fa fa-smile-o fa-3x"></i></button>
-            <p>
-              That's all there is to it. You just got kisst! Please check your email for your receipt and for login information for your portal. Your KISST service will text you when she's ready to go!
-            </p>
-          </li>
-        </ul>
-      </div>
-    </div>
-    </div>
-  </div>
   <div class="container full-screen">
     <div id="contact_us" class="col-xs-12 contact-section">
       <div class="col-xs-12">

@@ -22,38 +22,19 @@
 #
 
 ShortUUID = require 'shortid'
-Redis = require "redis"
 Os = require("os")
 ChildProcess = require("child_process")
 Url = require("url")
 Request = require("request")
-Request.debug = true
 Mailer = require("nodemailer")
-Moment = require("moment")
 Us = require("underscore.string")
-Parse = require('node-parse-api').Parse
 Async = require('async')
-BitlyAPI = require('node-bitlyapi')
 _ = require('underscore')
 
 module.exports = (robot) ->
   robot.sessions = {}
-  redis_client = Redis.createClient()
-  options =
-    app_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI"
-    api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7"
-  parse = new Parse(options)
-  Bitly = new BitlyAPI(
-    client_id: 'a491e6dd824dd4f070fd810898e939fcb583028b'
-    client_secret: '7478c375e2e2b96df5ce7d05178e3ff8cc2bd61e'
-  )
-  Bitly.setAccessToken('dae862bf86adea3e7f950f8bc1239ca6d75cdac1')
 
   class Session
-    STR_PAD_LEFT = 1
-    STR_PAD_RIGHT = 2
-    STR_PAD_BOTH = 3
-
     constructor: (message, room, @visitor, @visitor_settings)->
       # The variables that make up a Session
       @transcript = ""
@@ -65,14 +46,14 @@ module.exports = (robot) ->
       @room = room
       @command_path = @room.default_path
       @arguments = @assemble_args()
-      @log "Running #{@arguments}"
+      robot.logger "Running #{@arguments}"
 
       # @arguments is an array of words, the first one is the command. Like ruby
       # The rest are parameters, and we send them down as an array.
       @command = @arguments[0]
       @arguments.shift()
       @env = @command_settings()
-      @log "Running with environment: #{JSON.stringify @env}"
+      robot.logger "Running with environment: #{JSON.stringify @env}"
       # send the inital message to the script
       @env.INITIAL_MESSAGE = message
       opts =
@@ -86,23 +67,23 @@ module.exports = (robot) ->
       @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
       @process.on "exit", (code, signal) => @end_session()
       @process.on "error", (err) ->
-        @log "Error thrown from session"
-        @log err
-      @process.stderr.on "data", (buffer) =>
-        @log "Received from stderr #{buffer}"
+        robot.logger "Error thrown from session"
+        robot.logger err
+      @process.stderr.on "data", (buffer) ->
+        robot.logger "Received from stderr #{buffer}"
 
       # Tell the world that the blessed event has occured
       robot.emit "session:start", @
 
     assemble_args: () ->
       if @is_owner()
-        @log "Running as the owner"
+        robot.logger "Running as the owner"
         if @room.test_mode is true
           @room.test_mode = false
           parse.update 'Rooms', @room.objectId,
             { test_mode: false }, (err, response) ->
             if err
-              @log "Error trying to turn off test mode : #{err}"
+              robot.logger "Error trying to turn off test mode : #{err}"
           args = @room.default_cmd.split(" ")
         else
           args = @room.owner_cmd.split(" ")
@@ -117,72 +98,48 @@ module.exports = (robot) ->
       @transcript += line
 
     describe: () =>
-      @log "Describing session : #{@session_id}"
-      @log "ID: #{@process.pid}"
-      @log "NAME: #{@process.title}"
-      @log "UPTIME: #{@process.uptime}"
+      robot.logger "Describing session : #{@session_id}"
+      robot.logger "ID: #{@process.pid}"
+      robot.logger "NAME: #{@process.title}"
+      robot.logger "UPTIME: #{@process.uptime}"
 
     end_session: () =>
-      @log "Ending and recording session #{@session_id}"
+      robot.logger "Ending and recording session #{@session_id}"
       Async.series([
-        @send_goodbye,
         @send_webhook,
         @send_email,
         @delete_session])
 
-    send_goodbye: (callback) =>
-      @log "Looking for an ad to show"
-      if @room.show_ad == true
-        @log "We have an ad"
-        base_link = @room.goodbye_link or "http://www.justkisst.me"
-        url = Url.parse(base_link, true)
-        url.query["src"] = @src
-        url.query["dst"] = @room_name
-        url.query["session_id"] = @session_id
-        url.query["reseller"] = @room.reseller
-
-        @log "Using the closing link #{Url.format(url)}"
-        Bitly.shortenLink encodeURIComponent(Url.format(url)), (err, results) =>
-          @log "Shortened info is #{results}"
-          throw err if err
-          short_url = JSON.parse(results).data.url
-          # Do something with data
-          @handle_incoming_msg(@room.closing_message + short_url)
-          callback(null, "Saved object")
-      else
-        @log "No ads to show"
-        callback(null, "No goodbyes")
-
     send_webhook: (callback) =>
-      @log "Sending a webhook to #{@room.webhook_url}" if !! @room.webhook_url
+      robot.logger "Webhook to #{@room.webhook_url}" if !! @room.webhook_url
       if !! @room.webhook_url
         webhook_options =
-          form:  
+          form:
             transcript: @transcript
             room_id: @room.objectId
             script_id: @room.script.objectId
             settings: @room.settings
-            data: @collected_data 
+            data: @collected_data
         if !! @room.webhook_authtoken
-          webhook_options.headers = 
+          webhook_options.headers =
             Authorization: @room.webhook_authtoken
 
-        @log "Sending JSON as #{JSON.stringify webhook_options}"
+        robot.logger "Sending JSON as #{JSON.stringify webhook_options}"
         Request.post(@room.webhook_url, webhook_options)
-        .on 'response', (response) => 
-            @log "Completed."
-            @log response.statusCode
-            @log response.headers['content-type']
-            callback(null, "Sent hook")
+        .on 'response', (response) ->
+          robot.logger "Completed."
+          robot.logger response.statusCode
+          robot.logger response.headers['content-type']
+          callback(null, "Sent hook")
       else
-        @log "No webhook_url"
+        robot.logger "No webhook_url"
         callback(null, "No webhook")
 
     send_email: (callback) =>
-      @log "Sending emails"
+      robot.logger "Sending emails"
       if @room.notification_emails?
         # Create a SMTP transporter object
-        @log "Sending notification email"
+        robot.logger "Sending notification email"
         transporter = Mailer.createTransport(
           service: "gmail"
           auth:
@@ -197,22 +154,22 @@ module.exports = (robot) ->
           subject: "Conversation Complete"
           text: @transcript
 
-        @log "Sending Mail to #{recipients}"
-        transporter.sendMail message, (error, info) =>
+        robot.logger "Sending Mail to #{recipients}"
+        transporter.sendMail message, (error, info) ->
           if error
-            @log "Error occurred"
-            @log error.message
+            robot.logger "Error occurred"
+            robot.logger error.message
             return
-          @log "Message sent successfully!"
-          @log "Server responded with #{info.response}"
+          robot.logger "Message sent successfully!"
+          robot.logger "Server responded with #{info.response}"
           callback(null, "Mail sent")
       else
-        @log "No notification emails"
+        robot.logger "No notification emails"
         callback(null, "No mails to send")
 
- 
+
     delete_session: (callback) =>
-      @log "Session ended. Who do we have to tell?"
+      robot.logger "Session ended. Who do we have to tell?"
       delete robot.sessions[@session_key]
       robot.emit "session:end", @session_key
       #Add the collected data. That's a great idea.
@@ -229,7 +186,7 @@ module.exports = (robot) ->
       return env_settings
 
     is_owner: () ->
-      @log "Thinking I'm #{@src}"
+      robot.logger "Thinking I'm #{@src}"
       if @room.owners? and @src in @room.owners
         true
       else
@@ -248,7 +205,6 @@ module.exports = (robot) ->
 
     handle_incoming_msg: (text) =>
       # If the message is JSON, treat it as if it were collected data
-      # If so, stick it in a session_id in REDIS for somebody else to handle.
       lines = text.toString().split("\n")
       for line in lines
         line = line.trim()
@@ -286,7 +242,7 @@ module.exports = (robot) ->
     visitor_name = msg.message.user.name.toLowerCase()
     room_name = msg.message.room.toLowerCase()
     session_key =  visitor_name + "_" + room_name
-    robot.emit "log", "Looking for existing session #{session_key}"
+    robot.logger "Looking for existing session #{session_key}"
     session = robot.sessions[session_key]
     clean_text = msg.message.text.trim().toLowerCase()
     if session
@@ -294,7 +250,7 @@ module.exports = (robot) ->
         when "/quit"
           session.process.kill("SIGHUP")
         else
-          robot.emit "log", "Sending #{msg.message.text}"
+          robot.logger "Sending #{msg.message.text}"
           robot.emit "session:ingress_msg",
               session: session
               text: msg.message.text
@@ -304,23 +260,23 @@ module.exports = (robot) ->
       # This is a new session. See if there are settings defined for it.
       # If there are not, then create an empty template for this room
       # That allows the named owner the ability to set it up.
-      robot.emit "log", "Starting a new session"
+      robot.logger "Starting a new session"
       visitor_settings = {}
       visitor = null
 
       Async.series [
         (callback) ->
-          robot.emit "log", "Looking for a room named #{room_name}"
+          robot.logger "Looking for a room named #{room_name}"
           parse.find 'Rooms',
             where:
               name: room_name
             , (err, response) ->
               if err
-                robot.emit "log", "Err in find rooms #{err}:#{response}"
+                robot.logger "Err in find rooms #{err}:#{response}"
                 callback()
                 return
               rooms = response.results
-              robot.emit "log", "Found #{rooms.length} rooms"
+              robot.logger "Found #{rooms.length} rooms"
               # We support /commands on startup as well.
               # If they say /help, or /rooms, give them a list of them
               help_commands = ["help", "?", "rooms", "/help", "/rooms"]
@@ -329,26 +285,26 @@ module.exports = (robot) ->
                 msg.reply "Supported options: #{avail_rooms.toString()}"
                 return
               if err or (rooms.length == 0)
-                robot.emit "log", "Cannot setup room - no room defined"
+                robot.logger "Cannot setup room - no room defined"
               else
                 keywords = (room.keyword for room in rooms)
                 selected_room = null
-                robot.emit "log", " Avail keywords: #{keywords},
-                                    Looking for #{clean_text}"
-                if clean_text in keywords
-                  selected_room = candidate for candidate in rooms when candidate.keyword == clean_text
-                  robot.emit "log", "Found keyword room #{selected_room.desc}"
+                robot.logger "Keywords: #{keywords}, Looking for #{clean_text}"
+                if (clean_text in keywords)
+                  selected_room =
+                    (room for room in rooms when room.keyword == clean_text)
+                  robot.logger "Found keyword room #{selected_room.desc}"
                 unless selected_room?
                   # No room matched. Use the default room
                   for room in rooms
                     if room.default
-                      robot.emit "log", "Found default room : #{room.desc}"
+                      robot.logger "Found default room : #{room.desc}"
                       selected_room = room
                 unless selected_room?
                   # No default room? Take the first room we found.
                   selected_room = rooms[0]
-                  robot.emit "log", "No default room - use first"
-                robot.emit "log", "Using room #{selected_room.objectId}"
+                  robot.logger "No default room - use first"
+                robot.logger "Using room #{selected_room.objectId}"
                 create_session(msg, selected_room, visitor, visitor_settings)
       ]
 

@@ -30,27 +30,26 @@ Mailer = require("nodemailer")
 Us = require("underscore.string")
 Async = require('async')
 _ = require('underscore')
+Events = require('events')
 
 # Connect to the local mongo database
 connection_string = process.env.MONGO_URL or 'localhost/greenbot'
 Db = require('monk')(connection_string)
 Rooms = Db.get('Rooms')
 
+# Helper functions
+info = (text) ->
+  console.log text
+
+
 module.exports = (robot) ->
   robot.sessions = {}
-
-  # Helper functions
-  info = (text) ->
-    robot.logger.info text
-
 
   respond_to_help = (msg) ->
     info "Handle helpish message #{JSON.stringify msg.message}"
 
-  session_key = (msg) ->
-    info 'session key'
-    info JSON.stringify msg.message
-    session_key =  visitor_name(msg) + "_" + room_name(msg)
+  generate_session_key = (msg) ->
+    visitor_name(msg) + "_" + room_name(msg)
 
   clean_text = (msg) ->
     msg_text(msg).trim().toLowerCase()
@@ -60,57 +59,58 @@ module.exports = (robot) ->
 
   room_name = (msg) ->
     name = process.env.DEV_ROOM_NAME or msg.message.room.toLowerCase()
-    info "My name is #{name}"
     name
 
   visitor_name = (msg) ->
-    info 'visitor name'
-    info JSON.stringify msg.message
     msg.message.user.name.toLowerCase()
 
   fetch_room = (msg) ->
-    Rooms.find({name: room_name, keyword: clean_text})
+    name = room_name(msg)
+    Rooms.find({name: name, keyword: clean_text})
       .on 'error', () ->
-        robot.logger.info "Cant find room named #{room_name}"
+        info "Cant find room named #{name}"
         return
       .on 'succcess', (room) ->
-        return room if room
+        if room
+          info 'Found room' + JSON.stringify room
+          return room
         else
           # No room and keyword combination matched
           # Return the default if there's one.
-          robot.logger.info 'No room/keyword found. Check for default'
-          Rooms.find({name: room_name, default: true})
+          info 'No room/keyword found. Check for default'
+          Rooms.find({name: name, default: true})
             .on 'success', (room) ->
               if room
-                robot.logger.info 'Found room. Starting session'
-                create_session msg, room
+                info 'Found room' + JSON.stringify room
+                return room
               else
-                robot.logger.info 'No default room, no matching keyword. Fail.'
+                info 'No default room, no matching keyword. Fail.'
 
 
   class Session
-    constructor: (msg, room)->
+    constructor: (initial_msg, room, robot)->
       # The variables that make up a Session
       @transcript = ""
-      @user = msg.user    # This is the user structure from hubot.
-      info JSON.stringify msg.message
-      @src = visitor_name(msg)
-      @room_name = room_name(msg)
-      @session_key = session_key(msg)
+      @user = initial_msg.user    # This is the user structure from hubot.
+      info JSON.stringify initial_msg.message
+      @src = visitor_name(initial_msg)
+      @room_name = room_name(initial_msg)
+      @session_key = generate_session_key(initial_msg)
       @session_id = ShortUUID.generate()
       @room = room
       @command_path = @room.default_path
       @arguments = @assemble_args()
-      robot.logger.info "Running #{@arguments}"
+      @robot = robot
+      info "Running #{@arguments}"
 
       # @arguments is an array of words, the first one is the command. Like ruby
       # The rest are parameters, and we send them down as an array.
       @command = @arguments[0]
       @arguments.shift()
       @env = @command_settings()
-      robot.logger.info "Running with environment: #{JSON.stringify @env}"
+      info "Running with environment: #{JSON.stringify @env}"
       # send the inital msg to the script
-      @env.INITIAL_msg = msg
+      @env.INITIAL_msg = initial_msg.message.text
       opts =
         cwd: @command_path
         env: @env
@@ -122,27 +122,28 @@ module.exports = (robot) ->
       @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
       @process.on "exit", (code, signal) => @end_session()
       @process.on "error", (err) ->
-        robot.logger.info "Error thrown from session"
-        robot.logger.info err
+        info "Error thrown from session"
+        info err
       @process.stderr.on "data", (buffer) ->
-        robot.logger.info "Received from stderr #{buffer}"
+        info "Received from stderr #{buffer}"
 
       # Tell the world that the blessed event has occured
       robot.emit "session:start", @
 
     assemble_args: () ->
       if @is_owner()
-        robot.logger.info "Running as the owner"
+        info "Running as the owner"
         if @room.test_mode is true
           @room.test_mode = false
           Db.update 'Rooms', @room.objectId,
             { test_mode: false }, (err, response) ->
             if err
-              robot.logger.info "Error trying to turn off test mode : #{err}"
+              info "Error trying to turn off test mode : #{err}"
           args = @room.default_cmd.split(" ")
         else
           args = @room.owner_cmd.split(" ")
       else
+        info 'Arguments taken from ' + JSON.stringify @room
         args = @room.default_cmd.split(" ")
       return args
 
@@ -153,20 +154,20 @@ module.exports = (robot) ->
       @transcript += line
 
     describe: () =>
-      robot.logger.info "Describing session : #{@session_id}"
-      robot.logger.info "ID: #{@process.pid}"
-      robot.logger.info "NAME: #{@process.title}"
-      robot.logger.info "UPTIME: #{@process.uptime}"
+      info "Describing session : #{@session_id}"
+      info "ID: #{@process.pid}"
+      info "NAME: #{@process.title}"
+      info "UPTIME: #{@process.uptime}"
 
     end_session: () =>
-      robot.logger.info "Ending and recording session #{@session_id}"
+      info "Ending and recording session #{@session_id}"
       Async.series([
         @send_webhook,
         @send_email,
         @delete_session])
 
     send_webhook: (callback) =>
-      robot.logger.info "Webhook #{@room.webhook_url}" if !! @room.webhook_url
+      info "Webhook #{@room.webhook_url}" if !! @room.webhook_url
       if !! @room.webhook_url
         webhook_options =
           form:
@@ -179,22 +180,22 @@ module.exports = (robot) ->
           webhook_options.headers =
             Authorization: @room.webhook_authtoken
 
-        robot.logger.info "Sending JSON as #{JSON.stringify webhook_options}"
+        info "Sending JSON as #{JSON.stringify webhook_options}"
         Request.post(@room.webhook_url, webhook_options)
         .on 'response', (response) ->
-          robot.logger.info "Completed."
-          robot.logger.info response.statusCode
-          robot.logger.info response.headers['content-type']
+          info "Completed."
+          info response.statusCode
+          info response.headers['content-type']
           callback(null, "Sent hook")
       else
-        robot.logger.info "No webhook_url"
+        info "No webhook_url"
         callback(null, "No webhook")
 
     send_email: (callback) =>
-      robot.logger.info "Sending emails"
+      info "Sending emails"
       if @room.notification_emails?
         # Create a SMTP transporter object
-        robot.logger.info "Sending notification email"
+        info "Sending notification email"
         transporter = Mailer.createTransport(
           service: "gmail"
           auth:
@@ -209,22 +210,22 @@ module.exports = (robot) ->
           subject: "Conversation Complete"
           text: @transcript
 
-        robot.logger.info "Sending Mail to #{recipients}"
+        info "Sending Mail to #{recipients}"
         transporter.sendMail message, (error, info) ->
           if error
-            robot.logger.info "Error occurred"
-            robot.logger.info error.message
+            info "Error occurred"
+            info error.message
             return
-          robot.logger.info "Message sent successfully!"
-          robot.logger.info "Server responded with #{info.response}"
+          info "Message sent successfully!"
+          info "Server responded with #{info.response}"
           callback(null, "Mail sent")
       else
-        robot.logger.info "No notification emails"
+        info "No notification emails"
         callback(null, "No mails to send")
 
 
     delete_session: (callback) =>
-      robot.logger.info "Session ended. Who do we have to tell?"
+      info "Session ended. Who do we have to tell?"
       delete robot.sessions[@session_key]
       robot.emit "session:end", @session_key
       #Add the collected data. That's a great idea.
@@ -241,7 +242,7 @@ module.exports = (robot) ->
       return env_settings
 
     is_owner: () ->
-      robot.logger.info "Thinking I'm #{@src}"
+      info "Thinking I'm #{@src}"
       if @room.owners? and @src in @room.owners
         true
       else
@@ -293,15 +294,15 @@ module.exports = (robot) ->
       @process.stdin.write("#{text}\n")
       robot.emit("session:inbound_msg", @, text)
 
-  create_session = (msg, room) ->
-    new_session = new Session(msg, room)
+  create_session = (msg, room, robot) ->
+    new_session = new Session(msg, room, robot)
     robot.sessions[new_session.session_key] = new_session
 
   robot.hear /(.*)/i, (msg) ->
     # All messages that come from the network end up here.
-    robot.logger.info JSON.stringify(msg.message)
-    session_name = session_key(msg)
-    robot.logger.info "Looking for existing session #{session_name}"
+    info JSON.stringify(msg.message)
+    session_name = generate_session_key(msg)
+    info "Looking for existing session #{session_name}"
     session = robot.sessions[session_name]
 
     if session
@@ -317,10 +318,11 @@ module.exports = (robot) ->
 
     room = fetch_room(msg)
     if room
-      robot.logger.info "Found room #{room_name msg}, starting session"
-      create_session msg, room
+      info "Found room #{room_name msg}, starting session"
+      info 'Running with room ' + JSON.stringify room
+      create_session msg, room, robot
       return
-    robot.logger.info "No room or default for #{room_name}"
+    info "No room or default for #{room_name}"
 
   robot.on "session:chat_arrived", (session_key, chat_msg) ->
     session = robot.sessions[session_key]

@@ -37,6 +37,7 @@
     "minitest": "^0.2.0",
     "moment": "^2.9.0",
     "monitor": "^0.6.10",
+    "monk": "^1.0.1",
     "morgan": "^1.6.1",
     "multer": "^0.1.8",
     "node-bitlyapi": "^0.4.0",

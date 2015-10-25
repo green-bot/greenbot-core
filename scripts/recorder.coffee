@@ -12,33 +12,12 @@
 #   Thomas Howe
 #
 
-
-Parse = require('node-parse-api').Parse
 Async = require('async')
 _ = require('underscore')
 
 module.exports = (robot) ->
-  options =
-    app_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI"
-    api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7"
-  parse = new Parse(options)
   active_sessions = {}
   active_transcripts = {}
-
-  visitor_data_q = Async.queue (task, callback) ->
-    parse.insert "VisitorData",
-      visitor:
-        __type: "Pointer"
-        className: "Visitors"
-        objectId: task.visitor_id
-      key: task.key
-      value: task.value,
-      (err, response) ->
-        if err
-          robot.emit "log", "Error with visitor data save : #{err} #{response}"
-        else
-          robot.emit "log", "Rembered : #{task.key} as #{task.value}"
-        callback()
 
   update_q = Async.queue (task, callback) ->
     sessionId = task.session.session_id
@@ -52,12 +31,7 @@ module.exports = (robot) ->
         sessionId:  sessionId
         src:        task.session.src
         language:   task.session.room.language
-      parse.insert 'Sessions', session_object, (err, response) ->
-        if err
-          robot.emit "log", "Threw error with data save : #{err} #{response}"
-        else
-          active_sessions[sessionId] = response.objectId
-        callback()
+      callback()
     else
       objectId = active_sessions[sessionId]
       transcript = active_transcripts[sessionId] ? []
@@ -78,11 +52,7 @@ module.exports = (robot) ->
       if task.collected_data?
         update["collected_data"] = task.collected_data
       active_transcripts[sessionId] = transcript
-      parse.update "Sessions", objectId, update,
-        (err, response) ->
-          if err
-            robot.emit "log", "Unable error #{sessionId} #{err}"
-        callback()
+      callback()
   , 1
 
 
@@ -107,4 +77,4 @@ module.exports = (robot) ->
   robot.on "session:end", (sessionId) ->
     delete active_sessions[sessionId]
     delete active_transcripts[sessionId]
-    robot.emit "log", "Removed session #{sessionId} from lc"
+    robot.logger "Removed session #{sessionId} from lc"

@@ -11,7 +11,10 @@ require 'parse-ruby-client'
 require 'timeout'
 require './lib/room'
 
-Parse.init(application_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI", api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7", quiet: true)
+Parse.init(
+  application_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI",
+  api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7",
+  quiet: true)
 
 if ENV['DEVELOPER'] == "true"
   FIVE_MINUTES = 5

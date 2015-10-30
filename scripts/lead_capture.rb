@@ -16,13 +16,16 @@ def pask(prompt, name)
 end
 
 tell ENV['PROMPT_1']
+sleep 10
 ptell ENV['PROMPT_2']
+sleep 10
 
 pask ENV['NAME_PROMPT'], 'name'
 pask ENV['ZIP_PROMPT'], 'zip'
 pask ENV['EMAIL_PROMPT'], 'email'
 
 ptell ENV['THANK_YOU_PROMPT']
+sleep 10
 
 unless ENV['ADDITIONAL_PROMPT_Q'].empty?
   additional_answer = false
@@ -33,6 +36,7 @@ unless ENV['ADDITIONAL_PROMPT_Q'].empty?
     tell ENV['ADDITIONAL_PROMPT_N']
   end
   additional_answer.remember('additional_answer')
+  sleep 10
 end
 
 ptell ENV['SIGNATURE']

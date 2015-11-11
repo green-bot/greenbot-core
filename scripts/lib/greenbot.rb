@@ -1,27 +1,37 @@
 require 'rubygems'
-require 'bundler/setup'
+require 'byebug'
 
+if ENV['DEVELOPER'] == "true"
+  FIVE_MINUTES = 5
+  HALF_AN_HOUR = 30
+  MESSAGE_PACE = 1
+  at_exit byebug if $!
+else
+  FIVE_MINUTES = 5*60
+  HALF_AN_HOUR = 30*60
+  MESSAGE_PACE = 3.1415
+  at_exit {
+    e = $!
+    unless e.nil?
+      Airbrake.notify_or_ignore($!, {
+        error_message: e.message,
+        backtrace: e.backtrace,
+        cgi_data: ENV.to_hash
+        })
+        exit!
+    end
+  }
+end
+require 'bundler/setup'
 require 'highline/import'
 require 'yaml'
 require 'json'
 require 'redis'
 require 'uuidtools'
 require 'airbrake'
-require 'parse-ruby-client'
 require 'timeout'
 require './lib/room'
 
-Parse.init(application_id: "y9Bb9ovtjpM4cCgIesS5o2XVINBjHZunRF1Q8AoI", api_key: "C9s58yZZUqkAh1Yzfc2Ly9NKuAklqjAOhHq8G4v7", quiet: true)
-
-if ENV['DEVELOPER'] == "true"
-  FIVE_MINUTES = 5
-  HALF_AN_HOUR = 30
-  MESSAGE_PACE = 1
-else
-  FIVE_MINUTES = 5*60
-  HALF_AN_HOUR = 30*60
-  MESSAGE_PACE = 3.1415
-end
 
 # Handles the collection and remembering of data
 class SessionData
@@ -237,7 +247,7 @@ end
 
 room_name = ENV['DST']
 room_id = ENV['ROOM_OBJECT_ID']
-$room = Room.new(room_id)
+$room = Room.find_by(objectId: room_id)
 $room.set_environment
 
 session_id = ENV['SESSION_ID'] || UUIDTools::UUID.random_create.to_s
@@ -246,29 +256,4 @@ $session = SessionData.new(session_id)
 
 %w(SRC DST SESSION_ID).each do |s|
   $session.remember(s,ENV[s])
-end
-
-# Catch all uncaught errors here, pass them to Airbrake
-Airbrake.configure do |config|
-  config.api_key = ENV['AIRBRAKE_KEY'] || '466e18742945643dc8c08d6a9e334143'
-end
-
-unless ENV['DEVELOPER'] == "true"
-  at_exit {
-    e = $!
-    unless e.nil?
-      Airbrake.notify_or_ignore($!, {
-        error_message: e.message,
-        backtrace: e.backtrace,
-        cgi_data: ENV.to_hash
-        })
-        exit!
-    end
-  }
-end
-
-
-if ENV['INTERACTIVE'] == "true"
-  require 'pry'
-  binding.pry
 end

@@ -31,11 +31,8 @@ Us = require("underscore.string")
 Async = require('async')
 _ = require('underscore')
 Events = require('events')
-
-# Connect to the local mongo database
-connection_string = process.env.MONGO_URL or 'localhost/greenbot'
-Db = require('monk')(connection_string)
-Rooms = Db.get('Rooms')
+DB = require('mongo')
+Rooms = DB.client.get('Rooms')
 
 # Helper functions
 info = (text) ->
@@ -64,35 +61,11 @@ module.exports = (robot) ->
   visitor_name = (msg) ->
     msg.message.user.name.toLowerCase()
 
-  fetch_room = (msg) ->
-    name = room_name(msg)
-    Rooms.find({name: name, keyword: clean_text})
-      .on 'error', () ->
-        info "Cant find room named #{name}"
-        return
-      .on 'succcess', (room) ->
-        if room
-          info 'Found room' + JSON.stringify room
-          return room
-        else
-          # No room and keyword combination matched
-          # Return the default if there's one.
-          info 'No room/keyword found. Check for default'
-          Rooms.find({name: name, default: true})
-            .on 'success', (room) ->
-              if room
-                info 'Found room' + JSON.stringify room
-                return room
-              else
-                info 'No default room, no matching keyword. Fail.'
-
-
   class Session
     constructor: (initial_msg, room, robot)->
       # The variables that make up a Session
       @transcript = ""
       @user = initial_msg.user    # This is the user structure from hubot.
-      info JSON.stringify initial_msg.message
       @src = visitor_name(initial_msg)
       @room_name = room_name(initial_msg)
       @session_key = generate_session_key(initial_msg)
@@ -101,24 +74,16 @@ module.exports = (robot) ->
       @command_path = @room.default_path
       @arguments = @assemble_args()
       @robot = robot
-      info "Running #{@arguments}"
-
-      # @arguments is an array of words, the first one is the command. Like ruby
-      # The rest are parameters, and we send them down as an array.
       @command = @arguments[0]
       @arguments.shift()
       @env = @command_settings()
-      info "Running with environment: #{JSON.stringify @env}"
-      # send the inital msg to the script
-      @env.INITIAL_msg = initial_msg.message.text
+      @env.INITIAL_msg = initial_msg
       opts =
         cwd: @command_path
         env: @env
 
       # All setup, we now spawn the process.
       @process = ChildProcess.spawn(@command, @arguments, opts)
-
-      # Setup callbacks for incoming data
       @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
       @process.on "exit", (code, signal) => @end_session()
       @process.on "error", (err) ->
@@ -146,9 +111,6 @@ module.exports = (robot) ->
         info 'Arguments taken from ' + JSON.stringify @room
         args = @room.default_cmd.split(" ")
       return args
-
-    log: (text) ->
-      robot.emit "log", "#{@session_id}:#{text}"
 
     transcribe: (line) ->
       @transcript += line
@@ -211,13 +173,13 @@ module.exports = (robot) ->
           text: @transcript
 
         info "Sending Mail to #{recipients}"
-        transporter.sendMail message, (error, info) ->
+        transporter.sendMail message, (error, res) ->
           if error
             info "Error occurred"
             info error.message
             return
           info "Message sent successfully!"
-          info "Server responded with #{info.response}"
+          info "Server responded with #{res.response}"
           callback(null, "Mail sent")
       else
         info "No notification emails"
@@ -235,7 +197,7 @@ module.exports = (robot) ->
       env_settings = _.clone(process.env)
       env_settings.SESSION_ID = @session_id
       env_settings.SRC = @src
-      env_settings.DST = @user.room
+      env_settings.DST = @room_name
       env_settings.ROOM_OBJECT_ID = @room.objectId
       for attrname of @room.settings
         env_settings[attrname] = @room.settings[attrname]
@@ -284,15 +246,15 @@ module.exports = (robot) ->
             @transcribe("#{@room_name}:#{line}\n")
 
     send_cmd_to_session: (text) =>
-      log "Received #{text}"
-      robot.emit "session:ingress_msg",
-          session: session
+      info "Received #{text}"
+      @robot.emit "session:ingress_msg",
+          session: @
           text: text
       @transcribe("#{@src}:#{text}\n")
-      log "Error cmd #{text} to a disconnected session" if @process.connected
-      @describe
+      info "Error cmd #{text} to a disconnected session" if @process.connected
+      @describe()
       @process.stdin.write("#{text}\n")
-      robot.emit("session:inbound_msg", @, text)
+      @robot.emit "session:inbound_msg", @, text
 
   create_session = (msg, room, robot) ->
     new_session = new Session(msg, room, robot)
@@ -300,13 +262,9 @@ module.exports = (robot) ->
 
   robot.hear /(.*)/i, (msg) ->
     # All messages that come from the network end up here.
-    info JSON.stringify(msg.message)
     session_name = generate_session_key(msg)
-    info "Looking for existing session #{session_name}"
     session = robot.sessions[session_name]
-
     if session
-      # This is an existing session. Send the text to be handled
       session.send_cmd_to_session(msg_text msg)
       return
 
@@ -316,13 +274,27 @@ module.exports = (robot) ->
       respond_to_help msg
       return
 
-    room = fetch_room(msg)
-    if room
-      info "Found room #{room_name msg}, starting session"
-      info 'Running with room ' + JSON.stringify room
-      create_session msg, room, robot
-      return
-    info "No room or default for #{room_name}"
+    name = room_name(msg)
+    keyword = clean_text(msg)
+    Rooms.findOne {name: name, keyword: keyword}, (err, room) ->
+      if err
+        info "Can't find #{name}:#{keyword}"
+        return
+      if room
+        info "Found room #{room_name msg}, starting session"
+        create_session msg, room, robot
+        return
+      # No room and keyword combination matched
+      # Return the default if there's one.
+      info 'No room/keyword found. Check for default'
+      Rooms.findOne {name: name, default: true}, (err, room) ->
+        if room
+          info "Found room #{name}, starting session"
+          create_session msg, room, robot
+          return
+        else
+          info 'No default room, no matching keyword. Fail.'
+
 
   robot.on "session:chat_arrived", (session_key, chat_msg) ->
     session = robot.sessions[session_key]

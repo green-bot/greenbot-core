@@ -1,6 +1,7 @@
 production:
   clients:
     default:
+      logger: false
       database: greenbot
       hosts:
         - localhost:27017

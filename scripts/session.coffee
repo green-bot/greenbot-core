@@ -104,7 +104,7 @@ module.exports = (robot) ->
         else
           args = @room.owner_cmd.split(" ")
       else
-        info 'Arguments taken from ' + JSON.stringify @room
+        info "Running as a visitor"
         args = @room.default_cmd.split(" ")
       return args
 
@@ -121,73 +121,8 @@ module.exports = (robot) ->
 
     endSession: () =>
       info "Ending and recording session #{@sessionId}"
-      Async.series([
-        @sendWebhook,
-        @sendEmail,
-        @deleteSession])
-
-    sendWebhook: (callback) =>
-      info "Webhook #{@room.webhook_url}" if !! @room.webhook_url
-      if !! @room.webhook_url
-        webhook_options =
-          form:
-            transcript: @transcript
-            room_id: @room.objectId
-            script_id: @room.script.objectId
-            settings: @room.settings
-            data: @collectedData
-        if !! @room.webhook_authtoken
-          webhook_options.headers =
-            Authorization: @room.webhook_authtoken
-
-        info "Sending JSON as #{JSON.stringify webhook_options}"
-        Request.post(@room.webhook_url, webhook_options)
-        .on 'response', (response) ->
-          info "Completed."
-          info response.statusCode
-          info response.headers['content-type']
-          callback(null, "Sent hook")
-      else
-        info "No webhook_url"
-        callback(null, "No webhook")
-
-    sendEmail: (callback) =>
-      info "Sending emails"
-      if @room.notification_emails?
-        # Create a SMTP transporter object
-        info "Sending notification email"
-        transporter = Mailer.createTransport(
-          service: "gmail"
-          auth:
-            user: @room.mail_user
-            pass: @room.mail_pass
-        )
-        # Message object
-        recipients = @room.notification_emails.join(",")
-        message =
-          from: @room.mail_user
-          to: recipients
-          subject: "Conversation Complete"
-          text: @transcript
-
-        info "Sending Mail to #{recipients}"
-        transporter.sendMail message, (error, res) ->
-          if error
-            info "Error occurred"
-            info error.message
-            return
-          info "Message sent successfully!"
-          info "Server responded with #{res.response}"
-          callback(null, "Mail sent")
-      else
-        info "No notification emails"
-        callback(null, "No mails to send")
-
-
-    deleteSession: (callback) =>
-      info "Session ended. Who do we have to tell?"
+      robot.emit 'session:ended', @sessionId
       delete robot.sessions[@sessionKey]
-      callback(null, "No goodbyes")
 
     cmdSettings: () ->
       env_settings = _.clone(process.env)

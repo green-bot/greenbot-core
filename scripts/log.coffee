@@ -22,6 +22,6 @@ module.exports = (robot) ->
       port: 48986)
     ])
 
-  robot.on "log", (string) ->
-    robot.logger.info string
-    winston.info string
+  robot.on "log", (text) ->
+    console.log text
+    winston.info text

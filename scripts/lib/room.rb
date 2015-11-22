@@ -9,8 +9,9 @@ require 'uuidtools'
 require 'airbrake'
 require 'timeout'
 
-
 Mongoid.load!('lib/mongoid.yml', :production)
+Mongoid.logger = Logger.new("/dev/null")
+
 
 # Handles the Script collection in Mongo
 class Script

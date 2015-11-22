@@ -15,66 +15,68 @@
 Async = require('async')
 _ = require('underscore')
 
+connectionString = process.env.MONGO_URL or 'localhost/greenbot'
+Db = require('monk')(connectionString)
+Sessions = Db.get('Sessions')
+
 module.exports = (robot) ->
-  active_sessions = {}
-  active_transcripts = {}
-
   update_q = Async.queue (task, callback) ->
-    sessionId = task.session.session_id
-    unless sessionId of active_sessions
-      robot.emit "log", "New session with key #{task.session.session_id}"
-      session_object=
-        room:
-          __type:     'Pointer'
-          className:  'Rooms'
-          objectId:   task.session.room.objectId
-        sessionId:  sessionId
-        src:        task.session.src
-        language:   task.session.room.language
-      callback()
+    console.log task
+    if task.type == 'session:start'
+      # Can't find a session with that keyword. Make one.
+      s =
+        sessionId: task.session.sessionId
+        src: task.session.src
+        dst: task.session.dst
+        roomId: task.session.roomId
+        transcript: []
+      Sessions.insert(s).then () ->
+        callback()
     else
-      objectId = active_sessions[sessionId]
-      transcript = active_transcripts[sessionId] ? []
-      update = {}
-
-      if task.ingress_msg?
-        new_line =
-          direction: "ingress"
-          text: task.ingress_msg
-        transcript.push(new_line)
-        update["transcript"] = JSON.stringify transcript
-      if task.egress_msg?
-        new_line =
-          direction: "egress"
-          text: task.egress_msg
-        transcript.push(new_line)
-        update["transcript"] = JSON.stringify transcript
-      if task.collected_data?
-        update["collected_data"] = task.collected_data
-      active_transcripts[sessionId] = transcript
-      callback()
+      sessionId = task.sessionId
+      query = Sessions.findOne { 'sessionId': sessionId }
+      query.on 'success', (s) ->
+        if s
+          switch task.type
+            when 'session:ingress_msg'
+              new_line =
+                direction: 'ingress'
+                text: task.text
+              s.transcript.push(new_line)
+            when 'session:egress_msg'
+              new_line =
+                direction: 'egress'
+                text: task.text
+              s.transcript.push(new_line)
+            when 'session:collected_data'
+              s.collected_data = collected_data
+          Sessions.update {sessionId: s.sessionId}, s
+        callback()
   , 1
 
-
-  robot.on "session:ingress_msg", (msg) ->
+  robot.on 'session:ingress_msg', (sessionId, text) ->
     new_task =
-      session: msg.session
-      ingress_msg: msg.text
+      type: 'session:ingress_msg'
+      sessionId: sessionId
+      text: text
     update_q.push new_task
 
-  robot.on "session:egress_msg", (msg) ->
+  robot.on 'session:egress_msg', (sessionId, text) ->
     new_task =
-      session: msg.session
-      egress_msg: msg.text
+      type: 'session:egress_msg'
+      sessionId: sessionId
+      text: text
     update_q.push new_task
 
-  robot.on "session:data", (msg) ->
+  robot.on 'session:data', (msg) ->
     new_task =
-      session: msg.session
+      type: 'session:data'
+      sessionId: msg.session.sessionId
       collected_data: msg.collected_data
     update_q.push new_task
 
-  robot.on "session:end", (sessionId) ->
-    delete active_sessions[sessionId]
-    delete active_transcripts[sessionId]
-    robot.logger "Removed session #{sessionId} from lc"
+  robot.on 'session:start', (session) ->
+    new_task =
+      type: 'session:start'
+      session: session
+    update_q.push new_task

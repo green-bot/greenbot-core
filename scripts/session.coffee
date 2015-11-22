@@ -1,23 +1,6 @@
 # Description
 #
-# Session connects users with shell scripts. All inbound messages are handled by
-# this script, and each inbound message is sent to an arbitrary unix shell
-# script for handling. When a user sends his first message, Session will create
-# a new process and run the specified script, saving pointers to stdin, stdout
-# and stderr. Session will then pass this message into the script through stdin.
-# Any more messages from that user will be passed into the same script. If the
-# script sends messages back out, this script will forward those to the original
-# user. When the script ends, the session will also end, and the first new
-# message from that user will create a new session. Every session is identified
-# by a unique short sessionId; scripts that write data to a JSON file with that
-# will be collected by this script. # As a convenience, and for further
-# processing, Session will emits events to handle session life cycle (start and
-# finish), messaging in the session (stdin, stdout, stderr) and listen for any
-# JSON file and emit that as an event as well. # Configuration: commandPath:
-# The default path of the file to be executed. command: The command line to
-# execute # Notes: - This script will listen for all messages, and disregards
-# any naming of the bot, etc. In short, I don't think it will play all that well
-# with other scripts. YMMV
+# Session connects users with shell scripts.
 # Author: howethomas
 #
 
@@ -31,10 +14,12 @@ Us = require("underscore.string")
 Async = require('async')
 _ = require('underscore')
 Events = require('events')
+Util = require('util')
 
 connectionString = process.env.MONGO_URL or 'localhost/greenbot'
 Db = require('monk')(connectionString)
 Rooms = Db.get('Rooms')
+Sessions = Db.get('Sessions')
 
 
 module.exports = (robot) ->
@@ -47,41 +32,46 @@ module.exports = (robot) ->
   robot_emit = (key, text) ->
     robot.emit key, text
 
-  respond_to_help = (msg) ->
+  respToHelp = (msg) ->
     info "Handle helpish message #{JSON.stringify msg.message}"
 
-  generate_sessionKey = (msg) ->
-    visitor_name(msg) + "_" + roomName(msg)
+  genSessionKey = (msg) ->
+    visitor_name(msg) + "_" + msg.message.room.toLowerCase()
 
-  clean_text = (msg) ->
+  cleanText = (msg) ->
     msg_text(msg).trim().toLowerCase()
 
   msg_text = (msg) ->
     msg.message.text
 
-  roomName = (msg) ->
-    name = process.env.DEV_ROOM_NAME or msg.message.room.toLowerCase()
-    name
-
   visitor_name = (msg) ->
     msg.message.user.name.toLowerCase()
+
+  sessionUpdate = Async.queue (session, callback) ->
+    q = { sessionId: session.sessionId }
+    update = session.information()
+    opts = { upsert: true }
+    Sessions.findAndModify(q,update,opts).then (err, session) ->
+      info "Threw error on database update #{util.inspect err}" if err
+      callback()
+
 
   class Session
     constructor: (initial_msg, room, robot)->
       # The variables that make up a Session
-      @transcript = ""
+      @transcript = []
       @user = initial_msg.user    # This is the user structure from hubot.
       @src = visitor_name(initial_msg)
-      @roomName = roomName(initial_msg)
-      @sessionKey = generate_sessionKey(initial_msg)
+      @roomName = room.name
+      @sessionKey = genSessionKey(initial_msg)
       @sessionId = ShortUUID.generate()
       @room = room
       @commandPath = @room.default_path
-      @arguments = @assemble_args()
+      @arguments = @assembleArgs()
       @command = @arguments[0]
       @arguments.shift()
-      @initialMsg = clean_text(initial_msg)
-      @env = @command_settings()
+      @initialMsg = cleanText(initial_msg)
+      @env = @cmdSettings()
       @env.INITIAL_MSG = @initialMsg
       opts =
         cwd: @commandPath
@@ -89,16 +79,20 @@ module.exports = (robot) ->
 
       # All setup, we now spawn the process.
       @process = ChildProcess.spawn(@command, @arguments, opts)
-      @process.stdout.on "data", (buffer) => @handle_incoming_msg(buffer)
-      @process.on "exit", (code, signal) => @end_session()
+      @process.stdout.on "data", (buffer) => @egressMsg(buffer)
+      @process.on "exit", (code, signal) => @endSession()
       @process.on "error", (err) ->
         info "Error thrown from session"
         info err
       @process.stderr.on "data", (buffer) ->
         info "Received from stderr #{buffer}"
 
-    assemble_args: () ->
-      if @is_owner()
+      # Now save it in the database
+    updateDb: () ->
+      sessionUpdate.push @
+
+    assembleArgs: () ->
+      if @isOwner()
         info "Running as the owner"
         if @room.test_mode is true
           @room.test_mode = false
@@ -114,15 +108,6 @@ module.exports = (robot) ->
         args = @room.default_cmd.split(" ")
       return args
 
-    transcribe: (line) ->
-      @transcript += line
-
-    describe: () =>
-      info "Describing session : #{@sessionId}"
-      info "ID: #{@process.pid}"
-      info "NAME: #{@process.title}"
-      info "UPTIME: #{@process.uptime}"
-
     information: () ->
       transcript:     @transcript
       src:            @src
@@ -132,15 +117,16 @@ module.exports = (robot) ->
       commandPath:    @commandPath
       arguments:      @arguments
       roomId:         @room.objectId
+      collectedData:  @collectedData
 
-    end_session: () =>
+    endSession: () =>
       info "Ending and recording session #{@sessionId}"
       Async.series([
-        @send_webhook,
-        @send_email,
-        @delete_session])
+        @sendWebhook,
+        @sendEmail,
+        @deleteSession])
 
-    send_webhook: (callback) =>
+    sendWebhook: (callback) =>
       info "Webhook #{@room.webhook_url}" if !! @room.webhook_url
       if !! @room.webhook_url
         webhook_options =
@@ -149,7 +135,7 @@ module.exports = (robot) ->
             room_id: @room.objectId
             script_id: @room.script.objectId
             settings: @room.settings
-            data: @collected_data
+            data: @collectedData
         if !! @room.webhook_authtoken
           webhook_options.headers =
             Authorization: @room.webhook_authtoken
@@ -165,7 +151,7 @@ module.exports = (robot) ->
         info "No webhook_url"
         callback(null, "No webhook")
 
-    send_email: (callback) =>
+    sendEmail: (callback) =>
       info "Sending emails"
       if @room.notification_emails?
         # Create a SMTP transporter object
@@ -198,14 +184,12 @@ module.exports = (robot) ->
         callback(null, "No mails to send")
 
 
-    delete_session: (callback) =>
+    deleteSession: (callback) =>
       info "Session ended. Who do we have to tell?"
       delete robot.sessions[@sessionKey]
-      robot.emit "session:end", @sessionKey
-      #Add the collected data. That's a great idea.
       callback(null, "No goodbyes")
 
-    command_settings: () ->
+    cmdSettings: () ->
       env_settings = _.clone(process.env)
       env_settings.sessionId = @sessionId
       env_settings.SRC = @src
@@ -215,14 +199,15 @@ module.exports = (robot) ->
         env_settings[attrname] = @room.settings[attrname]
       return env_settings
 
-    is_owner: () ->
-      info "Thinking I'm #{@src}"
+    isOwner: () ->
       if @room.owners? and @src in @room.owners
+        info "Running session #{@sessionId} as the owner"
         true
       else
+        info "Running session #{@sessionId} as a visitor"
         false
 
-    is_json_string: (str) ->
+    isJson: (str) ->
       # When a text message comes from a session, if it's a valid JSON
       # string, we will treat it as a command or data. This function
       # allows us to figure that out.
@@ -233,68 +218,53 @@ module.exports = (robot) ->
       true
 
 
-    handle_incoming_msg: (text) =>
-      # If the message is JSON, treat it as if it were collected data
+    egressMsg: (text) =>
       lines = text.toString().split("\n")
       for line in lines
         line = line.trim()
-        if @is_json_string line
-          @collected_data = JSON.parse line
-          msg =
-            session:  @
-            collected_data:     line
-          robot.emit "session:data", msg
+        if @isJson line
+          # If the message is JSON, treat it as if it were collected data
+          @collectedData = JSON.parse line
+          @updateDb()
         else
           # It's not JSON, gotta be a message.
-          # because this might be a throttled service, we put this message in an
-          # array that holds the outbound messages.  Peridoically,
-          # and for a service
-          # like Nexmo, this is a one message per second rate.
           if line.length > 0
             robot.send @user, line
-            robot.emit "session:egress_msg", @sessionId, line
-            @transcribe("#{@roomName}:#{line}\n")
+            @transcript.push { direction: 'egress', text: line}
+            @updateDb()
 
-    send_cmd_to_session: (text) =>
-      info "Received #{text}"
-      robot_emit "session:ingress_msg",
-          session: @.information()
-          text: text
-      @transcribe("#{@src}:#{text}\n")
-      info "Error cmd #{text} to a disconnected session" if @process.connected
-      @describe()
+    ingressMsg: (text) =>
       @process.stdin.write("#{text}\n")
-      robot_emit "session:ingress_msg", @sessionId, text
+      @transcript.push { direction: 'ingress', text: text}
+      @updateDb()
 
-  create_session = (msg, room, robot) ->
+  createSession = (msg, room, robot) ->
     new_session = new Session(msg, room, robot)
     robot.sessions[new_session.sessionKey] = new_session
-    # Tell the world that the blessed event has occured
-    robot.emit "session:start", new_session.information()
 
   robot.hear /(.*)/i, (msg) ->
     # All messages that come from the network end up here.
-    session_name = generate_sessionKey(msg)
+    session_name = genSessionKey(msg)
     session = robot.sessions[session_name]
     if session
-      session.send_cmd_to_session(msg_text msg)
+      session.ingressMsg(msg_text msg)
       return
 
     # If this is a command to handle the directory, handle it.
-    help_commands = ["help", "?", "rooms", "/help", "/rooms"]
-    if  msg in help_commands
-      respond_to_help msg
+    helpCmds = ["help", "?", "rooms", "/help", "/rooms"]
+    if  msg in helpCmds
+      respToHelp msg
       return
 
-    name = roomName(msg)
-    keyword = clean_text(msg)
+    name = msg.message.room.toLowerCase()
+    keyword = cleanText(msg)
     Rooms.findOne {name: name, keyword: keyword}, (err, room) ->
       if err
         info "Can't find #{name}:#{keyword}"
         return
       if room
         info "Found room #{roomName msg}, starting session"
-        create_session msg, room, robot
+        createSession msg, room, robot
         return
       # No room and keyword combination matched
       # Return the default if there's one.
@@ -302,12 +272,7 @@ module.exports = (robot) ->
       Rooms.findOne {name: name, default: true}, (err, room) ->
         if room
           info "Found room #{name}, starting session"
-          create_session msg, room, robot
+          createSession msg, room, robot
           return
         else
           info 'No default room, no matching keyword. Fail.'
-
-
-  robot.on "session:chat_arrived", (sessionKey, chat_msg) ->
-    session = robot.sessions[sessionKey]
-    session.handle_incoming_msg(chat_msg)

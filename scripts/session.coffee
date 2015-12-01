@@ -21,19 +21,10 @@ Db = require('monk')(connectionString)
 Rooms = Db.get('Rooms')
 Sessions = Db.get('Sessions')
 
-
 module.exports = (robot) ->
-  robot.sessions = {}
-
   # Helper functions
   info = (text) ->
     robot.emit 'log', text
-
-  robot_emit = (key, text) ->
-    robot.emit key, text
-
-  respToHelp = (msg) ->
-    info "Handle helpish message #{JSON.stringify msg.message}"
 
   genSessionKey = (msg) ->
     visitor_name(msg) + "_" + msg.message.room.toLowerCase()
@@ -57,28 +48,73 @@ module.exports = (robot) ->
 
 
   class Session
-    constructor: (initial_msg, room, robot)->
+    @active = []
+
+    @findOrCreate: (hubotMsg) ->
+      # All messages that come from the network end up here.
+      session_name = genSessionKey(hubotMsg)
+      session = @active[session_name]
+      if session
+        # We already have a session, so send it off.
+        session.ingressMsg(msg_text hubotMsg)
+      else
+        # No session active. Kick one off.
+        name = process.env.DEV_ROOM_NAME or hubotMsg.message.room.toLowerCase()
+        keyword = cleanText(hubotMsg)
+        Rooms.findOne {name: name, keyword: keyword}, (err, room) ->
+          info "Can't find #{name}:#{keyword}" if err
+          if room
+            info "Found room #{name}, starting session"
+            new Session(hubotMsg, room)
+          return if room or err
+
+          # No room and keyword combination matched
+          # Return the default if there's one.
+          info 'No room/keyword found. Check for default'
+          Rooms.findOne {name: name, default: true}, (err, room) ->
+            if room
+              info "Found room #{name}, starting session"
+              new Session(hubotMsg, room)
+            else
+              info 'No default room, no matching keyword. Fail.'
+
+    constructor: (@hubotMsg, @room) ->
       # The variables that make up a Session
       @transcript = []
-      @user = initial_msg.user    # This is the user structure from hubot.
-      @src = visitor_name(initial_msg)
-      @roomName = room.name
-      @sessionKey = genSessionKey(initial_msg)
+      @user = @hubotMsg.user    # This is the user structure from hubot.
+      @src = visitor_name(@hubotMsg)
+      @sessionKey = genSessionKey(@hubotMsg)
       @sessionId = ShortUUID.generate()
-      @room = room
-      @commandPath = @room.default_path
-      @arguments = @assembleArgs()
+      Session.active[@sessionKey] = @
+      @createSessionEnv()
+      @startProcess()
+
+    createSessionEnv: () ->
+      if @isOwner()
+        info "Running as the owner"
+        if @room.test_mode is true
+          @room.test_mode = false
+          Db.update 'Rooms', @room.objectId,
+            { test_mode: false }, (err, response) ->
+            if err
+              info "Error trying to turn off test mode : #{err}"
+          @arguments  = @room.default_cmd.split(" ")
+        else
+          @arguments  = @room.owner_cmd.split(" ")
+      else
+        info "Running as a visitor"
+        @arguments  = @room.default_cmd.split(" ")
       @command = @arguments[0]
       @arguments.shift()
-      @initialMsg = cleanText(initial_msg)
       @env = @cmdSettings()
-      @env.INITIAL_MSG = @initialMsg
-      opts =
-        cwd: @commandPath
+      @env.INITIAL_MSG = cleanText(@hubotMsg)
+      @opts =
+        cwd: @room.default_path
         env: @env
 
+    startProcess: () ->
       # All setup, we now spawn the process.
-      @process = ChildProcess.spawn(@command, @arguments, opts)
+      @process = ChildProcess.spawn(@command, @arguments, @opts)
       @process.stdout.on "data", (buffer) => @egressMsg(buffer)
       @process.on "exit", (code, signal) => @endSession()
       @process.on "error", (err) ->
@@ -91,44 +127,24 @@ module.exports = (robot) ->
     updateDb: () ->
       sessionUpdate.push @
 
-    assembleArgs: () ->
-      if @isOwner()
-        info "Running as the owner"
-        if @room.test_mode is true
-          @room.test_mode = false
-          Db.update 'Rooms', @room.objectId,
-            { test_mode: false }, (err, response) ->
-            if err
-              info "Error trying to turn off test mode : #{err}"
-          args = @room.default_cmd.split(" ")
-        else
-          args = @room.owner_cmd.split(" ")
-      else
-        info "Running as a visitor"
-        args = @room.default_cmd.split(" ")
-      return args
-
     information: () ->
       transcript:     @transcript
       src:            @src
-      roomName:       @roomName
       sessionKey:     @sessionKey
       sessionId:      @sessionId
-      commandPath:    @commandPath
-      arguments:      @arguments
       roomId:         @room.objectId
       collectedData:  @collectedData
 
-    endSession: () =>
+    endSession: () ->
       info "Ending and recording session #{@sessionId}"
       robot.emit 'session:ended', @sessionId
-      delete robot.sessions[@sessionKey]
+      delete Session.active[@sessionKey]
 
     cmdSettings: () ->
       env_settings = _.clone(process.env)
       env_settings.sessionId = @sessionId
       env_settings.SRC = @src
-      env_settings.DST = @roomName
+      env_settings.DST = @room.name
       env_settings.ROOM_OBJECT_ID = @room.objectId
       for attrname of @room.settings
         env_settings[attrname] = @room.settings[attrname]
@@ -152,7 +168,6 @@ module.exports = (robot) ->
         return false
       true
 
-
     egressMsg: (text) =>
       lines = text.toString().split("\n")
       for line in lines
@@ -165,49 +180,15 @@ module.exports = (robot) ->
           # It's not JSON, gotta be a message.
           if line.length > 0
             robot.send @user, line
+            info "#{@sessionId}: #{@room.name}: #{line}"
             @transcript.push { direction: 'egress', text: line}
             @updateDb()
 
     ingressMsg: (text) =>
       @process.stdin.write("#{text}\n")
       @transcript.push { direction: 'ingress', text: text}
+      info "#{@sessionId}: #{@src}: #{text}"
       @updateDb()
 
-  createSession = (msg, room, robot) ->
-    new_session = new Session(msg, room, robot)
-    robot.sessions[new_session.sessionKey] = new_session
-
   robot.hear /(.*)/i, (msg) ->
-    # All messages that come from the network end up here.
-    session_name = genSessionKey(msg)
-    session = robot.sessions[session_name]
-    if session
-      session.ingressMsg(msg_text msg)
-      return
-
-    # If this is a command to handle the directory, handle it.
-    helpCmds = ["help", "?", "rooms", "/help", "/rooms"]
-    if  msg in helpCmds
-      respToHelp msg
-      return
-
-    name = msg.message.room.toLowerCase()
-    keyword = cleanText(msg)
-    Rooms.findOne {name: name, keyword: keyword}, (err, room) ->
-      if err
-        info "Can't find #{name}:#{keyword}"
-        return
-      if room
-        info "Found room #{roomName msg}, starting session"
-        createSession msg, room, robot
-        return
-      # No room and keyword combination matched
-      # Return the default if there's one.
-      info 'No room/keyword found. Check for default'
-      Rooms.findOne {name: name, default: true}, (err, room) ->
-        if room
-          info "Found room #{name}, starting session"
-          createSession msg, room, robot
-          return
-        else
-          info 'No default room, no matching keyword. Fail.'
+    Session.findOrCreate(msg)

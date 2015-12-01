@@ -14,14 +14,16 @@
 
 Winston = require('winston')
 Papertrail = require('winston-papertrail').Papertrail
+testLogger = new (Winston.Logger)(
+  transports: [ new (Winston.transports.Papertrail)(
+    host: 'logs2.papertrailapp.com'
+    port: 48986)
+  ])
 
 module.exports = (robot) ->
-  winston = new (Winston.Logger)(
-    transports: [ new (Winston.transports.Papertrail)(
-      host: 'logs2.papertrailapp.com'
-      port: 48986)
-    ])
-
+  logme = (text) ->
+    testLogger.info text if testLogger?
+    
   robot.on "log", (text) ->
     console.log text
-    winston.info text
+    testLogger.info text

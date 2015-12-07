@@ -8,7 +8,6 @@ ShortUUID = require 'shortid'
 Os = require("os")
 ChildProcess = require("child_process")
 Url = require("url")
-Request = require("request")
 Mailer = require("nodemailer")
 Us = require("underscore.string")
 Async = require('async')
@@ -29,8 +28,8 @@ module.exports = (robot) ->
   genSessionKey = (msg) ->
     visitor_name(msg) + "_" + msg.message.room.toLowerCase()
 
-  cleanText = (msg) ->
-    msg_text(msg).trim().toLowerCase()
+  cleanText = (text) ->
+    text.trim().toLowerCase()
 
   msg_text = (msg) ->
     msg.message.text
@@ -60,7 +59,7 @@ module.exports = (robot) ->
       else
         # No session active. Kick one off.
         name = process.env.DEV_ROOM_NAME or hubotMsg.message.room.toLowerCase()
-        keyword = cleanText(hubotMsg)
+        keyword = cleanText(msg_text(hubotMsg))
         Rooms.findOne {name: name, keyword: keyword}, (err, room) ->
           info "Can't find #{name}:#{keyword}" if err
           if room
@@ -86,6 +85,7 @@ module.exports = (robot) ->
       @sessionKey = genSessionKey(@hubotMsg)
       @sessionId = ShortUUID.generate()
       Session.active[@sessionKey] = @
+      @automated = true
       @createSessionEnv()
       @startProcess()
 
@@ -107,7 +107,7 @@ module.exports = (robot) ->
       @command = @arguments[0]
       @arguments.shift()
       @env = @cmdSettings()
-      @env.INITIAL_MSG = cleanText(@hubotMsg)
+      @env.INITIAL_MSG = cleanText(msg_text(@hubotMsg))
       @opts =
         cwd: @room.default_path
         env: @env
@@ -185,10 +185,19 @@ module.exports = (robot) ->
             @updateDb()
 
     ingressMsg: (text) =>
-      @process.stdin.write("#{text}\n")
+      if cleanText(text) == '/human'
+        @automated = false
+        robot.emit 'livechat:newsession', @information()
+      if @automated
+        @process.stdin.write("#{text}\n")
+      else
+        robot.emit 'livechat:ingress', @information(), text
       @transcript.push { direction: 'ingress', text: text}
       info "#{@sessionId}: #{@src}: #{text}"
       @updateDb()
 
   robot.hear /(.*)/i, (msg) ->
     Session.findOrCreate(msg)
+
+  robot.on 'livechat:egress', (sessionKey, text) ->
+    console.log "Received #{text} for #{sessionKey}"

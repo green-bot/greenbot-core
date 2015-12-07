@@ -14,6 +14,7 @@ Async = require('async')
 _ = require('underscore')
 Events = require('events')
 Util = require('util')
+Stream = require('stream')
 
 connectionString = process.env.MONGO_URL or 'localhost/greenbot'
 Db = require('monk')(connectionString)
@@ -87,7 +88,20 @@ module.exports = (robot) ->
       Session.active[@sessionKey] = @
       @automated = true
       @createSessionEnv()
-      @startProcess()
+
+      # Start the process, connect the pipes
+      @process = @startProcess()
+      @ingressProcessStream = new Stream.PassThrough()
+      @egressProcessStream = new Stream.PassThrough()
+      @ingressProcessStream.pipe(@process.stdin)
+      @process.stdout.pipe(@egressProcessStream)
+      @egressProcessStream.on "data", (buffer) => @egressMsg(buffer)
+      @egressProcessStream.on "end", (code, signal) => @endSession()
+      @egressProcessStream.on "error", (err) ->
+        info "Error thrown from session"
+        info err
+      @process.stderr.on "data", (buffer) ->
+        info "Received from stderr #{buffer}"
 
     createSessionEnv: () ->
       if @isOwner()
@@ -114,14 +128,7 @@ module.exports = (robot) ->
 
     startProcess: () ->
       # All setup, we now spawn the process.
-      @process = ChildProcess.spawn(@command, @arguments, @opts)
-      @process.stdout.on "data", (buffer) => @egressMsg(buffer)
-      @process.on "exit", (code, signal) => @endSession()
-      @process.on "error", (err) ->
-        info "Error thrown from session"
-        info err
-      @process.stderr.on "data", (buffer) ->
-        info "Received from stderr #{buffer}"
+      ChildProcess.spawn(@command, @arguments, @opts)
 
       # Now save it in the database
     updateDb: () ->
@@ -189,7 +196,7 @@ module.exports = (robot) ->
         @automated = false
         robot.emit 'livechat:newsession', @information()
       if @automated
-        @process.stdin.write("#{text}\n")
+        @ingressProcessStream.write("#{text}\n")
       else
         robot.emit 'livechat:ingress', @information(), text
       @transcript.push { direction: 'ingress', text: text}

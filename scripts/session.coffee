@@ -27,16 +27,16 @@ module.exports = (robot) ->
     robot.emit 'log', text
 
   genSessionKey = (msg) ->
-    visitor_name(msg) + "_" + msg.message.room.toLowerCase()
+    msg.src + "_" + msg.dst
 
   cleanText = (text) ->
     text.trim().toLowerCase()
 
   msg_text = (msg) ->
-    msg.message.text
+    msg.txt
 
   visitor_name = (msg) ->
-    msg.message.user.name.toLowerCase()
+    msg.src.toLowerCase()
 
   sessionUpdate = Async.queue (session, callback) ->
     q = { sessionId: session.sessionId }
@@ -48,32 +48,30 @@ module.exports = (robot) ->
 
   class LanguageStream extends Stream.PassThrough
     _write : (chunk, enc, cb) ->
-      info "writing #{chunk}"
       super arguments...
 
     _read: (n) ->
-      info "reading #{n}"
       super arguments...
 
   class Session
     @active = []
 
-    @findOrCreate: (hubotMsg) ->
+    @findOrCreate: (msg, cb) ->
       # All messages that come from the network end up here.
-      session_name = genSessionKey(hubotMsg)
+      session_name = genSessionKey(msg)
       session = @active[session_name]
       if session
         # We already have a session, so send it off.
-        session.ingressMsg(msg_text hubotMsg)
+        session.ingressMsg(msg.txt)
       else
         # No session active. Kick one off.
-        name = process.env.DEV_ROOM_NAME or hubotMsg.message.room.toLowerCase()
-        keyword = cleanText(msg_text(hubotMsg))
+        name = process.env.DEV_ROOM_NAME or msg.dst.toLowerCase()
+        keyword = cleanText(msg.txt)
         Rooms.findOne {name: name, keyword: keyword}, (err, room) ->
           info "Can't find #{name}:#{keyword}" if err
           if room
             info "Found room #{name}, starting session"
-            new Session(hubotMsg, room)
+            new Session(hubotMsg, room, cb)
           return if room or err
 
           # No room and keyword combination matched
@@ -82,16 +80,16 @@ module.exports = (robot) ->
           Rooms.findOne {name: name, default: true}, (err, room) ->
             if room
               info "Found room #{name}, starting session"
-              new Session(hubotMsg, room)
+              new Session(msg, room, cb)
             else
               info 'No default room, no matching keyword. Fail.'
 
-    constructor: (@hubotMsg, @room) ->
+    constructor: (@msg, @room, @cb) ->
       # The variables that make up a Session
       @transcript = []
-      @user = @hubotMsg.user    # This is the user structure from hubot.
-      @src = visitor_name(@hubotMsg)
-      @sessionKey = genSessionKey(@hubotMsg)
+      @src = @msg.src
+      @dst = @msg.dst.toLowerCase()
+      @sessionKey = genSessionKey(@msg)
       @sessionId = ShortUUID.generate()
       Session.active[@sessionKey] = @
       @automated = true
@@ -133,7 +131,7 @@ module.exports = (robot) ->
       @command = @arguments[0]
       @arguments.shift()
       @env = @cmdSettings()
-      @env.INITIAL_MSG = cleanText(msg_text(@hubotMsg))
+      @env.INITIAL_MSG = @msg.txt
       @opts =
         cwd: @room.default_path
         env: @env
@@ -160,7 +158,7 @@ module.exports = (robot) ->
       env_settings = _.clone(process.env)
       env_settings.sessionId = @sessionId
       env_settings.SRC = @src
-      env_settings.DST = @room.name
+      env_settings.DST = @dst
       env_settings.ROOM_OBJECT_ID = @room.objectId
       for attrname of @room.settings
         env_settings[attrname] = @room.settings[attrname]
@@ -195,7 +193,7 @@ module.exports = (robot) ->
         else
           # It's not JSON, gotta be a message.
           if line.length > 0
-            robot.send @user, line
+            @cb @src, line
             info "#{@sessionId}: #{@room.name}: #{line}"
             @transcript.push { direction: 'egress', text: line}
             @updateDb()
@@ -212,8 +210,18 @@ module.exports = (robot) ->
       info "#{@sessionId}: #{@src}: #{text}"
       @updateDb()
 
-  robot.hear /(.*)/i, (msg) ->
-    Session.findOrCreate(msg)
+  robot.on 'telnet:ingress', (msg) ->
+    Session.findOrCreate msg, (dst, txt) ->
+      robot.emit "telnet:egress:#{dst}", txt
+
+  robot.hear /(.*)/i, (hubotMsg) ->
+    msg =
+      dst: hubotMsg.message.room.toLowerCase()
+      src: hubotMsg.message.user.name.toLowerCase()
+      txt: hubotMsg.message.text
+    Session.findOrCreate msg, (src, txt) ->
+      user = robot.brain.userForId dst, name: src
+      robot.send user, txt
 
   robot.on 'livechat:egress', (sessionKey, text) ->
     console.log "Received #{text} for #{sessionKey}"

@@ -46,6 +46,14 @@ module.exports = (robot) ->
       info "Threw error on database update #{util.inspect err}" if err
       callback()
 
+  class LanguageStream extends Stream.PassThrough
+    _write : (chunk, enc, cb) ->
+      info "writing #{chunk}"
+      super arguments...
+
+    _read: (n) ->
+      info "reading #{n}"
+      super arguments...
 
   class Session
     @active = []
@@ -90,10 +98,14 @@ module.exports = (robot) ->
       @createSessionEnv()
 
       # Start the process, connect the pipes
-      @process = @startProcess()
+      @process = ChildProcess.spawn(@command, @arguments, @opts)
       @ingressProcessStream = new Stream.PassThrough()
       @egressProcessStream = new Stream.PassThrough()
-      @ingressProcessStream.pipe(@process.stdin)
+
+      @language = new LanguageStream()
+      @ingressProcessStream.pipe(@language).pipe(@process.stdin)
+
+
       @process.stdout.pipe(@egressProcessStream)
       @egressProcessStream.on "data", (buffer) => @egressMsg(buffer)
       @egressProcessStream.on "end", (code, signal) => @endSession()
@@ -126,9 +138,6 @@ module.exports = (robot) ->
         cwd: @room.default_path
         env: @env
 
-    startProcess: () ->
-      # All setup, we now spawn the process.
-      ChildProcess.spawn(@command, @arguments, @opts)
 
       # Now save it in the database
     updateDb: () ->

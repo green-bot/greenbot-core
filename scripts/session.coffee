@@ -71,7 +71,7 @@ module.exports = (robot) ->
           info "Can't find #{name}:#{keyword}" if err
           if room
             info "Found room #{name}, starting session"
-            new Session(hubotMsg, room, cb)
+            new Session(msg, room, cb)
           return if room or err
 
           # No room and keyword combination matched

@@ -41,13 +41,12 @@ module.exports = (robot) ->
 
   sessionUpdate = Async.queue (session, callback) ->
     information = session.information()
-    sesionId = session.sessionId
+    sessionId = session.sessionId
     cb = (err, session) ->
       info "Threw error on database update #{err}" if err
       callback()
 
-    Sessions.findOne {sessionId: sesionId}, (err, session) ->
-      console.log "Session returned : #{Util.inspect session}"
+    Sessions.findOne {sessionId: sessionId}, (err, session) ->
       if session?
         Sessions.findAndModify {
           query:

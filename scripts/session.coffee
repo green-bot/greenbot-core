@@ -51,7 +51,7 @@ module.exports = (robot) ->
       if session?
         Sessions.findAndModify {
           query:
-            sessionId: sesionId
+            sessionId: sessionId
           update:
             information
           options:
@@ -172,7 +172,7 @@ module.exports = (robot) ->
 
     cmdSettings: () ->
       env_settings = _.clone(process.env)
-      env_settings.sessionId = @sessionId
+      env_settings.SESSION_ID = @sessionId
       env_settings.SRC = @src
       env_settings.DST = @dst
       env_settings.ROOM_OBJECT_ID = @room.objectId

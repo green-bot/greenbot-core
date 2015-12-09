@@ -62,6 +62,10 @@ module.exports = (robot) ->
 
   robot.on 'session:ended', (sessionId) ->
     Sessions.findOne { sessionId: sessionId }, (err, session) ->
+      if err or not session?
+        info "Can't find the session record to update. Odd"
+        return
+        
       info "Notifying session #{sessionId} in room #{session.roomId}"
       Rooms.findOne { objectId: session.roomId }, (err, room) ->
         sendHook(session, room) if room.webhook_url?

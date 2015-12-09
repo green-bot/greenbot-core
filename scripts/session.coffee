@@ -30,6 +30,7 @@ module.exports = (robot) ->
     msg.src + "_" + msg.dst
 
   cleanText = (text) ->
+    return "" unless text
     text.trim().toLowerCase()
 
   msg_text = (msg) ->
@@ -39,12 +40,25 @@ module.exports = (robot) ->
     msg.src.toLowerCase()
 
   sessionUpdate = Async.queue (session, callback) ->
-    q = { sessionId: session.sessionId }
-    update = session.information()
-    opts = { upsert: true }
-    Sessions.findAndModify(q,update,opts).then (err, session) ->
-      info "Threw error on database update #{util.inspect err}" if err
+    information = session.information()
+    sesionId = session.sessionId
+    cb = (err, session) ->
+      info "Threw error on database update #{err}" if err
       callback()
+
+    Sessions.findOne {sessionId: sesionId}, (err, session) ->
+      console.log "Session returned : #{Util.inspect session}"
+      if session?
+        Sessions.findAndModify {
+          query:
+            sessionId: sesionId
+          update:
+            information
+          options:
+            new: true
+          }, cb
+      else
+        Sessions.insert information, cb
 
   class LanguageStream extends Stream.PassThrough
     _write : (chunk, enc, cb) ->
@@ -139,11 +153,13 @@ module.exports = (robot) ->
 
       # Now save it in the database
     updateDb: () ->
+      info "Updating session #{@sessionId}"
       sessionUpdate.push @
 
     information: () ->
       transcript:     @transcript
       src:            @src
+      dst:            @dst
       sessionKey:     @sessionKey
       sessionId:      @sessionId
       roomId:         @room.objectId
@@ -213,6 +229,10 @@ module.exports = (robot) ->
   robot.on 'telnet:ingress', (msg) ->
     Session.findOrCreate msg, (dst, txt) ->
       robot.emit "telnet:egress:#{dst}", txt
+
+  robot.on 'slack:ingress', (msg) ->
+    Session.findOrCreate msg, (dst, txt) ->
+      robot.emit "slack:egress", dst, txt
 
   robot.hear /(.*)/i, (hubotMsg) ->
     msg =

@@ -3,32 +3,37 @@ Slack = require('slack-client')
 Util = require('util')
 
 
-autoReconnect = true
-autoMark = true
-slackClient = new Slack(process.env.SLACK_TOKEN, autoReconnect, autoMark)
-announceChannel = process.env.SLACK_ANNOUNCE
-announceId = ''
-
-sendToChannel = (channelName, text) ->
-  options =
-    uri: 'https://slack.com/api/channels.join'
-    qs:
-      token: process.env.SLACK_TOKEN
-      name: channelName
-  Request(options).then((response) ->
-    console.log Util.inspect response
-    options.uri = 'https://slack.com/api/chat.postMessage'
-    options.qs.text = text
-    options.qs.channel = JSON.parse(response).channel.id
-    Request(options).then((response) ->
-      console.log Util.inspect options
-      console.log Util.inspect response
-      console.log "#{text} sent to #{channelName}"
-    )
-  )
-
 
 module.exports = (robot) ->
+  # Don't run this unless SLACK_TOKEN and SLACK_ANNOUNCE are set
+  unless process.env.SLACK_TOKEN and process.env.SLACK_ANNOUNCE
+    console.log "Not running slack chat. No credentials"
+    return
+
+  autoReconnect = true
+  autoMark = true
+  slackClient = new Slack(process.env.SLACK_TOKEN, autoReconnect, autoMark)
+  announceChannel = process.env.SLACK_ANNOUNCE
+  announceId = ''
+
+  sendToChannel = (channelName, text) ->
+    options =
+      uri: 'https://slack.com/api/channels.join'
+      qs:
+        token: process.env.SLACK_TOKEN
+        name: channelName
+    Request(options).then((response) ->
+      console.log Util.inspect response
+      options.uri = 'https://slack.com/api/chat.postMessage'
+      options.qs.text = text
+      options.qs.channel = JSON.parse(response).channel.id
+      Request(options).then((response) ->
+        console.log Util.inspect options
+        console.log Util.inspect response
+        console.log "#{text} sent to #{channelName}"
+      )
+    )
+  
   slackClient.login()
 
   slackClient.on 'send', (channel, msg) ->

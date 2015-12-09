@@ -15,6 +15,12 @@ _ = require('underscore')
 Events = require('events')
 Util = require('util')
 Stream = require('stream')
+Watson = require('watson-developer-cloud')
+LanguageTranslation = Watson.language_translation(
+  username: process.env.WATSON_USERNAME
+  password: process.env.WATSON_PASSWORD
+  version: 'v2'
+  )
 
 connectionString = process.env.MONGO_URL or 'localhost/greenbot'
 Db = require('monk')(connectionString)
@@ -39,6 +45,16 @@ module.exports = (robot) ->
   visitor_name = (msg) ->
     msg.src.toLowerCase()
 
+  isJson = (str) ->
+    # When a text message comes from a session, if it's a valid JSON
+    # string, we will treat it as a command or data. This function
+    # allows us to figure that out.
+    try
+      JSON.parse str
+    catch e
+      return false
+    true
+
   sessionUpdate = Async.queue (session, callback) ->
     information = session.information()
     sessionId = session.sessionId
@@ -59,12 +75,74 @@ module.exports = (robot) ->
       else
         Sessions.insert information, cb
 
-  class LanguageStream extends Stream.PassThrough
-    _write : (chunk, enc, cb) ->
+  class LanguageDetector extends Stream.PassThrough
+    constructor: (@lang) ->
+      @adaptive = !!@lang
+      super
+      console.log "Detector contstructed with #{@lang}"
+
+    analyze: (words) ->
+      if @adaptive
+        # @lang = Watson.detect(words)
+        @lang = @lang
+
+    getLang: () =>
+      console.log "Language detector thinks #{@lang}"
+      @lang
+
+    _write: (chunk, enc, cb) ->
+      @analyze(chunk.toString())
       super arguments...
 
     _read: (n) ->
       super arguments...
+
+  class LanguageStream extends Stream.PassThrough
+    constructor: (@fromLanguage, @toLanguage) ->
+      super
+
+    translate: (from, to, words) ->
+      translation
+
+    _write : (chunk, enc, cb) ->
+      unless process.env.WATSON_USERNAME?
+        super chunk, enc, cb
+        return
+      else
+        words = chunk.toString()
+        if isJson words or process.env.NO_TRANSLATE
+          super new Buffer(words), enc, cb
+          return
+
+        from = @fromLanguage()
+        to = @toLanguage()
+        options =
+          text: words
+          source: from
+          target: to
+        LanguageTranslation.translate options, (err, result) =>
+          if (err)
+            console.log(err)
+          else
+            trans = result.translations[0].translation
+            console.log "Original : #{words}"
+            console.log "Trans: #{Util.inspect trans}"
+            super new Buffer(trans), enc, cb
+
+    _read: (n) ->
+      super arguments...
+
+  class LanguageFilter
+    constructor: (@nearEndLanguage, @farEndLanguage) ->
+      console.log @nearEndLanguage
+      console.log @farEndLanguage
+      nearEndDetector = new LanguageDetector(@nearEndLanguage)
+      farEndDetector = new LanguageDetector(@farEndLanguage)
+      ingressLangStream = new LanguageStream farEndDetector.getLang, nearEndDetector.getLang
+      @ingressStream = farEndDetector.pipe(ingressLangStream)
+      egressLangStream = new LanguageStream nearEndDetector.getLang, farEndDetector.getLang
+      @egressStream = nearEndDetector.pipe(egressLangStream)
+
 
   class Session
     @active = []
@@ -113,11 +191,10 @@ module.exports = (robot) ->
       @ingressProcessStream = new Stream.PassThrough()
       @egressProcessStream = new Stream.PassThrough()
 
-      @language = new LanguageStream()
-      @ingressProcessStream.pipe(@language).pipe(@process.stdin)
+      @language = new LanguageFilter('en', 'es')
+      @ingressProcessStream.pipe(@language.ingressStream).pipe(@process.stdin)
 
-
-      @process.stdout.pipe(@egressProcessStream)
+      @process.stdout.pipe(@language.egressStream).pipe(@egressProcessStream)
       @egressProcessStream.on "data", (buffer) => @egressMsg(buffer)
       @egressProcessStream.on "end", (code, signal) => @endSession()
       @egressProcessStream.on "error", (err) ->
@@ -187,21 +264,12 @@ module.exports = (robot) ->
         info "Running session #{@sessionId} as a visitor"
         false
 
-    isJson: (str) ->
-      # When a text message comes from a session, if it's a valid JSON
-      # string, we will treat it as a command or data. This function
-      # allows us to figure that out.
-      try
-        JSON.parse str
-      catch e
-        return false
-      true
 
     egressMsg: (text) =>
       lines = text.toString().split("\n")
       for line in lines
         line = line.trim()
-        if @isJson line
+        if isJson line
           # If the message is JSON, treat it as if it were collected data
           @collectedData = JSON.parse line
           @updateDb()

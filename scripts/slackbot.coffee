@@ -5,27 +5,30 @@ ShortUUID = require 'shortid'
 
 autoReconnect = true
 autoMark = true
-slack = new Slack(process.env.SLACK_TOKEN, autoReconnect, autoMark)
+
 
 module.exports = (robot) ->
-  slack.login()
+  if process.env.SLACK_TOKEN
+    slack = new Slack(process.env.SLACK_TOKEN, autoReconnect, autoMark)
 
-  slack.on 'open', ->
-    console.log "Running slackbot as @#{slack.self.name} of #{slack.team.name}"
+    slack.login()
 
-  slack.on 'message', (message) ->
-    {type, ts, text, user, channel} = message
-    console.log("New chat arrived : #{text} from #{channel}, user #{user}")
+    slack.on 'open', ->
+      console.log "Running slackbot as @#{slack.self.name} of #{slack.team.name}"
 
-    msg =
-      dst: "@" + slack.self.name
-      src: channel
-      txt: text
-    robot.emit 'slack:ingress', msg
+    slack.on 'message', (message) ->
+      {type, ts, text, user, channel} = message
+      console.log("New chat arrived : #{text} from #{channel}, user #{user}")
 
-  slack.on 'error', (error) ->
-    console.error "Slack client error: #{JSON.stringify(error)}"
+      msg =
+        dst: "@" + slack.self.name
+        src: channel
+        txt: text
+      robot.emit 'slack:ingress', msg
 
-  robot.on "slack:egress", (dst, txt) ->
-    channel = slack.getChannelGroupOrDMByID(dst)
-    channel.send txt
+    slack.on 'error', (error) ->
+      console.error "Slack client error: #{JSON.stringify(error)}"
+
+    robot.on "slack:egress", (dst, txt) ->
+      channel = slack.getChannelGroupOrDMByID(dst)
+      channel.send txt

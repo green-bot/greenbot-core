@@ -7,6 +7,7 @@
 Request = require("request")
 Mailer = require("nodemailer")
 Events = require('events')
+Util = require('util')
 
 connectionString = process.env.MONGO_URL or 'localhost/greenbot'
 Db = require('monk')(connectionString)
@@ -26,11 +27,14 @@ module.exports = (robot) ->
         user: room.mail_user
         pass: room.mail_pass
     )
+
     message =
       to:       room.notification_emails.join(',')
       from:     room.mail_user
       subject:  'Conversation Complete'
-      text:      session.transcript.join(',')
+      text:     formatEmail(session)
+
+    info "Sending " + message.text
 
     transporter.sendMail message, (error, res) ->
       if error
@@ -65,8 +69,27 @@ module.exports = (robot) ->
       if err or not session?
         info "Can't find the session record to update. Odd"
         return
-        
+
       info "Notifying session #{sessionId} in room #{session.roomId}"
       Rooms.findOne { objectId: session.roomId }, (err, room) ->
         sendHook(session, room) if room.webhook_url?
         sendEmail(session, room) if room.notification_emails?
+
+  formatEmail = (session) ->
+    txt = "#{session.src.trim()}\n,
+    You have a new conversation from #{session.dst}.\n
+    \n
+    "
+
+    txt += "\nTranscript\n"
+    for line in session.transcript
+      do (line) ->
+        output = session.dst if line.direction is 'egress'
+        output = session.src if line.direction is 'ingress'
+        output += ": " + line.text + "\n"
+        txt += output
+
+    txt += "\nCollected Data\n"
+    for k,v of session.collectedData
+      txt += "#{k}:#{v}\n"
+    txt

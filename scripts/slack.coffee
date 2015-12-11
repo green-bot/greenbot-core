@@ -33,7 +33,7 @@ module.exports = (robot) ->
         console.log "#{text} sent to #{channelName}"
       )
     )
-  
+
   slackClient.login()
 
   slackClient.on 'send', (channel, msg) ->
@@ -42,7 +42,7 @@ module.exports = (robot) ->
   slackClient.on 'message', (message) ->
     channel = slackClient.getChannelGroupOrDMByID(message.channel)
     {type, ts, text} = message
-    console.log("New chat arrived : #{text} from #{channel}")
+    console.log("---\nSLACK: New chat arrived : #{text} from #{channel}")
 
   slackClient.on 'error', (error) ->
     console.error "Slack client error: #{JSON.stringify(error)}"

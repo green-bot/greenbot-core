@@ -15,12 +15,15 @@ _ = require('underscore')
 Events = require('events')
 Util = require('util')
 Stream = require('stream')
+Pipe = require('multipipe')
+
 Watson = require('watson-developer-cloud')
-LanguageTranslation = Watson.language_translation(
-  username: process.env.WATSON_USERNAME
-  password: process.env.WATSON_PASSWORD
-  version: 'v2'
-  )
+if process.env.WATSON_USERNAME? and process.env.WATSON_PASSWORD?
+  LanguageTranslation = Watson.language_translation(
+    username: process.env.WATSON_USERNAME
+    password: process.env.WATSON_PASSWORD
+    version: 'v2'
+    )
 
 connectionString = process.env.MONGO_URL or 'localhost/greenbot'
 Db = require('monk')(connectionString)
@@ -75,74 +78,103 @@ module.exports = (robot) ->
       else
         Sessions.insert information, cb
 
-  class LanguageDetector extends Stream.PassThrough
-    constructor: (@lang) ->
-      @adaptive = !!@lang
+  class LanguageDetector extends Stream.Transform
+    constructor: (@lang, @detectorId) ->
+      @adaptive = !@lang
+      @words = ''
       super
-      console.log "Detector contstructed with #{@lang}"
+      info "[#{@detectorId}] Adaptive value in constructor: #{@adaptive}"
+      if @lang
+        info "[#{@detectorId}] Detector contstructed with #{@lang}"
+      else
+        info "Detector constructed in adaptive mode"
 
-    analyze: (words) ->
+    analyze: (words, cb) =>
+      info "[#{@detectorId}] Adaptive value in analyze: #{@adaptive}"
+      info "Running in adaptive mode " if @adaptive
       if @adaptive
-        # @lang = Watson.detect(words)
-        @lang = @lang
+        @words += words
+        info "[#{@detectorId}] Analyzing " + Util.inspect @words
+        LanguageTranslation.identify text: @words, (err, result) =>
+          if (err)
+            info "[#{@detectorId}] Language detection error : " + err
+          else
+            @lang = result.languages[0].language
+            # TODO: Check to see if @lang a supported translation.
+            info "[#{@detectorId}] Language detected as " + @lang
+          cb()
+      else
+        cb()
 
     getLang: () =>
-      console.log "Language detector thinks #{@lang}"
+      info "[#{@detectorId}] Language detector thinks language is #{@lang}"
       @lang
 
-    _write: (chunk, enc, cb) ->
-      @analyze(chunk.toString())
-      super arguments...
+    _transform: (chunk, enc, cb) =>
+      info "[#{@detectorId}] About to analyze"
+      @analyze chunk.toString(), () =>
+        info "[#{@detectorId}] Done analyzing"
+        @push chunk
+        cb()
 
-    _read: (n) ->
-      super arguments...
-
-  class LanguageStream extends Stream.PassThrough
+  class LanguageStream extends Stream.Transform
     constructor: (@fromLanguage, @toLanguage) ->
       super
 
-    translate: (from, to, words) ->
-      translation
+    _transform: (chunk, enc, cb) =>
+      words = chunk.toString()
+      info "Translating #{words.trim()}"
+      isNotJson = (text) -> !isJson text
+      # jsonLines = words.split('\n').filter(isJson)
+      humanText = words.split('\n').filter(isNotJson).join('\n')
+      # super(new Buffer(jsonLines), enc, cb
+      from = @fromLanguage()
+      to = @toLanguage()
 
-    _write : (chunk, enc, cb) ->
-      unless process.env.WATSON_USERNAME?
-        super chunk, enc, cb
+      unknownLanguage = not from or not to
+      sameLanguage = from is to
+      # if we don't know the source or target languages
+      # don't translate anythhing. This is the case
+      # if we're in adaptive language detection mode
+      # and the user hasn't said anything yet.
+      if unknownLanguage or sameLanguage
+        info "Not translating because we don't know the from lang" if not from
+        info "Not translating because we don't know the to lang" if not to
+        info "Not translating because src and target langs are the same" if sameLanguage
+        @push chunk
+        cb()
         return
-      else
-        words = chunk.toString()
-        if isJson words or process.env.NO_TRANSLATE
-          super new Buffer(words), enc, cb
-          return
 
-        from = @fromLanguage()
-        to = @toLanguage()
-        options =
-          text: words
-          source: from
-          target: to
-        LanguageTranslation.translate options, (err, result) =>
-          if (err)
-            console.log(err)
-          else
-            trans = result.translations[0].translation
-            console.log "Original : #{words}"
-            console.log "Trans: #{Util.inspect trans}"
-            super new Buffer(trans), enc, cb
-
-    _read: (n) ->
-      super arguments...
+      options =
+        text: humanText
+        source: from
+        target: to
+      LanguageTranslation.translate options, (err, result) =>
+        if (err)
+          info "Watson translation error :  " + Util.inspect err
+          info "Translation run with #{Util.inspect options}"
+          @push chunk
+        else
+          trans = result.translations[0].translation
+          trans += '\n' unless trans.slice(-1) is '\n'
+          info "Original : #{humanText}"
+          info "Trans: #{Util.inspect trans}"
+          buffTrans = new Buffer trans
+          info "Trans: #{Util.inspect buffTrans}"
+          info "Trans: #{Util.inspect chunk}"
+          # @push new Buffer(trans)
+          @push buffTrans
+        cb()
+        return
 
   class LanguageFilter
     constructor: (@nearEndLanguage, @farEndLanguage) ->
-      console.log @nearEndLanguage
-      console.log @farEndLanguage
-      nearEndDetector = new LanguageDetector(@nearEndLanguage)
-      farEndDetector = new LanguageDetector(@farEndLanguage)
+      nearEndDetector = new LanguageDetector(@nearEndLanguage, "Near End")
+      farEndDetector = new LanguageDetector(@farEndLanguage, "Far End")
       ingressLangStream = new LanguageStream farEndDetector.getLang, nearEndDetector.getLang
-      @ingressStream = farEndDetector.pipe(ingressLangStream)
-      egressLangStream = new LanguageStream nearEndDetector.getLang, farEndDetector.getLang
-      @egressStream = nearEndDetector.pipe(egressLangStream)
-
+      egressLangStream = new LanguageStream  nearEndDetector.getLang, farEndDetector.getLang
+      @ingressStream = Pipe(farEndDetector, ingressLangStream)
+      @egressStream = Pipe(nearEndDetector, egressLangStream)
 
   class Session
     @active = []
@@ -188,15 +220,16 @@ module.exports = (robot) ->
 
       # Start the process, connect the pipes
       @process = ChildProcess.spawn(@command, @arguments, @opts)
-      @ingressProcessStream = new Stream.PassThrough()
-      @egressProcessStream = new Stream.PassThrough()
+      @language = new LanguageFilter('en')
+      @ingressProcessStream = Pipe(@language.ingressStream, @process.stdin)
+      @egressProcessStream = Pipe(@process.stdout, @language.egressStream)
 
-      @language = new LanguageFilter('en', 'es')
-      @ingressProcessStream.pipe(@language.ingressStream).pipe(@process.stdin)
-
-      @process.stdout.pipe(@language.egressStream).pipe(@egressProcessStream)
-      @egressProcessStream.on "data", (buffer) => @egressMsg(buffer)
-      @egressProcessStream.on "end", (code, signal) => @endSession()
+      @egressProcessStream.on "readable", () =>
+        # Send the output of the egress stream off to the network
+        @egressMsg @egressProcessStream.read()
+      @egressProcessStream.on "end", (code, signal) =>
+        # When the egress stream closes, the session ends.
+        @endSession()
       @egressProcessStream.on "error", (err) ->
         info "Error thrown from session"
         info err
@@ -266,7 +299,10 @@ module.exports = (robot) ->
 
 
     egressMsg: (text) =>
-      lines = text.toString().split("\n")
+      if text
+        lines = text.toString().split("\n")
+      else
+        lines = []
       for line in lines
         line = line.trim()
         if isJson line

@@ -14,21 +14,12 @@ Async = require('async')
 _ = require('underscore')
 Events = require('events')
 Util = require('util')
-Stream = require('stream')
-Pipe = require('multipipe')
-
-Watson = require('watson-developer-cloud')
-if process.env.WATSON_USERNAME? and process.env.WATSON_PASSWORD?
-  LanguageTranslation = Watson.language_translation(
-    username: process.env.WATSON_USERNAME
-    password: process.env.WATSON_PASSWORD
-    version: 'v2'
-    )
-
+LanguageFilter = require('watson-translate-stream')
 connectionString = process.env.MONGO_URL or 'localhost/greenbot'
 Db = require('monk')(connectionString)
 Rooms = Db.get('Rooms')
 Sessions = Db.get('Sessions')
+Pipe = require("multipipe")
 
 module.exports = (robot) ->
   # Helper functions
@@ -78,103 +69,6 @@ module.exports = (robot) ->
       else
         Sessions.insert information, cb
 
-  class LanguageDetector extends Stream.Transform
-    constructor: (@lang, @detectorId) ->
-      @adaptive = !@lang
-      @words = ''
-      super
-      info "[#{@detectorId}] Adaptive value in constructor: #{@adaptive}"
-      if @lang
-        info "[#{@detectorId}] Detector contstructed with #{@lang}"
-      else
-        info "Detector constructed in adaptive mode"
-
-    analyze: (words, cb) =>
-      info "[#{@detectorId}] Adaptive value in analyze: #{@adaptive}"
-      info "Running in adaptive mode " if @adaptive
-      if @adaptive
-        @words += words
-        info "[#{@detectorId}] Analyzing " + Util.inspect @words
-        LanguageTranslation.identify text: @words, (err, result) =>
-          if (err)
-            info "[#{@detectorId}] Language detection error : " + err
-          else
-            @lang = result.languages[0].language
-            # TODO: Check to see if @lang a supported translation.
-            info "[#{@detectorId}] Language detected as " + @lang
-          cb()
-      else
-        cb()
-
-    getLang: () =>
-      info "[#{@detectorId}] Language detector thinks language is #{@lang}"
-      @lang
-
-    _transform: (chunk, enc, cb) =>
-      info "[#{@detectorId}] About to analyze"
-      @analyze chunk.toString(), () =>
-        info "[#{@detectorId}] Done analyzing"
-        @push chunk
-        cb()
-
-  class LanguageStream extends Stream.Transform
-    constructor: (@fromLanguage, @toLanguage) ->
-      super
-
-    _transform: (chunk, enc, cb) =>
-      words = chunk.toString()
-      info "Translating #{words.trim()}"
-      isNotJson = (text) -> !isJson text
-      # jsonLines = words.split('\n').filter(isJson)
-      humanText = words.split('\n').filter(isNotJson).join('\n')
-      # super(new Buffer(jsonLines), enc, cb
-      from = @fromLanguage()
-      to = @toLanguage()
-
-      unknownLanguage = not from or not to
-      sameLanguage = from is to
-      # if we don't know the source or target languages
-      # don't translate anythhing. This is the case
-      # if we're in adaptive language detection mode
-      # and the user hasn't said anything yet.
-      if unknownLanguage or sameLanguage
-        info "Not translating because we don't know the from lang" if not from
-        info "Not translating because we don't know the to lang" if not to
-        info "Not translating because src and target langs are the same" if sameLanguage
-        @push chunk
-        cb()
-        return
-
-      options =
-        text: humanText
-        source: from
-        target: to
-      LanguageTranslation.translate options, (err, result) =>
-        if (err)
-          info "Watson translation error :  " + Util.inspect err
-          info "Translation run with #{Util.inspect options}"
-          @push chunk
-        else
-          trans = result.translations[0].translation
-          trans += '\n' unless trans.slice(-1) is '\n'
-          info "Original : #{humanText}"
-          info "Trans: #{Util.inspect trans}"
-          buffTrans = new Buffer trans
-          info "Trans: #{Util.inspect buffTrans}"
-          info "Trans: #{Util.inspect chunk}"
-          # @push new Buffer(trans)
-          @push buffTrans
-        cb()
-        return
-
-  class LanguageFilter
-    constructor: (@nearEndLanguage, @farEndLanguage) ->
-      nearEndDetector = new LanguageDetector(@nearEndLanguage, "Near End")
-      farEndDetector = new LanguageDetector(@farEndLanguage, "Far End")
-      ingressLangStream = new LanguageStream farEndDetector.getLang, nearEndDetector.getLang
-      egressLangStream = new LanguageStream  nearEndDetector.getLang, farEndDetector.getLang
-      @ingressStream = Pipe(farEndDetector, ingressLangStream)
-      @egressStream = Pipe(nearEndDetector, egressLangStream)
 
   class Session
     @active = []

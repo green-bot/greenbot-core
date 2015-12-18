@@ -138,9 +138,11 @@ module.exports = (robot) ->
       console.log @farEndLanguage
       nearEndDetector = new LanguageDetector(@nearEndLanguage)
       farEndDetector = new LanguageDetector(@farEndLanguage)
-      ingressLangStream = new LanguageStream farEndDetector.getLang, nearEndDetector.getLang
+      ingressLangStream = new LanguageStream farEndDetector.getLang,
+                          nearEndDetector.getLang
       @ingressStream = farEndDetector.pipe(ingressLangStream)
-      egressLangStream = new LanguageStream nearEndDetector.getLang, farEndDetector.getLang
+      egressLangStream = new LanguageStream nearEndDetector.getLang,
+                          farEndDetector.getLang
       @egressStream = nearEndDetector.pipe(egressLangStream)
 
 

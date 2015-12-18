@@ -3,3 +3,4 @@ node_modules
 .hubot_history
 scripts/session_data/*
 session_data/*
+.vscode

@@ -26,6 +26,7 @@
     "hubot-redis-brain": "0.0.2",
     "hubot-rules": "^0.1.0",
     "hubot-scripts": "^2.5.16",
+    "hubot-session": "0.1.0",
     "hubot-shango": "^0.1.1",
     "hubot-shipit": "^0.1.1",
     "hubot-slack": "^3.2.1",

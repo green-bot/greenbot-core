@@ -4,3 +4,4 @@ node_modules
 scripts/session_data/*
 session_data/*
 .vscode
+vendor

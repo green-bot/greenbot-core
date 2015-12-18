@@ -5,3 +5,4 @@ scripts/session_data/*
 session_data/*
 .vscode
 vendor
+.bundle

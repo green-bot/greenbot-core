@@ -84,7 +84,7 @@ end
 def confirm(prompt)
   positives = %w(yes sure OK yep)
   negatives = %w(no nope noway)
-  answer = ask(prompt+'(yes/no)').chomp.downcase
+  answer = ask(prompt+'( yes / no )').chomp.downcase
   answered = false
   while not answered
     positives.each do |p|

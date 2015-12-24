@@ -26,7 +26,7 @@
     "hubot-redis-brain": "0.0.2",
     "hubot-rules": "^0.1.0",
     "hubot-scripts": "^2.5.16",
-    "hubot-session": "0.4.0",
+    "hubot-session": "file:../hubot-session",
     "hubot-shango": "^0.1.1",
     "hubot-shipit": "^0.1.1",
     "hubot-slack": "^3.2.1",
@@ -65,8 +65,8 @@
     "underscore": "^1.8.2",
     "underscore.string": "^3.0.3",
     "watson-developer-cloud": "1.0.6",
+    "watson-translate-stream": "file:../watson-translate-stream",
     "websocket": "^1.0.17",
-    "watson-translate-stream": "*",
     "winston": "^0.9.0",
     "winston-papertrail": "^1.0.1"
   },

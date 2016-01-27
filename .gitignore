@@ -6,3 +6,4 @@ session_data/*
 .vscode
 vendor
 .bundle
+*.rdb

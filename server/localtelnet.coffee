@@ -23,17 +23,18 @@ Telnet.createServer((client) ->
   client.on 'data', (b) ->
     msg = b.toString()
 
-    console.log 'Inbound message ' + msg
+    events.emit 'log',  'Inbound message ' + msg
     msg =
       dst: '12183255075'
-      src: 'telnet'
+      src: 'localtelnet'
       txt: b.toString()
-    events.emit 'telnet:ingress', msg
+    events.emit 'ingress', msg
     return
 
-  events.on "telnet:egress:telnet", (txt) ->
+  events.on "localtelnet", (txt) ->
+    events.emit 'log', 'Local telnet egress' + txt
     client.write new Buffer txt + "\n"
 
-  console.log 'Telnet server listening'
+  events.emit 'log',  'Telnet server listening'
   return
 ).listen 3002

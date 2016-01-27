@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "author": "Thomas Howe <therealthomashowe@gmail.com>",
-  "description": "A simple helpful robot for your Company",
+  "description": "A multi network, multi language, all singing and dancing bot server",
   "dependencies": {
     "airbrake": "^0.3.8",
     "async": "^0.9.0",
@@ -11,6 +11,7 @@
     "bluebird": "3.1.1",
     "body-parser": "^1.13.2",
     "coffee": "^1.1.0",
+    "coffee-script": "1.10.0",
     "colors": "^1.1.0",
     "express": "^4.12.0",
     "hubot": "^2.11.0",
@@ -69,7 +70,7 @@
     "watson-developer-cloud": "1.0.6",
     "watson-translate-stream": "file:../watson-translate-stream",
     "websocket": "^1.0.17",
-    "winston": "^0.9.0",
+    "winston": "0.9.0",
     "winston-papertrail": "^1.0.1"
   },
   "engines": {

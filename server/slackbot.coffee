@@ -32,11 +32,11 @@ module.exports = () ->
     slack.login()
 
     slack.on 'open', ->
-      console.log "Running slackbot: @#{slack.self.name} of #{slack.team.name}"
+      events.emit 'log',  "Running slackbot: @#{slack.self.name} of #{slack.team.name}"
 
     slack.on 'message', (message) ->
       {type, ts, text, user, channel} = message
-      console.log("New chat arrived : #{text} from #{channel}, user #{user}")
+      events.emit 'log', ("New chat arrived : #{text} from #{channel}, user #{user}")
 
       msg =
         dst: "@" + slack.self.name

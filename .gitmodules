@@ -1,3 +1,0 @@
-[submodule "scripts/watson_dialog_cli"]
-	path = scripts/watson_dialog_cli
-	url = https://github.com/howethomas/watson_dialog_cli.git

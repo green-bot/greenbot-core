@@ -2,10 +2,14 @@
 //
 
 // Load config for RethinkDB and express
-var bluemix = require('./config/bluemix')
+var bluemix = require('../config/bluemix')
 var extend = require('util')._extend
 var watson = require('watson-developer-cloud')
 var gB = require('./greenbot-process')
+
+var info = function (text) {
+  console.log(text)
+}
 
 // if bluemix credentials exists, then override local
 var credentials = extend({
@@ -15,14 +19,6 @@ var credentials = extend({
   version: 'v1'
 }, bluemix.getServiceCreds('dialog'))
 var dialog_id = process.env.WATSON_DIALOG_ID || '<dialog-id>'
-
-// Create the service wrapper
-var dialog = watson.dialog(credentials)
-
-// Couple convenience functions
-var info = function (text) {
-  console.log(text)
-}
 var sessions = {}
 
 var createDialog = function (sess) {
@@ -56,4 +52,10 @@ var ingressMsg = function (sessionId, txt) {
   })
 }
 
-var gbProcess = gB(ingressMsg, createDialog, 'watson')
+if (credentials.password &&
+    credentials.username &&
+    dialog_id) {
+  var dialog = watson.dialog(credentials)
+  var gbProcess = gB(ingressMsg, createDialog, 'watson')
+  info('Watson configured.')
+}

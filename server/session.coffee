@@ -236,9 +236,6 @@ class Session
         opts: @opts
         lang: @lang
       @processStack.push nextProcess
-      # @process.kill()
-
-    info "New process started : #{@process.pid}"
 
   createSessionEnv: () ->
     if @isOwner()

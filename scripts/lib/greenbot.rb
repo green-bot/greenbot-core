@@ -10,17 +10,6 @@ else
   FIVE_MINUTES = 5*60
   HALF_AN_HOUR = 30*60
   MESSAGE_PACE = 3.1415
-  at_exit {
-    e = $!
-    unless e.nil?
-      Airbrake.notify_or_ignore($!, {
-        error_message: e.message,
-        backtrace: e.backtrace,
-        cgi_data: ENV.to_hash
-        })
-        exit!
-    end
-  }
 end
 require 'bundler/setup'
 require 'highline/import'

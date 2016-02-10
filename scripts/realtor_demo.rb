@@ -10,8 +10,9 @@ OTHER_CONTACT_PROMPT = ENV['FOLLOWUP_PROMPT']
 SIGNATURE = ENV['SIGNATURE']
 
 tell WELCOME_PROMPT
+sleep 10
 tell HELP_PROMPT
-sleep 5
+sleep 10
 issue = note(NOTE_PROMPT)
 issue.remember('issue')
 if confirm(OTHER_CONTACT_PROMPT)

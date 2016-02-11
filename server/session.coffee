@@ -37,6 +37,8 @@ Db = require('monk')(connectionString)
 Bots = Db.get('Bots')
 Sessions = Db.get('Sessions')
 Scripts = Db.get('Scripts')
+ObjectID = require('mongodb').ObjectID
+
 
 # Setup the connect to Redis
 Bluebird.promisifyAll(Redis.RedisClient.prototype)
@@ -84,28 +86,6 @@ ingressList = (sessionKey) ->
 
 egressList = (sessionKey) ->
   sessionKey + '.egress'
-
-sessionUpdate = Async.queue (session, callback) ->
-  information = session.information()
-  sessionId = session.sessionId
-  cb = (err, session) ->
-    info "Threw error on database update #{err}" if err
-    callback()
-
-  Sessions.findOne {sessionId: sessionId}, (err, session) ->
-    if session?
-      Sessions.findAndModify {
-        query:
-          sessionId: sessionId
-        update:
-          information
-        options:
-          new: true
-        }, cb
-    else
-      info 'Creating a new session'
-      information.createdAt = Date.now()
-      Sessions.insert information, cb
 
 class Session
   @active = []
@@ -283,17 +263,18 @@ class Session
     return q
 
     # Now save it in the database
-  updateDb: () ->
+  updateDb: () =>
     info "Updating session #{@sessionId}"
-    sessionUpdate.push @
+    info @bot
+    Session.update sessionId: @sessionId, @information(), upsert: true
 
-  information: () ->
+
+  information: () =>
     transcript:     @transcript
     src:            @src
     dst:            @dst
     sessionKey:     @sessionKey
     sessionId:      @sessionId
-    botId:          @bot._id
     collectedData:  @collectedData
     updatedAt:      Date.now()
     lang:           @lang

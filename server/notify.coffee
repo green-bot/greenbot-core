@@ -10,38 +10,36 @@
 # Author:
 #   Thomas Howe - ghostofbasho@gmail.com
 #
-
-
 Request = require("request")
 Mailer = require("nodemailer")
 Util = require('util')
-
-connectionString = process.env.MONGO_URL or 'localhost/greenbot'
-Db = require('monk')(connectionString)
-Sessions = Db.get('Sessions')
-Rooms = Db.get('Rooms')
-
-# Global events object
 Pubsub = require('./pubsub')
 events = Pubsub.pubsub
 
+connectionString = process.env.MONGO_URL or 'localhost/greenbot'
+Db = require('monk')(connectionString)
+Bots = Db.get('Bots')
+Sessions = Db.get('Sessions')
+Integrations = Db.get('Integrations')
 
-module.exports = (events) ->
-  info = (text) ->
-    events.emit 'log', text
+info = (text) ->
+  events.emit 'log', text
 
-  sendEmail = (session, room) ->
-    info "Sending emails for session #{session.sessionId}"
-    transporter = Mailer.createTransport(
-      service: "gmail"
+sendEmail = (session, bot) ->
+  info "Sending emails for session #{session.sessionId}"
+  q = Integrations.find
+    type: 'mail'
+    provider: 'google'
+  q.then (int) ->
+    transporter = Mailer.createTransport
+      service: int.provider
       auth:
-        user: room.mail_user
-        pass: room.mail_pass
-    )
+        user: int.auth.username
+        pass: int.auth.password
 
     message =
-      to:       room.notification_emails.join(',')
-      from:     room.mail_user
+      to:       bot.notification_emails.join(',')
+      from:     int.auth.username
       subject:  'Conversation Complete'
       text:     formatEmail(session)
 
@@ -55,52 +53,55 @@ module.exports = (events) ->
         info "Sent email for session #{session.sessionId}"
 
 
-  sendHook = (session, room) ->
-    webhook_options =
-      form:
-        transcript: session.transcript
-        room_id: room.objectId
-        script_id: room.script.objectId
-        settings: room.settings
-        data: session.collectedData
-    if !! room.webhook_authtoken
-      webhook_options.headers =
-        Authorization: room.webhook_authtoken
+sendHook = (session, bot) ->
+  webhook_options =
+    form:
+      transcript: session.transcript
+      botId: bot._id
+      scriptId: bot.scriptId
+      settings: bot.settings
+      data: session.collectedData
+  if !! bot.webhook_authtoken
+    webhook_options.headers =
+      Authorization: bot.webhook_authtoken
 
-    info "Webhook #{room.webhook_url} sent for session #{session.sessionId}"
-    Request.post(room.webhook_url, webhook_options)
-    .on 'response', (response) ->
-      info "Completed."
-      info response.statusCode
-      info response.headers['content-type']
+  info "Webhook #{bot.webhook_url} sent for session #{session.sessionId}"
+  Request.post(bot.webhook_url, webhook_options)
+  .on 'response', (response) ->
+    info "Completed."
+    info response.statusCode
+    info response.headers['content-type']
+
+formatEmail = (session) ->
+  txt = "#{session.src.trim()}\n,
+  You have a new conversation from #{session.dst}.\n
+  \n
+  "
+
+  txt += "\nTranscript\n"
+  for line in session.transcript
+    do (line) ->
+      output = session.dst if line.direction is 'egress'
+      output = session.src if line.direction is 'ingress'
+      output += ": " + line.text + "\n"
+      txt += output
+
+  txt += "\nCollected Data\n"
+  for k,v of session.collectedData
+    txt += "#{k}:#{v}\n"
+  txt
 
 
-  events.on 'session:ended', (sessionId) ->
-    Sessions.findOne { sessionId: sessionId }, (err, session) ->
-      if err or not session?
-        info "Can't find the session record to update. Odd"
-        return
-
-      info "Notifying session #{sessionId} in room #{session.roomId}"
-      Rooms.findOne { objectId: session.roomId }, (err, room) ->
-        sendHook(session, room) if room.webhook_url?
-        sendEmail(session, room) if room.notification_emails?
-
-  formatEmail = (session) ->
-    txt = "#{session.src.trim()}\n,
-    You have a new conversation from #{session.dst}.\n
-    \n
-    "
-
-    txt += "\nTranscript\n"
-    for line in session.transcript
-      do (line) ->
-        output = session.dst if line.direction is 'egress'
-        output = session.src if line.direction is 'ingress'
-        output += ": " + line.text + "\n"
-        txt += output
-
-    txt += "\nCollected Data\n"
-    for k,v of session.collectedData
-      txt += "#{k}:#{v}\n"
-    txt
+events.on 'session:ended', (sessionId) ->
+  info "Notifying on the end of session #{sessionId}"
+  q = Sessions.findOne sessionId: sessionId
+  q.on 'error', (err) -> info "Session search fail in notify? #{err}"
+  q.on 'success', (session) ->
+    info "Notifying session #{sessionId} for bot #{session.botId}"
+    info session
+    q2 = Bots.findOne _id: session.botId
+    q2.on 'error', (err) -> info "Error thrown in noticiations : #{err}"
+    q2.on 'success', (bot) ->
+      info bot
+      sendHook(session, bot) if bot.webhook_url?
+      sendEmail(session, bot) if bot.notification_emails?

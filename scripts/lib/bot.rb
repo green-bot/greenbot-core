@@ -21,12 +21,12 @@ class Script
   field :default_path, type: String
 end
 
-# Handles the Room collection in Mongo
-class Room
+# Handles the Bot collection in Mongo
+class Bot
   include Mongoid::Document
-  store_in collection: 'Rooms'
+  store_in collection: 'Bots'
   field :name, type: String
-  field :settings, type: Hash
+  field :settings, type: Array
   field :qty, type: Integer
   field :test_mode, type: Boolean
   field :owners, type: Array
@@ -54,9 +54,9 @@ class Room
     default_cmd == 'ruby default.rb'
   end
 
-  def retarget(new_room_name)
+  def retarget(new_bot_name)
     update_attributes(
-      name: new_room_name.downcase
+      name: new_bot_name.downcase
     )
   end
 

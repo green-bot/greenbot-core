@@ -25,13 +25,13 @@ Telnet.createServer((client) ->
 
     events.emit 'log',  'Inbound message ' + msg
     msg =
-      dst: '12183255075'
-      src: 'localtelnet'
+      dst: process.env.DEV_ROOM_NAME or 'development'
+      src: 'telnet'
       txt: b.toString()
     events.emit 'ingress', msg
     return
 
-  events.on "localtelnet", (txt) ->
+  events.on "telnet", (txt) ->
     events.emit 'log', 'Local telnet egress' + txt
     client.write new Buffer txt + "\n"
 

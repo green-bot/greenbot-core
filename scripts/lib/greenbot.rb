@@ -19,7 +19,7 @@ require 'redis'
 require 'uuidtools'
 require 'airbrake'
 require 'timeout'
-require './lib/room'
+require './lib/Bot'
 
 
 # Handles the collection and remembering of data
@@ -234,10 +234,8 @@ def manage_settings(bot)
 end
 
 
-room_name = ENV['DST']
-room_id = ENV['ROOM_OBJECT_ID']
-$room = Room.find_by(objectId: room_id)
-$room.set_environment
+bot_name = ENV['DST']
+bot_id = ENV['BOT_OBJECT_ID']
 
 session_id = ENV['SESSION_ID'] || UUIDTools::UUID.random_create.to_s
 ENV['SESSION_ID'] = session_id

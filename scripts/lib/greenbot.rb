@@ -19,7 +19,7 @@ require 'redis'
 require 'uuidtools'
 require 'airbrake'
 require 'timeout'
-require './lib/Bot'
+require './lib/bot'
 
 
 # Handles the collection and remembering of data

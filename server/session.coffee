@@ -266,7 +266,7 @@ class Session
   updateDb: () =>
     info "Updating session #{@sessionId}"
     info @bot
-    Session.update sessionId: @sessionId, @information(), upsert: true
+    Sessions.update sessionId: @sessionId, @information(), upsert: true
 
 
   information: () =>

@@ -2,6 +2,7 @@ node_modules
 .DS_Store*
 .hubot_history
 scripts/session_data/*
+scripts/bin/*
 session_data/*
 .vscode
 vendor

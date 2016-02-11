@@ -25,7 +25,7 @@ Telnet.createServer((client) ->
 
     events.emit 'log',  'Inbound message ' + msg
     msg =
-      dst: process.env.DEV_ROOM_NAME or 'development'
+      dst: process.env.DEV_ROOM_NAME or 'development@telnet'
       src: 'telnet'
       txt: b.toString()
     events.emit 'ingress', msg

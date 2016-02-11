@@ -158,11 +158,11 @@ def note(prompt)
       complete = true
       tell "Note taking mode complete."
     else
-      note << response
+      note << response + "\n"
       response = ask("Still listening here. Send as many messages as you like, send a Q to end. ")
     end
   end while not complete
-  return note
+  return note.chomp
 end
 
 class Account

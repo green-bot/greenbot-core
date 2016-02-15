@@ -7,7 +7,7 @@ Telnet = require('./localtelnet')
 Logger = require('./logger')
 Bash = require('./bash-process')
 Watson = require('./watson-process')
-
+Matrix = require('./matrix')
 Pubsub = require('./pubsub')
 events = Pubsub.pubsub
 

@@ -15,7 +15,7 @@ Telnet = require('telnet')
 ShortUUID = require 'shortid'
 
 # Global events object
-Pubsub = require('./pubsub')
+Pubsub = require('../pubsub')
 events = Pubsub.pubsub
 
 Telnet.createServer((client) ->
@@ -31,7 +31,7 @@ Telnet.createServer((client) ->
     events.emit 'ingress', msg
     return
 
-  events.on "telnet", (txt) ->
+  events.on "egress_telnet", (txt) ->
     events.emit 'log', 'Local telnet egress' + txt
     client.write new Buffer txt + "\n"
 

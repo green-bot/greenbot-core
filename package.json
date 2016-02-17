@@ -49,7 +49,7 @@
     "underscore": "^1.8.2",
     "underscore.string": "^3.0.3",
     "watson-developer-cloud": "1.0.6",
-    "watson-translate-stream": "file:../watson-translate-stream",
+    "watson-translate-stream": "^0.3.1",
     "websocket": "^1.0.17",
     "winston": "0.9.0",
     "winston-papertrail": "^1.0.1"

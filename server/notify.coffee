@@ -16,7 +16,7 @@ Util = require('util')
 Pubsub = require('./pubsub')
 events = Pubsub.pubsub
 
-connectionString = process.env.MONGO_URL or 'localhost/greenbot'
+connectionString = process.env.MONGO_URL or 'localhost:27017/greenbot'
 Db = require('monk')(connectionString)
 Bots = Db.get('Bots')
 Sessions = Db.get('Sessions')

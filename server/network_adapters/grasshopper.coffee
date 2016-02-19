@@ -27,14 +27,9 @@ processGhMsgs  = () ->
           network: "gh"
           egressEvent: egressEvent
           txt: ghMsg.body
-
-        Logger.info "Grasshopper INGRESS: #{JSON.stringify msg}"
         events.emit 'ingress', msg
-        Logger.info "#{JSON.stringify msg}"
-        Logger.info "[#{msg.src}->#{msg.dst}] #{msg.txt}"
 
 getNewMessages = (timestamp) ->
-  Logger.info "Looking for messagse since #{timestamp}"
   getConversationsSince(timestamp)
   .then (conversations) ->
     numbers = []
@@ -67,7 +62,6 @@ getMessagesSince = (otherNumber, timestamp) ->
     return (m for m in messages when Date.parse(m.timestamp) > epochTime and m.direction is "Inbound")
 
 getConversationsSince = (timestamp) ->
-  Logger.info "Looking for conversations since #{timestamp}"
   epochTime = Date.parse(timestamp)
   options =
     uri: "https://mnsq.ghuser.com/external/sms/conversations"
@@ -78,8 +72,6 @@ getConversationsSince = (timestamp) ->
       vpsNumber: encodeURI(ghNumber)
   Request(options).then (convos) ->
     convos = (c for c in convos when Date.parse(c.timestamp) > epochTime)
-    Logger.info "Found the following new convos"
-    Logger.info convos
     return convos
 
 sendMsg = (token, src, dst, txt) ->
@@ -101,7 +93,6 @@ if ghNumber? and ghToken?
   Logger.info "Starting Grasshopper adapter"
   events.on egressEvent, (msg) ->
     {src, dst, txt} = msg
-    Logger.info "Sending #{txt} to #{dst}"
     sendMsg ghToken, src, dst, txt
 
   setInterval processGhMsgs, 5000

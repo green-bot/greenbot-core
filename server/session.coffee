@@ -75,13 +75,11 @@ class Session
   @findById = (id) ->
     for key, session of Session.active
       return session if session.id is id
-    Logger.info "Session NOT FOUND !!!!"
 
   @findByKey = (key) ->
     Session.active[key]
 
   @findOrCreate = (msg, cb) ->
-    Logger.info("Finding or creating session: #{JSON.stringify msg}")
     # All messages that come from the network end up here.
     sessionKey = genSessionKey(msg)
     session = Session.findByKey(sessionKey)
@@ -117,7 +115,6 @@ class Session
         if not bot
           Logger.info "No default keyword set for that network handle."
           return
-        Logger.info bot
         new Session(msg, bot, cb)
 
   constructor: (@msg, @bot, @cb) ->
@@ -130,8 +127,6 @@ class Session
     Session.active[@sessionKey] = @
     @automated = true
     @processStack = []
-
-    Logger.info "Creating new session #{@id}"
 
     # Assemble the @command, @arguments, @opts
     q = dbSessions.findOne({src: @src}, {sort: {updatedAt: -1}})
@@ -151,7 +146,6 @@ class Session
 
   kickOffProcess : (command, args, opts, lang) =>
     # Start the process, connect the pipes
-    Logger.info 'Kicking off process through redis : '
     sess =
       command: command
       args: args
@@ -161,7 +155,6 @@ class Session
       botId: @bot._id
       scriptId: @bot.scriptId
       type: @bot.type
-    Logger.info sess
 
     newSessionRequest = JSON.stringify sess
     client.lpush NEW_SESSIONS_FEED, newSessionRequest
@@ -175,8 +168,6 @@ class Session
       client.publish INGRESS_MSGS_FEED, @id
 
     @egressProcessStream = Pipe(jsonFilter, @language.egressStream)
-    Logger.info "@egressProcessStream initialized:"
-    Logger.info @egressProcessStream
 
     @egressProcessStream.on "readable", =>
       @egressMsg @egressProcessStream.read()
@@ -187,7 +178,6 @@ class Session
     @language.on "langChanged", (oldLang, newLang) =>
       Logger.info "Language changed, restarting : #{oldLang} to #{newLang}"
       @egressProcessStream.write("Language changed, restarting conversation.")
-      Logger.info "Restarting session."
       @lang = newLang
       nextProcess =
         command: @command
@@ -197,7 +187,6 @@ class Session
       @processStack.push nextProcess
 
   createSessionEnv: =>
-    Logger.info 'Organizing the session environment'
     q = Scripts.findById @bot.scriptId
     q.onReject (err) -> Logger.info "Can't find script???"
     q.then (@script) =>
@@ -223,7 +212,6 @@ class Session
 
     # Now save it in the database
   updateDb: =>
-    Logger.info @bot
     dbSessions.update sessionId: @id, @information(), upsert: true
 
 
@@ -236,6 +224,7 @@ class Session
     collectedData:  @collectedData
     updatedAt:      Date.now()
     lang:           @lang
+    botId:          @bot._id
 
   end: =>
     nextProcess = @processStack.shift()
@@ -275,7 +264,6 @@ class Session
       line = line.trim()
       if line.length > 0
         @cb line
-        Logger.info "#{@id}: #{@bot.name}: #{line}"
         @transcript.push { direction: 'egress', text: line}
         @updateDb()
 
@@ -288,14 +276,12 @@ class Session
     else
       events.emit 'livechat:ingress', @information(), text
     @transcript.push { direction: 'ingress', text: text}
-    Logger.info "#{@id}: #{@src}: #{text}"
     @updateDb()
 
   createJsonFilter: () =>
     # Filter out JSON as it goes through the system
     jsonFilter = new Stream.Transform()
     jsonFilter._transform = (chunk, encoding, done) =>
-      Logger.info "Filtering JSON in session #{@id}"
       lines = chunk.toString().split("\n")
       for line in lines
         do (line) ->
@@ -307,7 +293,6 @@ class Session
 
       # If the message is JSON, treat it as if it were collected data
     jsonFilter.on 'json', (line) =>
-      Logger.info "Remembering #{line} in #{@id}"
       @collectedData = JSON.parse line
       @updateDb()
     return jsonFilter
@@ -323,12 +308,10 @@ class Session
   egressList: ->  @id + '.egress'
 
 events.on 'ingress', (msg) ->
-  Logger.info 'Inbound ' + msg.txt
   #flipping for egress
   src = msg.dst
   dst = msg.src
   Session.findOrCreate msg, (txt) ->
-    Logger.info "FOC callback: #{JSON.stringify msg}"
     egressMsg = {src: src, dst: dst, txt: txt}
     events.emit msg.egressEvent, egressMsg
 
@@ -339,8 +322,6 @@ sessionClient.on 'message', (chan, sessionId) ->
 egressClient.on "message", (chan, sessionId) ->
   #get the right session from sesion id
   session = Session.findById(sessionId)
-  Logger.info session
-  Logger.info session.egressProcessStream
   client.lpopAsync(session.egressList()).then(session.writeEgressMessage, session.redisPopErrored)
 
 egressClient.subscribe(EGRESS_MSGS_FEED)

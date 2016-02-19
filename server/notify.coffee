@@ -14,6 +14,7 @@ Request = require("request")
 Mailer = require("nodemailer")
 Util = require('util')
 Pubsub = require('./pubsub')
+ObjectId = require('mongodb').ObjectID
 events = Pubsub.pubsub
 
 connectionString = process.env.MONGO_URL or 'localhost:27017/greenbot'
@@ -99,7 +100,7 @@ events.on 'session:ended', (sessionId) ->
   q.on 'success', (session) ->
     info "Notifying session #{sessionId} for bot #{session.botId}"
     info session
-    q2 = Bots.findOne _id: session.botId
+    q2 = Bots.findOne _id: ObjectId(session.botId)
     q2.on 'error', (err) -> info "Error thrown in noticiations : #{err}"
     q2.on 'success', (bot) ->
       info bot

@@ -20,7 +20,7 @@
     "matrix-js-sdk": "0.3.0",
     "minitest": "^0.2.0",
     "moment": "^2.9.0",
-    "mongodb": "^2.0.47",
+    "mongodb": "2.1.7",
     "mongoose": "^4.2.4",
     "monitor": "^0.6.10",
     "monk": "^1.0.1",

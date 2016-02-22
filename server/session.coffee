@@ -18,6 +18,8 @@ ChildProcess   = require("child_process")
 LanguageFilter = require('watson-translate-stream')
 Logger         = require('./logger')
 Mailer         = require("nodemailer")
+MongoClient    = require('mongodb').MongoClient
+ObjectID       = require('mongodb').ObjectID
 Os             = require("os")
 Pipe           = require("multipipe")
 Promise        = require('node-promise')
@@ -28,18 +30,13 @@ Url            = require("url")
 Us             = require("underscore.string")
 Util           = require('util')
 
+
+#DBLogger = require('mongodb').Logger
+#DBLogger.setLevel('debug')
+
 # Global events object
 Pubsub = require('./pubsub')
 events = Pubsub.pubsub
-
-# Setup the connection to the database
-connectionString = process.env.MONGO_URL or 'localhost/greenbot'
-Db       = require('monk')(connectionString)
-Bots     = Db.get('Bots')
-dbSessions = Db.get('Sessions')
-Scripts  = Db.get('Scripts')
-ObjectID = require('mongodb').ObjectID
-
 
 # Setup the connect to Redis
 Bluebird.promisifyAll(Redis.RedisClient.prototype)
@@ -55,6 +52,7 @@ SESSION_ENDED_FEED = 'COMPLETED_SESSIONS'
 
 # Set the default directory for scripts
 DEF_SCRIPT_DIR = process.env.DEF_SCRIPT_DIR || './scripts/'
+CONNECTION_STRING = process.env.MONGO_URL or 'mongodb://localhost:27017/greenbot'
 
 genSessionKey = (msg) -> msg.src + "_" + msg.dst
 cleanText     = (text = "") -> text.trim().toLowerCase()
@@ -68,9 +66,30 @@ isJson = (str) ->
     return false
   true
 
+errorHandler = (desc, err) ->
+  Logger.info desc
+  Logger.info err
+
+trace = (desc, obj) ->
+  Logger.info desc
+  Logger.info Util.inspect(obj) if obj?
+
 
 class Session
   @active = {}
+
+  @connectDb = (url) ->
+    # Setup the connection to the database
+    MongoClient.connect(url)
+    .then (@db) =>
+      Logger.info "Connected to the DB"
+      @botsDb     = @db.collection('Bots')
+      @sessionsDb = @db.collection('Sessions')
+      @scriptsDb  = @db.collection('Scripts')
+
+    .catch (err) ->
+      Logger.info "Cannot connect to DB. Fail"
+      exit -1
 
   @findById = (id) ->
     for key, session of Session.active
@@ -91,33 +110,33 @@ class Session
       name = msg.dst.toLowerCase()
       keyword = cleanText(msg.txt)
       Logger.info "Looking for #{name}:#{keyword}"
-      q = Bots.findOne
+      Session.botsDb.findOne
         $and: [
           'addresses.networkHandleName': name,
           "keywords": $in: [keyword]
         ]
-
-      q.onReject (err) ->
-        Logger.info "Can't find #{name}:#{keyword}" + err
-
-      q.then (bot) ->
+      .then (bot) =>
         if bot
           Logger.info "Found bot #{name}:#{keyword}"
           return bot
-
+        else
+          Logger.info "Hmmm. Keep looking."
         # Apparently, no bots with that keyword. Check for default
-        return Bots.findOne
+        return Session.botsDb.findOne
           $and: [
             'addresses.networkHandleName': name,
             "keywords": $in: ['default']
           ]
       .then (bot) ->
         if not bot
-          Logger.info "No default keyword set for that network handle."
+          trace "No default keyword set for that network handle."
           return
+        trace "This is the bot I am looking for. Creating session", bot
         new Session(msg, bot, cb)
+      .catch (err) -> errorHandler("Error thrown in finding the bot", err)
 
   constructor: (@msg, @bot, @cb) ->
+    Logger.info "Constructing the session"
     # The variables that make up a Session
     @transcript = []
     @src = @msg.src
@@ -129,22 +148,48 @@ class Session
     @processStack = []
 
     # Assemble the @command, @arguments, @opts
-    q = dbSessions.findOne({src: @src}, {sort: {updatedAt: -1}})
-    q.error = (err) ->
-      Logger.info 'Mongo error in fetch language : ' + err
-    q.then (session) =>
+    Session.sessionsDb.findOne({src: @src}, {sort: {updatedAt: -1}})
+    .then (session) =>
+      return err if err?
       if session?.lang?
         @lang = session.lang
       else
         @lang = process.env.DEFAULT_LANG or 'en'
-      Logger.info 'Language selection ' + @lang
-      return @lang
-    .then () =>
+      trace 'Language selection ', @lang
+    .then =>
       @createSessionEnv()
-    .then () =>
+    .then =>
       @kickOffProcess(@command, @arguments, @opts, @lang)
+    .then ->
+      Logger.info "Session started"
+    .catch (err) -> errorHandler("Error in session constructor", err)
+
+  createSessionEnv: =>
+    trace "Starting session ENV", @
+    trace "Scripts collection", Session.scriptsDb
+    trace "Bot looks like", @bot
+    Session.scriptsDb.findOne( { _id: @bot.scriptId })
+    .then (script) =>
+      trace("Just got the script", script)
+      @script = script
+      if @isOwner() and not @bot.testMode
+        @arguments  = @script.owner_cmd.split(" ")
+      else
+        @arguments  = @script.default_cmd.split(" ")
+
+      @command = @arguments[0]
+      @arguments.shift()
+      @env = @cmdSettings()
+      @env.INITIAL_MSG = @msg.txt
+      @opts =
+        cwd: DEF_SCRIPT_DIR
+        env: @env
+      Session.botsDb.update {_id: ObjectID(@bot.scriptId)}, testMode:false
+    .catch (err) -> errorHandler("Error thrown in createSessionEnv", err)
+
 
   kickOffProcess : (command, args, opts, lang) =>
+    Logger.info "Kicking off session as #{command} #{args} in #{lang}"
     # Start the process, connect the pipes
     sess =
       command: command
@@ -155,7 +200,7 @@ class Session
       botId: @bot._id
       scriptId: @bot.scriptId
       type: @bot.type
-
+    Logger.info "New session starting: #{Util.inspect sess}"
     newSessionRequest = JSON.stringify sess
     client.lpush NEW_SESSIONS_FEED, newSessionRequest
     client.publish NEW_SESSIONS_FEED, newSessionRequest
@@ -186,33 +231,12 @@ class Session
         lang: @lang
       @processStack.push nextProcess
 
-  createSessionEnv: =>
-    q = Scripts.findById @bot.scriptId
-    q.onReject (err) -> Logger.info "Can't find script???"
-    q.then (@script) =>
-      if @isOwner() and not @bot.testMode
-        Logger.info "Running as the owner"
-        @arguments  = @script.owner_cmd.split(" ")
-      else
-        Logger.info "Running as a visitor"
-        @arguments  = @script.default_cmd.split(" ")
-
-      @command = @arguments[0]
-      @arguments.shift()
-      @env = @cmdSettings()
-      @env.INITIAL_MSG = @msg.txt
-      @opts =
-        cwd: DEF_SCRIPT_DIR
-        env: @env
-      return @opts
-    .then (opts) =>
-      Logger.info 'Updating test mode on the bot'
-      Bots.updateById @bot._id, testMode:false
-    return q
 
     # Now save it in the database
   updateDb: =>
-    dbSessions.update sessionId: @id, @information(), upsert: true
+    Session.sessionsDb.update {sessionId: @id}, @information(), upsert: true
+    .then (res) -> Logger.info "Database updated"
+    .catch (err) -> errorHandler("Error thrown in updateDb", err)
 
 
   information: =>
@@ -249,8 +273,10 @@ class Session
     return env_settings
 
   isOwner: () =>
+    Logger.info "Checking to see if #{@src} is in"
+    Logger.info @bot
     for address in @bot.addresses
-      return true if @src in address.ownerHandles
+      return true if @src in @bot.ownerHandles
     Logger.info "Running session #{@id} as a visitor"
     return false
 
@@ -301,11 +327,12 @@ class Session
     lines = txt.split("\n")
     @egressProcessStream.write(line) for line in lines
 
-  redisPopErrored: (err) =>
+  redisPopErrored: (err) ->
     Logger.info('Popping message returns ' + err)
 
   ingressList: -> @id + '.ingress'
   egressList: ->  @id + '.egress'
+# End Session class
 
 events.on 'ingress', (msg) ->
   #flipping for egress
@@ -317,12 +344,24 @@ events.on 'ingress', (msg) ->
 
 
 sessionClient.on 'message', (chan, sessionId) ->
-  Session.findById(sessionId).end()
+  session = Session.findById(sessionId)
+  session?.end()
 
 egressClient.on "message", (chan, sessionId) ->
   #get the right session from sesion id
   session = Session.findById(sessionId)
-  client.lpopAsync(session.egressList()).then(session.writeEgressMessage, session.redisPopErrored)
+  if not session
+    trace "I can't find #{sessionId}", session
+    return
+    
+  client.lpopAsync(session.egressList())
+  .then (txt) ->
+    session.writeEgressMessage(txt)
+    trace "Message egress from session", txt
+  .catch (err) -> errorHandler("Error thrown in redisPopErrored", err)
 
 egressClient.subscribe(EGRESS_MSGS_FEED)
 sessionClient.subscribe(SESSION_ENDED_FEED)
+
+# Connect to the DB
+Session.connectDb(CONNECTION_STRING)

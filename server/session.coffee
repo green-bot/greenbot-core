@@ -363,10 +363,11 @@ events.on 'ingress', (msg) ->
   trace "Inbound message ", msg
   src = msg.dst
   dst = msg.src
+  egressEvent = msg.egressEvent
   Session.findOrCreate msg, (txt) ->
     egressMsg = {src: src, dst: dst, txt: txt}
     trace "Sending out message to #{dst}", egressMsg
-    events.emit dst, egressMsg
+    events.emit egressEvent, egressMsg
 
 
 sessionClient.on 'message', (chan, sessionId) ->

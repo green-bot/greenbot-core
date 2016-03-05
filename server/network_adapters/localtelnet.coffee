@@ -20,6 +20,7 @@ events = Pubsub.pubsub
 
 Telnet.createServer((client) ->
   sessionId = ShortUUID.generate()
+  egressEvent = 'telnet'
   client.on 'data', (b) ->
     msg = b.toString()
 
@@ -28,10 +29,11 @@ Telnet.createServer((client) ->
       dst: process.env.DEV_ROOM_NAME or 'development::telnet'
       src: 'telnet'
       txt: b.toString()
+      egressEvent: egressEvent
     events.emit 'ingress', msg
     return
 
-  events.on "telnet", (msg) ->
+  events.on egressEvent, (msg) ->
     events.emit 'log', 'Local telnet egress' + msg.txt
     client.write new Buffer msg.txt + "\n"
 

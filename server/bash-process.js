@@ -7,30 +7,34 @@ var gB = require('./greenbot-process')
 var u = require('util')
 
 // Couple convenience functions
-var info = function (text) {
-  console.log(text)
+var trace = function (text) {
+  if (process.env.TRACE_MESSAGES) {
+    console.log(text)
+  }
 }
-var objInfo = function (obj) {
-  console.log(u.inspect(obj))
+var objtrace = function (obj) {
+  if (process.env.TRACE_MESSAGES){
+    console.log(u.inspect(obj))
+  }
 }
 var sessions = {}
 
 var createBash = function (sess) {
   var sessionId = sess.sessionId
 
-  info('starting process: ' + sess.command)
+  trace('starting process: ' + sess.command)
   sess.process = cp.spawn(sess.command, sess.args, sess.opts)
   // Check for thrown errors
   sess.process.on('exit', function (code, signal) {
-    info('Session ended ' + code)
+    trace('Session ended ' + code)
     gbProcess.complete(sessionId)
   })
   sess.process.on('error', function (err) {
-    info('Session threw error.')
-    objInfo(err)
+    trace('Session threw error.')
+    objtrace(err)
   })
   sess.process.stderr.on('data', function (chunk) {
-    info('stderr: ' + chunk)
+    trace('stderr: ' + chunk)
   })
 
   // Look for egress messages and stick them into the database
@@ -38,7 +42,7 @@ var createBash = function (sess) {
     gbProcess.egress(sessionId, chunk.toString())
   })
   sessions[sessionId] = sess
-  info('started process: ' + sess.command)
+  trace('started process: ' + sess.command)
 }
 
 var ingressMsg = function (sessionId, txt) {

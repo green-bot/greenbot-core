@@ -71,9 +71,9 @@ errorHandler = (desc, err) ->
   Logger.info err
 
 trace = (desc, obj) ->
-  Logger.info desc
-  Logger.info Util.inspect(obj) if obj?
-
+  if process.env.TRACE_MESSAGES?
+    Logger.info desc
+    Logger.info Util.inspect(obj) if obj?
 
 class Session
   @active = {}
@@ -109,11 +109,10 @@ class Session
       # No session active. Kick one off.
       name = msg.dst.toLowerCase()
       keyword = cleanText(msg.txt)
-      Logger.info "Looking for #{name}:#{keyword}"
       Session.botsDb.findOne
         $and: [
           'addresses.networkHandleName': name,
-          "keywords": $in: [keyword]
+          'addresses.keywords': $in: [keyword]
         ]
       .then (bot) =>
         if bot
@@ -200,42 +199,52 @@ class Session
       botId: @bot._id
       scriptId: @bot.scriptId
       type: @bot.type
-    Logger.info "New session starting: #{Util.inspect sess}"
+    trace "New session starting", sess
     newSessionRequest = JSON.stringify sess
     client.lpush NEW_SESSIONS_FEED, newSessionRequest
     client.publish NEW_SESSIONS_FEED, newSessionRequest
-    @language = new LanguageFilter('en', lang)
-    jsonFilter = @createJsonFilter()
-    # Start the subscriber for the bash_process pub/sub
-    @ingressProcessStream = @language.ingressStream
-    @ingressProcessStream.on 'readable', =>
-      client.lpush @ingressList(), @ingressProcessStream.read()
-      client.publish INGRESS_MSGS_FEED, @id
 
-    @egressProcessStream = Pipe(jsonFilter, @language.egressStream)
+    if process.env.WATSON_USERNAME and process.env.WATSON_PASSWORD
+      # Create the language filter using Watson
+      @language = new LanguageFilter('en', lang)
 
-    @egressProcessStream.on "readable", =>
-      @egressMsg @egressProcessStream.read()
+      # Bot dialogs have interleaved messages: straight text is to
+      # be sent to the network, any valid JSON should be saved as
+      # collected data from the session
+      jsonFilter = @createJsonFilter()
 
-    @egressProcessStream.on "error", (err) ->
-      Logger.info "Error thrown from session"
-      Logger.info err
-    @language.on "langChanged", (oldLang, newLang) =>
-      Logger.info "Language changed, restarting : #{oldLang} to #{newLang}"
-      @egressProcessStream.write("Language changed, restarting conversation.")
-      @lang = newLang
-      nextProcess =
-        command: @command
-        args: @arguments
-        opts: @opts
-        lang: @lang
-      @processStack.push nextProcess
+      # the ingress process stream carries messages from
+      # the network to the bot dialog
+      @ingressProcessStream = @language.ingressStream
+      @ingressProcessStream.on 'readable', =>
+        client.lpush @ingressList(), @ingressProcessStream.read()
+        client.publish INGRESS_MSGS_FEED, @id
 
+      # the egress process stream carries messages from the
+      # bot to the network.
+      @egressProcessStream = Pipe(jsonFilter, @language.egressStream)
+      @egressProcessStream.on "readable", =>
+        @egressMsg @egressProcessStream.read()
+      @egressProcessStream.on "error", (err) ->
+        Logger.info "Error thrown from session"
+        Logger.info err
+
+      # When the language changes, restart the bot dialog
+      @language.on "langChanged", (oldLang, newLang) =>
+        Logger.info "Language changed, restarting : #{oldLang} to #{newLang}"
+        @egressProcessStream.write("Language changed, restarting conversation.")
+        @lang = newLang
+        nextProcess =
+          command: @command
+          args: @arguments
+          opts: @opts
+          lang: @lang
+        @processStack.push nextProcess
 
     # Now save it in the database
   updateDb: =>
     Session.sessionsDb.update {sessionId: @id}, @information(), upsert: true
-    .then (res) -> Logger.info "Database updated"
+    .then (res) -> trace "Database updated"
     .catch (err) -> errorHandler("Error thrown in updateDb", err)
 
 
@@ -273,8 +282,7 @@ class Session
     return env_settings
 
   isOwner: () =>
-    Logger.info "Checking to see if #{@src} is in"
-    Logger.info @bot
+    trace "Checking to see if #{@src} is in", @bot
     for address in @bot.addresses
       return true if @src in @bot.ownerHandles
     Logger.info "Running session #{@id} as a visitor"
@@ -294,11 +302,18 @@ class Session
         @updateDb()
 
   ingressMsg: (text) =>
+    # Handle slash commands, if any
     if cleanText(text) == '/human'
       @automated = false
       events.emit 'livechat:newsession', @information()
+
+    # If we are in automated mode, send it to the bot
     if @automated
-      @ingressProcessStream.write("#{text}\n")
+      if @ingressProcessStream
+        @ingressProcessStream.write("#{text}\n")
+      else
+        client.lpush @ingressList(), text
+        client.publish INGRESS_MSGS_FEED, @id
     else
       events.emit 'livechat:ingress', @information(), text
     @transcript.push { direction: 'ingress', text: text}
@@ -324,8 +339,17 @@ class Session
     return jsonFilter
 
   writeEgressMessage: (txt) =>
+    trace "Writing egress message #{txt}"
     lines = txt.split("\n")
-    @egressProcessStream.write(line) for line in lines
+    if @egressProcessStream
+      @egressProcessStream.write(line) for line in lines
+    else
+      for line in lines
+        if isJson line
+          @collectedData = JSON.parse line
+          @updateDb()
+        else
+          @egressMsg line
 
   redisPopErrored: (err) ->
     Logger.info('Popping message returns ' + err)
@@ -336,11 +360,13 @@ class Session
 
 events.on 'ingress', (msg) ->
   #flipping for egress
+  trace "Inbound message ", msg
   src = msg.dst
   dst = msg.src
   Session.findOrCreate msg, (txt) ->
     egressMsg = {src: src, dst: dst, txt: txt}
-    events.emit msg.egressEvent, egressMsg
+    trace "Sending out message to #{dst}", egressMsg
+    events.emit dst, egressMsg
 
 
 sessionClient.on 'message', (chan, sessionId) ->
@@ -353,7 +379,10 @@ egressClient.on "message", (chan, sessionId) ->
   if not session
     trace "I can't find #{sessionId}", session
     return
-    
+  else
+    trace "Found session #{sessionId}"
+    trace session
+
   client.lpopAsync(session.egressList())
   .then (txt) ->
     session.writeEgressMessage(txt)

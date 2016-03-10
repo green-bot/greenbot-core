@@ -60,6 +60,8 @@ isJson = (str) ->
   # When a text message comes from a session, if it's a valid JSON
   # string, we will treat it as a command or data. This function
   # allows us to figure that out.
+  console.log "Checking for JSON"
+  console.log str
   try
     JSON.parse str
   catch e
@@ -181,7 +183,7 @@ class Session
       @env = @cmdSettings()
       @env.INITIAL_MSG = @msg.txt
       @opts =
-        cwd: DEF_SCRIPT_DIR
+        cwd: @script.default_path
         env: @env
       Session.botsDb.update {_id: ObjectID(@bot.scriptId)}, testMode:false
     .catch (err) -> errorHandler("Error thrown in createSessionEnv", err)
@@ -345,10 +347,13 @@ class Session
       @egressProcessStream.write(line) for line in lines
     else
       for line in lines
-        if isJson line
+        console.log line
+        if isJson(line)
+          console.log "JSON"
           @collectedData = JSON.parse line
           @updateDb()
         else
+          console.log "Not JSON"
           @egressMsg line
 
   redisPopErrored: (err) ->

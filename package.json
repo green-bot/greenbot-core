@@ -1,6 +1,6 @@
 {
   "name": "greenbot",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "author": "Thomas Howe <therealthomashowe@gmail.com>",
   "description": "A multi network, multi language, all singing and dancing bot server",

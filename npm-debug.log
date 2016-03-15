@@ -1,0 +1,249 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/local/bin/node',
+1 verbose cli   '/usr/local/bin/npm',
+1 verbose cli   'install',
+1 verbose cli   'lua_sample_bot',
+1 verbose cli   '--save' ]
+2 info using npm@2.14.7
+3 info using node@v4.2.1
+4 verbose install initial load of /root/code/greenbot/package.json
+5 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/airbrake/package.json
+6 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/async/package.json
+7 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/bitly/package.json
+8 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/bluebird/package.json
+9 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/bluemix/package.json
+10 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/body-parser/package.json
+11 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/coffee/package.json
+12 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/coffee-script/package.json
+13 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/colors/package.json
+14 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/express/package.json
+15 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot/package.json
+16 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-bw/package.json
+17 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-csf/package.json
+18 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-diagnostics/package.json
+19 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-google-images/package.json
+20 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-google-translate/package.json
+21 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-help/package.json
+22 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-heroku-keepalive/package.json
+23 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-maps/package.json
+24 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-nexmo/package.json
+25 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-pugme/package.json
+26 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-redis-brain/package.json
+27 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-rules/package.json
+28 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-scripts/package.json
+29 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-shango/package.json
+30 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-shipit/package.json
+31 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-slack/package.json
+32 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-tsg/package.json
+33 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-twitter/package.json
+34 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/hubot-youtube/package.json
+35 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/info_bot/package.json
+36 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/install/package.json
+37 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/irc/package.json
+38 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/matrix-js-sdk/package.json
+39 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/minitest/package.json
+40 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/moment/package.json
+41 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/mongodb/package.json
+42 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/mongoose/package.json
+43 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/monitor/package.json
+44 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/monk/package.json
+45 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/morgan/package.json
+46 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/multer/package.json
+47 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/multipipe/package.json
+48 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/node-bitlyapi/package.json
+49 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/node-parse-api/package.json
+50 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/node-promise/package.json
+51 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/node-slack/package.json
+52 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/nodemailer/package.json
+53 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/nodemailer-smtp-transport/package.json
+54 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/nodemailer-wellknown/package.json
+55 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/nodemon/package.json
+56 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/npm/package.json
+57 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/passport/package.json
+58 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/passport-oauth1/package.json
+59 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/redis/package.json
+60 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/request/package.json
+61 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/request-promise/package.json
+62 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/require-dir/package.json
+63 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/shortid/package.json
+64 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/slack-client/package.json
+65 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/slack-node/package.json
+66 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/telnet/package.json
+67 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/twitter/package.json
+68 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/underscore/package.json
+69 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/underscore.string/package.json
+70 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/watson-developer-cloud/package.json
+71 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/watson-translate-stream/package.json
+72 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/websocket/package.json
+73 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/winston/package.json
+74 verbose installManyTop reading scoped package data from /root/code/greenbot/node_modules/winston-papertrail/package.json
+75 info package.json bitly@1.2.5 No license field.
+76 info package.json hubot-csf@0.2.1 No license field.
+77 info package.json hubot-nexmo@0.4.4 No license field.
+78 info package.json hubot-scripts@2.16.2 No license field.
+79 info package.json hubot-tsg@0.0.2 No license field.
+80 info package.json hubot-twitter@2.1.1 No license field.
+81 info package.json install@0.1.8 No license field.
+82 info package.json irc@0.3.12 No license field.
+83 info package.json minitest@0.2.0 No license field.
+84 info package.json matrix-js-sdk@0.3.0 license should be a valid SPDX license expression
+85 info package.json monitor@0.6.10 No license field.
+86 info package.json monk@1.0.1 No license field.
+87 info package.json node-bitlyapi@0.4.0 No license field.
+88 info package.json node-parse-api@0.3.8 No license field.
+89 info package.json node-promise@0.5.12 No license field.
+90 info package.json node-slack@0.0.5 license should be a valid SPDX license expression
+91 info package.json redis@0.12.1 No license field.
+92 info package.json telnet@0.0.1 No license field.
+93 info package.json twitter@1.2.5 No license field.
+94 info package.json winston@0.9.0 No license field.
+95 info package.json winston-papertrail@1.0.2 No license field.
+96 verbose readDependencies loading dependencies from /root/code/greenbot/package.json
+97 silly cache add args [ 'lua_sample_bot', null ]
+98 verbose cache add spec lua_sample_bot
+99 silly cache add parsed spec Result {
+99 silly cache add   raw: 'lua_sample_bot',
+99 silly cache add   scope: null,
+99 silly cache add   name: 'lua_sample_bot',
+99 silly cache add   rawSpec: '',
+99 silly cache add   spec: '*',
+99 silly cache add   type: 'range' }
+100 silly addNamed lua_sample_bot@*
+101 verbose addNamed "*" is a valid semver range for lua_sample_bot
+102 silly addNameRange { name: 'lua_sample_bot', range: '*', hasData: false }
+103 silly mapToRegistry name lua_sample_bot
+104 silly mapToRegistry using default registry
+105 silly mapToRegistry registry https://registry.npmjs.org/
+106 silly mapToRegistry uri https://registry.npmjs.org/lua_sample_bot
+107 verbose addNameRange registry:https://registry.npmjs.org/lua_sample_bot not in flight; fetching
+108 verbose request uri https://registry.npmjs.org/lua_sample_bot
+109 verbose request no auth needed
+110 info attempt registry request try #1 at 3:26:53 PM
+111 verbose request using bearer token for auth
+112 verbose request id 2e9e60b8c4858b3a
+113 http request GET https://registry.npmjs.org/lua_sample_bot
+114 http 200 https://registry.npmjs.org/lua_sample_bot
+115 verbose headers { server: 'CouchDB/1.5.0 (Erlang OTP/R16B03)',
+115 verbose headers   etag: '"52TBE1PPY3CGQE1B9K7GH2TSF"',
+115 verbose headers   'content-type': 'application/json',
+115 verbose headers   'cache-control': 'max-age=300',
+115 verbose headers   'content-length': '1990',
+115 verbose headers   'accept-ranges': 'bytes',
+115 verbose headers   date: 'Tue, 15 Mar 2016 19:26:53 GMT',
+115 verbose headers   via: '1.1 varnish',
+115 verbose headers   connection: 'keep-alive',
+115 verbose headers   'x-served-by': 'cache-jfk1021-JFK',
+115 verbose headers   'x-cache': 'MISS',
+115 verbose headers   'x-cache-hits': '0',
+115 verbose headers   'x-timer': 'S1458070013.562996,VS0,VE350',
+115 verbose headers   vary: 'Accept' }
+116 silly get cb [ 200,
+116 silly get   { server: 'CouchDB/1.5.0 (Erlang OTP/R16B03)',
+116 silly get     etag: '"52TBE1PPY3CGQE1B9K7GH2TSF"',
+116 silly get     'content-type': 'application/json',
+116 silly get     'cache-control': 'max-age=300',
+116 silly get     'content-length': '1990',
+116 silly get     'accept-ranges': 'bytes',
+116 silly get     date: 'Tue, 15 Mar 2016 19:26:53 GMT',
+116 silly get     via: '1.1 varnish',
+116 silly get     connection: 'keep-alive',
+116 silly get     'x-served-by': 'cache-jfk1021-JFK',
+116 silly get     'x-cache': 'MISS',
+116 silly get     'x-cache-hits': '0',
+116 silly get     'x-timer': 'S1458070013.562996,VS0,VE350',
+116 silly get     vary: 'Accept' } ]
+117 verbose get saving lua_sample_bot to /root/.npm/registry.npmjs.org/lua_sample_bot/.cache.json
+118 silly addNameRange number 2 { name: 'lua_sample_bot', range: '*', hasData: true }
+119 silly addNameRange versions [ 'lua_sample_bot', [ '0.1.1' ] ]
+120 silly addNamed lua_sample_bot@0.1.1
+121 verbose addNamed "0.1.1" is a plain semver version for lua_sample_bot
+122 silly cache afterAdd lua_sample_bot@0.1.1
+123 verbose afterAdd /root/.npm/lua_sample_bot/0.1.1/package/package.json not in flight; writing
+124 verbose afterAdd /root/.npm/lua_sample_bot/0.1.1/package/package.json written
+125 silly install resolved [ { name: 'lua_sample_bot',
+125 silly install resolved     version: '0.1.1',
+125 silly install resolved     description: 'A lua bot that says hello',
+125 silly install resolved     main: 'hello.lua',
+125 silly install resolved     scripts:
+125 silly install resolved      { test: 'echo "Error: no test specified" && exit 1',
+125 silly install resolved        postinstall: 'mongoimport -d greenbot -c Scripts -h 127.0.0.1 -p 27017 bot.json --jsonArray' },
+125 silly install resolved     repository:
+125 silly install resolved      { type: 'git',
+125 silly install resolved        url: 'git+https://github.com/green-bot/lua_bot.git' },
+125 silly install resolved     bin: { info_bot: 'lua hello.lua' },
+125 silly install resolved     keywords: [ 'green-bot', 'greenbot', 'bot', 'bashbot', 'lua' ],
+125 silly install resolved     license: 'MIT',
+125 silly install resolved     bugs: { url: 'https://github.com/green-bot/lua_bot/issues' },
+125 silly install resolved     readme: '# info_bot\nA bot that collects information from a user, built for green-bot.\n',
+125 silly install resolved     readmeFilename: 'README.md',
+125 silly install resolved     gitHead: 'eb20287c82bd37344c63db4077749fd3e1644182',
+125 silly install resolved     homepage: 'https://github.com/green-bot/lua_bot#readme',
+125 silly install resolved     _id: 'lua_sample_bot@0.1.1',
+125 silly install resolved     _shasum: '76343b07afca73d46be8ceb110bef4e107459c4c',
+125 silly install resolved     _from: 'lua_sample_bot@*' } ]
+126 info install lua_sample_bot@0.1.1 into /root/code/greenbot
+127 info installOne lua_sample_bot@0.1.1
+128 verbose installOne of lua_sample_bot to /root/code/greenbot not in flight; installing
+129 verbose lock using /root/.npm/_locks/lua-sample-bot-37174288e1558ae2.lock for /root/code/greenbot/node_modules/lua_sample_bot
+130 silly install write writing lua_sample_bot 0.1.1 to /root/code/greenbot/node_modules/lua_sample_bot
+131 verbose unbuild node_modules/lua_sample_bot
+132 silly gentlyRm /root/code/greenbot/node_modules/lua_sample_bot is being purged from base /root/code/greenbot
+133 verbose gentlyRm don't care about contents; nuking /root/code/greenbot/node_modules/lua_sample_bot
+134 verbose tar unpack /root/.npm/lua_sample_bot/0.1.1/package.tgz
+135 verbose tar unpacking to /root/code/greenbot/node_modules/lua_sample_bot
+136 silly gentlyRm /root/code/greenbot/node_modules/lua_sample_bot is being purged
+137 verbose gentlyRm don't care about contents; nuking /root/code/greenbot/node_modules/lua_sample_bot
+138 silly gunzTarPerm modes [ '755', '644' ]
+139 silly gunzTarPerm extractEntry package.json
+140 silly gunzTarPerm extractEntry .npmignore
+141 silly gunzTarPerm extractEntry README.md
+142 silly gunzTarPerm extractEntry bot.json
+143 silly gunzTarPerm extractEntry dkjson.lua
+144 silly gunzTarPerm extractEntry hello.lua
+145 verbose write writing to /root/code/greenbot/node_modules/lua_sample_bot/package.json
+146 info preinstall lua_sample_bot@0.1.1
+147 verbose readDependencies loading dependencies from /root/code/greenbot/node_modules/lua_sample_bot/package.json
+148 verbose readDependencies loading dependencies from /root/code/greenbot/node_modules/lua_sample_bot/package.json
+149 silly install resolved []
+150 verbose about to build /root/code/greenbot/node_modules/lua_sample_bot
+151 info build /root/code/greenbot/node_modules/lua_sample_bot
+152 info linkStuff lua_sample_bot@0.1.1
+153 silly linkStuff lua_sample_bot@0.1.1 has /root/code/greenbot/node_modules as its parent node_modules
+154 verbose linkBins lua_sample_bot@0.1.1
+155 verbose link bins [ { info_bot: 'lua hello.lua' },
+155 verbose link bins   '/root/code/greenbot/node_modules/.bin',
+155 verbose link bins   false ]
+156 verbose linkMans lua_sample_bot@0.1.1
+157 verbose rebuildBundles lua_sample_bot@0.1.1
+158 verbose unlock done using /root/.npm/_locks/lua-sample-bot-37174288e1558ae2.lock for /root/code/greenbot/node_modules/lua_sample_bot
+159 verbose stack Error: ENOENT: no such file or directory, chmod '/root/code/greenbot/node_modules/lua_sample_bot/lua hello.lua'
+159 verbose stack     at Error (native)
+160 verbose cwd /root/code/greenbot
+161 error Linux 3.13.0-57-generic
+162 error argv "/usr/local/bin/node" "/usr/local/bin/npm" "install" "lua_sample_bot" "--save"
+163 error node v4.2.1
+164 error npm  v2.14.7
+165 error path /root/code/greenbot/node_modules/lua_sample_bot/lua hello.lua
+166 error code ENOENT
+167 error errno -2
+168 error syscall chmod
+169 error enoent ENOENT: no such file or directory, chmod '/root/code/greenbot/node_modules/lua_sample_bot/lua hello.lua'
+169 error enoent This is most likely not a problem with npm itself
+169 error enoent and is related to npm not being able to find a file.
+170 verbose exit [ -2, true ]
+171 verbose unbuild node_modules/lua_sample_bot
+172 info preuninstall lua_sample_bot@0.1.1
+173 info uninstall lua_sample_bot@0.1.1
+174 verbose unbuild rmStuff lua_sample_bot@0.1.1 from /root/code/greenbot/node_modules
+175 silly gentlyRm /root/code/greenbot/node_modules/.bin/info_bot is being gently removed
+176 silly gentlyRm verifying /root/code/greenbot is an npm working directory
+177 silly gentlyRm containing path /root/code/greenbot is under npm's control, in /root/code/greenbot
+178 silly gentlyRm deletion target /root/code/greenbot/node_modules/.bin/info_bot is under /root/code/greenbot
+179 verbose gentlyRm vacuuming from /root/code/greenbot/node_modules/.bin/info_bot up to /root/code/greenbot
+180 silly vacuum-fs removing /root/code/greenbot/node_modules/.bin/info_bot
+181 silly vacuum-fs quitting because other entries in /root/code/greenbot/node_modules/.bin
+182 info postuninstall lua_sample_bot@0.1.1
+183 silly gentlyRm /root/code/greenbot/node_modules/lua_sample_bot is being purged from base /root/code/greenbot
+184 verbose gentlyRm don't care about contents; nuking /root/code/greenbot/node_modules/lua_sample_bot
+185 silly vacuum-fs purging /root/code/greenbot/node_modules/lua_sample_bot
+186 silly vacuum-fs quitting because other entries in /root/code/greenbot/node_modules

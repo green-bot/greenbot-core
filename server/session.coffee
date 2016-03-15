@@ -246,9 +246,6 @@ class Session
     # Now save it in the database
   updateDb: =>
     Session.sessionsDb.update {sessionId: @id}, @information(), upsert: true
-    .then (res) -> trace "Database updated"
-    .catch (err) -> errorHandler("Error thrown in updateDb", err)
-
 
   information: =>
     transcript:     @transcript

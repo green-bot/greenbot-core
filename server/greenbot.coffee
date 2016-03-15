@@ -1,7 +1,5 @@
 require('coffee-script')
 Notify = require('./notify')
-Slackbot = require('./slackbot')
-Slack = require('./slack')
 Session = require('./session')
 Logger = require('./logger')
 Bash = require('./bash-process')

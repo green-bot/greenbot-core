@@ -1,4 +1,4 @@
-# Copyright (c) 2015, Ten Digit Communications
+# Copyright (c) 2015, GreenBot
 # Thomas Howe
 Logger = require('../logger')
 Request = require "request-promise"

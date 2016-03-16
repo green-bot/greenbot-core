@@ -1,4 +1,4 @@
-# Copyright (c) 2015, Ten Digit Communications
+# Copyright (c) 2015, GreenBot
 # Thomas Howe
 _              = require('underscore')
 Logger         = require('../logger')

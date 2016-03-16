@@ -40,6 +40,7 @@
     "npm": "2.14.22",
     "passport": "0.2.2",
     "passport-oauth1": "1.1.0",
+    "prompt": "1.0.0",
     "redis": "0.12.1",
     "request": "^2.53.0",
     "request-promise": "1.0.2",

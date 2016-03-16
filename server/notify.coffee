@@ -68,8 +68,12 @@ formatEmail = (session) ->
 sendEmail = (session, bot) =>
   info "Sending emails for session #{session.sessionId}"
   emailText = formatEmail(session)
-  integrationsDb.findOne { type: 'mail', provider: 'mailgun'}
+  integrationsDb.find({ type: 'mail', provider: 'mailgun'}).limit(1).next()
   .then (int) =>
+    unless int
+      trace "No email integration found. Returning"
+      return
+    
     trace "Found email integration", int
     trace "Applying it to bot", bot
     smtpConfig =
@@ -117,12 +121,12 @@ sendHook = (session, bot) ->
 events.on 'session:ended', (sessionId) ->
   info "Notifying on the end of session #{sessionId}"
   session = undefined
-  sessionsDb.findOne sessionId: sessionId
+  sessionsDb.find({ sessionId: sessionId }).limit(1).next()
   .then (sess) =>
     session = sess
     info "Notifying session #{sessionId} for bot #{session.botId}"
     info session
-    q2 = botsDb.findOne _id: session.botId
+    botsDb.find({_id: session.botId}).limit(1).next() 
   .then (bot) =>
     trace "Found the bot, notifying", bot
     trace "for session ", session

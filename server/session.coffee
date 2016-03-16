@@ -77,6 +77,7 @@ trace = (desc, obj) ->
     Logger.info desc
     Logger.info Util.inspect(obj) if obj?
 
+
 class Session
   @active = {}
 
@@ -100,6 +101,15 @@ class Session
   @findByKey = (key) ->
     Session.active[key]
 
+  @findBot = (handle, keyword) ->
+    Session.botsDb.find
+      $and: [
+        'addresses.networkHandleName': handle,
+        'addresses.keywords': $in: [keyword]
+      ]
+    .limit(1).next()
+
+
   @findOrCreate = (msg, cb) ->
     # All messages that come from the network end up here.
     sessionKey = genSessionKey(msg)
@@ -111,25 +121,15 @@ class Session
       # No session active. Kick one off.
       name = msg.dst.toLowerCase()
       keyword = cleanText(msg.txt)
-      Session.botsDb.findOne
-        $and: [
-          'addresses.networkHandleName': name,
-          'addresses.keywords': $in: [keyword]
-        ]
+
+
+      Session.findBot(name, keyword)
       .then (bot) =>
-        if bot
-          Logger.info "Found bot #{name}:#{keyword}"
-          return bot
-        else
-          Logger.info "Hmmm. Keep looking."
-        # Apparently, no bots with that keyword. Check for default
-        return Session.botsDb.findOne
-          $and: [
-            'addresses.networkHandleName': name,
-            "keywords": $in: ['default']
-          ]
+        return bot if bot
+        Logger.info "Hmmm. Keep looking."
+        Session.findBot(name, 'default')
       .then (bot) ->
-        if not bot
+        unless bot
           trace "No default keyword set for that network handle."
           return
         trace "This is the bot I am looking for. Creating session", bot
@@ -246,9 +246,6 @@ class Session
     # Now save it in the database
   updateDb: =>
     Session.sessionsDb.update {sessionId: @id}, @information(), upsert: true
-    .then (res) -> trace "Database updated"
-    .catch (err) -> errorHandler("Error thrown in updateDb", err)
-
 
   information: =>
     transcript:     @transcript

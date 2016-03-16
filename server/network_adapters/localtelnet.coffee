@@ -32,6 +32,14 @@ Telnet.createServer((client) ->
       egressEvent: egressEvent
     events.emit 'ingress', msg
     return
+  client.on 'error', (e) ->
+    if e.code is "ECONNRESET"
+      console.log("Client quit unexpectedly; ignoring exception.")
+      return
+
+    console.log("Exception encountered:")
+    console.log(e.code)
+    process.exit(1)
 
   events.on egressEvent, (msg) ->
     events.emit 'log', 'Local telnet egress' + msg.txt

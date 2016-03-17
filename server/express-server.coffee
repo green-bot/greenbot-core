@@ -14,5 +14,3 @@ expressPort = process.env.GREENBOT_BOT_SERVER_PORT or 3001
 app.listen(3001)
 Logger.info "Started express on port #{expressPort}"
 exports.app = app
-
-events.emit 'express:start'

@@ -4,30 +4,40 @@ _              = require('underscore')
 Logger         = require('../logger')
 Request        = require "request-promise"
 Util           = require "util"
+Express        = require('../express-server').app
+Events         = require('../pubsub').pubsub
 
-# Global events object
-Pubsub = require('../pubsub')
-events = Pubsub.pubsub
+GH_TOKEN       = process.env.GH_TOKEN
+GH_NUMBER      = process.env.GH_NUMBER
+EGRESS_EVENT   = "grasshopper_egress"
+WEBHOOK_PATH   = process.env.GH_WEBHOOK or '/inbound/gh'
+NETWORK_NAME   = "gh"
 
-ghToken = process.env.GH_TOKEN
-ghNumber = process.env.GH_NUMBER
-egressEvent = "grasshopper_egress"
-lastMessageAt = new Date()
+Events.on EGRESS_EVENT, (msg) ->
+  {src, dst, txt} = msg
+  egressMsg GH_TOKEN, src, dst, txt
+
+ghHandle = (handle) -> NETWORK_NAME+"::#{handle}"
+
+ingressMsg = (ghMsg) ->
+  msg =
+    dst:          ghHandle ghMsg.vpsNumber
+    src:          ghHandle ghMsg.otherNumber
+    network:      NETWORK_NAME
+    EGRESS_EVENT: EGRESS_EVENT
+    txt:          ghMsg.body
+  Events.emit     'ingress', msg
 
 processGhMsgs  = () ->
   # Check for messages inbound from ZW
   getNewMessages(lastMessageAt).then (messages) ->
     return if messages.length is 0
     lastMessageAt = messages[0].timestamp
-    for ghMsg in messages
-      do (ghMsg) ->
-        msg =
-          dst: "gh::#{ghMsg.vpsNumber}"
-          src: "gh::#{ghMsg.otherNumber}"
-          network: "gh"
-          egressEvent: egressEvent
-          txt: ghMsg.body
-        events.emit 'ingress', msg
+    ingressMsg(ghMsg) for ghMsg in messages
+
+Express.post WEBHOOK_PATH, (req, res) ->
+  ingressMsg(req.body)
+  res.send 'OK'
 
 getNewMessages = (timestamp) ->
   getConversationsSince(timestamp)
@@ -53,10 +63,10 @@ getMessagesSince = (otherNumber, timestamp) ->
   options =
     uri: "https://mnsq.ghuser.com/external/sms"
     method: "GET"
-    headers: Authorization: ghToken
+    headers: Authorization: GH_TOKEN
     json: true
     qs:
-      vpsNumber: encodeURI(ghNumber)
+      vpsNumber: encodeURI(GH_NUMBER)
       otherNumber: encodeURI(otherNumber)
   Request(options).then (messages) ->
     return (m for m in messages when Date.parse(m.timestamp) > epochTime and m.direction is "Inbound")
@@ -66,22 +76,22 @@ getConversationsSince = (timestamp) ->
   options =
     uri: "https://mnsq.ghuser.com/external/sms/conversations"
     method: "GET"
-    headers: Authorization: ghToken
+    headers: Authorization: GH_TOKEN
     json: true
     qs:
-      vpsNumber: encodeURI(ghNumber)
+      vpsNumber: encodeURI(GH_NUMBER)
   Request(options).then (convos) ->
     convos = (c for c in convos when Date.parse(c.timestamp) > epochTime)
     return convos
 
-sendMsg = (token, src, dst, txt) ->
+egressMsg = (token, src, dst, txt) ->
   # extract telephone number
   src = src.split('::')[1]
   dst = dst.split('::')[1]
   options =
     uri: "https://mnsq.ghuser.com/external/sms"
     method: "POST"
-    headers: Authorization: ghToken
+    headers: Authorization: GH_TOKEN
     json: true
     body:
       vpsNumber: encodeURI(src)
@@ -89,14 +99,11 @@ sendMsg = (token, src, dst, txt) ->
       body: txt
   Request(options)
 
-if ghNumber? and ghToken?
+if GH_NUMBER? and GH_TOKEN?
   Logger.info "Starting Grasshopper adapter"
-  events.on egressEvent, (msg) ->
-    {src, dst, txt} = msg
-    sendMsg ghToken, src, dst, txt
-
-  setInterval processGhMsgs, 5000
+  setInterval(processGhMsgs, 5000) unless WEBHOOK_PATH
+  Logger.info "Waiting for GH Webhooks" if WEBHOOK_PATH
 else
   Logger.info "Not starting Grasshopper adapter"
-  Logger.info "No GH_TOKEN defined in environment" if not process.env.GH_TOKEN
-  Logger.info "No GH_NUMBER defined in environment" if not process.env.GH_NUMBER
+  Logger.info "No GH_TOKEN defined in environment" if not GH_TOKEN
+  Logger.info "No GH_NUMBER defined in environment" if not GH_NUMBER

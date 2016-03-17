@@ -3,13 +3,13 @@ Notify = require('./notify')
 Session = require('./session')
 Logger = require('./logger')
 Bash = require('./bash-process')
-#Watson = require('./watson-process')
-#Matrix = require('./matrix')
+Watson = require('./watson-process')
+Matrix = require('./matrix')
 Pubsub = require('./pubsub')
 events = Pubsub.pubsub
+Express = require('./express-server')
 
 RequireDir = require('require-dir')
-#RequireDir('./network_adapters')
-require('./network_adapters/tsg')
+RequireDir('./network_adapters')
 
-events.emit 'log', "Greenbot started"
+Logger.info "Greenbot started"

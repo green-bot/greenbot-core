@@ -1,0 +1,15 @@
+{
+  "name": "greenbot_console",
+  "version": "0.1.0",
+  "description": "A command line tool for testing GreenBot",
+  "main": "test.coffee",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Thomas Howe <ghostofbasho@gmail.com> (http://www.thomashowe.me)",
+  "license": "MIT",
+  "dependencies": {
+    "prompt": "1.0.0",
+    "socket.io-client": "1.4.5"
+  }
+}

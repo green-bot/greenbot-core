@@ -24,7 +24,7 @@ ingressMsg = (ghMsg) ->
     dst:          ghHandle ghMsg.vpsNumber
     src:          ghHandle ghMsg.otherNumber
     network:      NETWORK_NAME
-    EGRESS_EVENT: EGRESS_EVENT
+    egressEvent:  EGRESS_EVENT
     txt:          ghMsg.body
   Events.emit     'ingress', msg
 
@@ -98,6 +98,12 @@ egressMsg = (token, src, dst, txt) ->
       otherNumber: encodeURI(dst)
       body: txt
   Request(options)
+  .catch (err) ->
+    console.log "GH Send Message Error"
+    console.log err
+  .then (resp) ->
+    console.log "GH Send message sucess"
+    console.log resp
 
 if GH_NUMBER? and GH_TOKEN?
   Logger.info "Starting Grasshopper adapter"

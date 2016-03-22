@@ -9,3 +9,4 @@ vendor
 .bundle
 *.rdb
 .sass-cache
+tools/npm-debug.log

@@ -140,6 +140,7 @@ class Session
     Logger.info "Constructing the session"
     # The variables that make up a Session
     @transcript = []
+    @createdAt = new Date()
     @src = @msg.src
     @dst = @msg.dst.toLowerCase()
     @sessionKey = genSessionKey(@msg)
@@ -254,7 +255,8 @@ class Session
     sessionKey:     @sessionKey
     sessionId:      @id
     collectedData:  @collectedData
-    updatedAt:      Date.now()
+    updatedAt:      new Date()
+    createdAt:      @createdAt
     lang:           @lang
     botId:          @bot._id
 

@@ -19,7 +19,6 @@ LanguageFilter = require('watson-translate-stream')
 Logger         = require('./logger')
 Mailer         = require("nodemailer")
 MongoClient    = require('mongodb').MongoClient
-ObjectID       = require('mongodb').ObjectID
 Os             = require("os")
 Pipe           = require("multipipe")
 Promise        = require('node-promise')
@@ -29,7 +28,7 @@ Stream         = require('stream')
 Url            = require("url")
 Us             = require("underscore.string")
 Util           = require('util')
-
+Random = require('meteor-random')
 
 #DBLogger = require('mongodb').Logger
 #DBLogger.setLevel('debug')
@@ -184,7 +183,7 @@ class Session
       @opts =
         cwd: @script.default_path
         env: @env
-      Session.botsDb.update {_id: ObjectID(@bot.scriptId)}, testMode:false
+      Session.botsDb.update {_id: @bot.scriptId}, testMode:false
     .catch (err) -> errorHandler("Error thrown in createSessionEnv", err)
 
 
@@ -244,6 +243,7 @@ class Session
 
     # Now save it in the database
   updateDb: =>
+    Logger.info "Updating session #{@id} in the database"
     Session.sessionsDb.update {sessionId: @id}, @information(), upsert: true
 
   information: =>
@@ -257,6 +257,7 @@ class Session
     createdAt:      @createdAt
     lang:           @lang
     botId:          @bot._id
+    _id:            Random.id()
 
   end: =>
     nextProcess = @processStack.shift()

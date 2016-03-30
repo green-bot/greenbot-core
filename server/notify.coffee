@@ -16,7 +16,6 @@ Util           = require('util')
 Pubsub         = require('./pubsub')
 Logger         = require('./logger')
 MongoClient    = require('mongodb').MongoClient
-ObjectID       = require('mongodb').ObjectID
 events         = Pubsub.pubsub
 
 errorHandler = (desc, err) ->
@@ -126,10 +125,12 @@ events.on 'session:ended', (sessionId) ->
     session = sess
     info "Notifying session #{sessionId} for bot #{session.botId}"
     info session
-    botsDb.find({_id: session.botId}).limit(1).next() 
+    botsDb.find({_id: session.botId}).limit(1).next()
   .then (bot) =>
     trace "Found the bot, notifying", bot
     trace "for session ", session
     sendHook(session, bot) if bot.postConversationWebhook
     sendEmail(session, bot) if bot.notificationEmails
-  .catch (error) -> trace("Session end error:  #{sessionId}", error)
+  .catch (error) ->
+    trace(error.stack)
+    trace("Session end error:  #{sessionId}", error)

@@ -17,7 +17,6 @@
     "coffee": "^1.1.0",
     "coffee-script": "1.10.0",
     "colors": "^1.1.0",
-    "dhealthsignup": "file:../dhealth_signup",
     "express": "^4.13.4",
     "install": "0.1.8",
     "irc": "0.5.0",

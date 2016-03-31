@@ -1,0 +1,27 @@
+version: '2'
+services:
+  db:
+    image: mongo
+    command: "--smallfiles --logpath=/dev/null"
+    ports:
+      - "27017:27017"
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+  server:
+    image: greenbot-core
+    depends_on:
+      - db
+      - redis
+    command: npm start
+    ports:
+      - "3001:3001"
+    links:
+      - db
+      - redis
+    environment:
+      PORT: 3001 # this is optional, allows express to use process.env.PORT instead of a raw
+      REDIS_PORT: 6379
+      REDIS_HOST: redis
+      MONGO_URL: mongodb://db:27017/greenbot

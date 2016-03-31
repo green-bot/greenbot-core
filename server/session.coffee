@@ -40,10 +40,11 @@ events = Pubsub.pubsub
 # Setup the connect to Redis
 Bluebird.promisifyAll(Redis.RedisClient.prototype)
 Bluebird.promisifyAll(Redis.Multi.prototype)
-redisUrl      = process.env.REDIS_URL or 'redis://localhost:6379'
-client        = Redis.createClient(redisUrl)
-egressClient  = Redis.createClient(redisUrl)
-sessionClient = Redis.createClient(redisUrl)
+redisPort      = process.env.REDIS_PORT or 6379
+redisHost      = process.env.REDIS_HOST or 'localhost'
+client        = Redis.createClient(redisPort, redisHost)
+egressClient  = Redis.createClient(redisPort, redisHost)
+sessionClient = Redis.createClient(redisPort, redisHost)
 
 INGRESS_MSGS_FEED  = 'INGRESS_MSGS'
 EGRESS_MSGS_FEED   = 'EGRESS_MSGS'

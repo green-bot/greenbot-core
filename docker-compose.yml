@@ -10,7 +10,7 @@ services:
     ports:
       - "6379:6379"
   server:
-    image: greenbot-core
+    image: greenbot/greenbot-core
     depends_on:
       - db
       - redis

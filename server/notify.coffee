@@ -32,7 +32,8 @@ botsDb = undefined
 sessionsDb = undefined
 integrationsDb= undefined
 
-CONNECTION_STRING = process.env.MONGO_URL or 'mongodb://localhost:27017/greenbot'
+CONNECTION_STRING = process.env.MONGO_URL or
+                    'mongodb://localhost:27017/greenbot'
 
 MongoClient.connect(CONNECTION_STRING)
 .then (db) ->
@@ -64,15 +65,15 @@ formatEmail = (session) ->
     txt += "#{k}:#{v}\n"
   txt
 
-sendEmail = (session, bot) =>
+sendEmail = (session, bot) ->
   info "Sending emails for session #{session.sessionId}"
   emailText = formatEmail(session)
   integrationsDb.find({ type: 'mail', provider: 'mailgun'}).limit(1).next()
-  .then (int) =>
+  .then (int) ->
     unless int
       trace "No email integration found. Returning"
       return
-    
+
     trace "Found email integration", int
     trace "Applying it to bot", bot
     smtpConfig =
@@ -108,7 +109,7 @@ sendHook = (session, bot) ->
     webhook_options.headers =
       Authorization: bot.webhook_authtoken
 
-  info "Webhook #{bot.postConversationWebhook} sent for session #{session.sessionId}"
+  info "Webhook #{bot.postConversationWebhook} sent for #{session.sessionId}"
   Request.post(bot.postConversationWebhook, webhook_options)
   .then (response) ->
     info "Completed."
@@ -121,12 +122,12 @@ events.on 'session:ended', (sessionId) ->
   info "Notifying on the end of session #{sessionId}"
   session = undefined
   sessionsDb.find({ sessionId: sessionId }).limit(1).next()
-  .then (sess) =>
+  .then (sess) ->
     session = sess
     info "Notifying session #{sessionId} for bot #{session.botId}"
     info session
     botsDb.find({_id: session.botId}).limit(1).next()
-  .then (bot) =>
+  .then (bot) ->
     trace "Found the bot, notifying", bot
     trace "for session ", session
     sendHook(session, bot) if bot.postConversationWebhook

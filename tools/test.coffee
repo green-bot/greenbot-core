@@ -20,6 +20,10 @@ io.on 'disconnect', ->
   console.log "Disconnected from #{socketUrl}"
 io.on 'egress', (msg) ->
   console.log msg.txt
+io.on 'session:ended', (sess) ->
+  if sess.src is consoleSrc
+    console.log "Session ended"
+    console.log sess
 
 sendMsg = (src, dst, txt) ->
   msg =

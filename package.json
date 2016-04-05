@@ -19,7 +19,6 @@
     "colors": "^1.1.0",
     "express": "^4.13.4",
     "install": "0.1.8",
-    "irc": "0.5.0",
     "matrix-js-sdk": "0.3.0",
     "meteor-random": "0.0.3",
     "minitest": "^0.2.0",

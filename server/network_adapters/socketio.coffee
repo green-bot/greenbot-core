@@ -29,11 +29,30 @@ MongoClient.connect(CONNECTION_STRING)
 .then (db) ->
   sessionsDb = db.collection('Sessions')
 
+handleEgress = (msg) ->
+  {dst, src, txt}  = msg
+  Logger.info "SOCKET EGRESS #{src}->#{dst}:#{txt}"
+  io.emit 'egress', msg
+
+handleEndSession = (sessionId) ->
+  console.log "Got a session ended event"
+  sessionsDb.find({ sessionId: sessionId }).limit(1).next()
+  .then (sess) ->
+    console.log "Sending session ended for #{sessionId}"
+    io.emit 'session:ended', sess
+
+
 io.on 'connection', (socket) ->
   egressEvent = 'socket-' + ShortUUID.generate()
+  events.on egressEvent, handleEgress
+  events.on 'session:ended', handleEndSession
   Logger.info "A network client connected. Listening on #{egressEvent}"
+
   socket.on 'disconnect', () ->
-    Logger.info 'Network client disconnected'
+    Logger.info "Network client disconnected from #{egressEvent}"
+    events.removeListener 'session:ended', handleEndSession
+    events.removeListener egressEvent, handleEgress
+
   socket.on 'ingress', (msg) ->
     # Clean this sucker up. Make sure nothing icky gets in
     {dst, src, txt}  = msg
@@ -44,14 +63,4 @@ io.on 'connection', (socket) ->
       txt: txt
       egressEvent: egressEvent
     events.emit 'ingress', msg
-  events.on egressEvent, (msg) ->
-    {dst, src, txt}  = msg
-    Logger.info "SOCKET EGRESS #{src}->#{dst}:#{txt}"
-    io.emit 'egress', msg
-  events.on 'session:ended', (sessionId) ->
-    sessionsDb.find({ sessionId: sessionId }).limit(1).next()
-    .then (sess) ->
-      console.log "Sending session ended for #{sessionId}"
-      io.emit 'session:ended', sess
-
 Logger.info "Started socket.io adapter"

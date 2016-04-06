@@ -23,8 +23,9 @@ errorHandler = (desc, err) ->
   Logger.info err
 
 trace = (desc, obj) ->
-  Logger.info desc
-  Logger.info Util.inspect(obj) if obj?
+  if process.env.TRACE_MESSAGES?
+    Logger.info desc
+    Logger.info Util.inspect(obj) if obj?
 
 
 # Global scope so we can get it later.
@@ -113,8 +114,8 @@ sendHook = (session, bot) ->
   Request.post(bot.postConversationWebhook, webhook_options)
   .then (response) ->
     info "Completed."
-    info response.statusCode
-    info response.headers['content-type']
+    trace response.statusCode
+    trace response.headers['content-type']
   .catch (error) -> trace("Hook error:  #{bot.webhook_url}", error)
 
 
@@ -125,7 +126,7 @@ events.on 'session:ended', (sessionId) ->
   .then (sess) ->
     session = sess
     info "Notifying session #{sessionId} for bot #{session.botId}"
-    info session
+    trace session
     botsDb.find({_id: session.botId}).limit(1).next()
   .then (bot) ->
     trace "Found the bot, notifying", bot

@@ -11,7 +11,9 @@ events = Pubsub.pubsub
 zwUser = process.env.ZW_NUMBER
 zwPass = process.env.ZW_PASS
 
-return unless zwUser and zwPass
+unless zwUser and zwPass
+  Logger.info "Not starting ZipWhip - no credentials"
+  return
 
 startSession = (username, password) ->
   options =

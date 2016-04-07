@@ -35,6 +35,11 @@ events.on egressEvent, (msg) ->
   Logger.info 'tsg egress: ' + msg.txt
   sendTsgMessage(msg)
 
+events.on 'tsg', (event, data) ->
+  Logger.info "TSG Event Fired"
+  Logger.info event
+  Logger.info data
+  
 Logger.info 'tsg server listening'
 
 

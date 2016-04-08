@@ -143,7 +143,7 @@ class Session
     @src = @msg.src
     @dst = @msg.dst.toLowerCase()
     @sessionKey = genSessionKey(@msg)
-    @id = ShortUUID.generate()
+    @id = Random.id() 
     Session.active[@sessionKey] = @
     @automated = true
     @processStack = []
@@ -245,7 +245,6 @@ class Session
 
     # Now save it in the database
   updateDb: =>
-    Logger.info "Updating session #{@id} in the database"
     Session.sessionsDb.update {sessionId: @id}, @information(), upsert: true
 
   information: =>
@@ -259,7 +258,7 @@ class Session
     createdAt:      @createdAt
     lang:           @lang
     botId:          @bot._id
-    _id:            Random.id()
+    _id:            @id
 
   end: =>
     nextProcess = @processStack.shift()

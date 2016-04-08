@@ -75,10 +75,8 @@ getClient = () ->
     promise = new Promise()
     promise.resolve client
 
-  Logger.info "No client, establishing connection"
   MongoClient.connect(CONNECTION_STRING)
   .then (db) ->
-    Logger.info "Connection etablished"
     client = db
     return client
 

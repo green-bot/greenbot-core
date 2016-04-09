@@ -8,6 +8,7 @@ Matrix = require('./matrix')
 Pubsub = require('./pubsub')
 events = Pubsub.pubsub
 Express = require('./express-server')
+PackageMgr = require('./package')
 
 RequireDir = require('require-dir')
 RequireDir('./network_adapters')

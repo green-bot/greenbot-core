@@ -4,10 +4,12 @@ Util           = require('util')
 Pubsub         = require('./pubsub')
 Logger         = require('./logger')
 MongoClient    = require('mongodb').MongoClient
+Promise        = require('es6-promise').Promise
 events         = Pubsub.pubsub
 Fs             = require('fs')
 Chokidar       = require('chokidar')
 CP             = require('child_process')
+glob           = require("glob")
 
 MONGO_URL = process.env.MONGO_URL or 'mongodb://localhost:27017/greenbot'
 NPM_PATH =  process.env.GREENBOT_NPM_PATH or './node_modules/'
@@ -21,48 +23,97 @@ trace = (desc, obj) ->
     Logger.info desc
     Logger.info Util.inspect(obj) if obj?
 
-removeScript = (pkg) ->
+db = undefined
+getDb = ->
+  Logger.info "Returning cached db connection" if db
+  return Promise.resolve(db) if db
   MongoClient.connect(MONGO_URL)
+  .then (database) ->
+    Logger.info "Package connection to db established"
+    db = database
+
+removeScript = (pkg) ->
+  getDb()
   .then (db) ->
     scripts  = db.collection('Scripts')
-    scripts.remove npm_pkg_name: pkg
+    scripts.findOne({npm_pkg_name: pkg})
+    .then (script) ->
+      scripts.remove npm_pkg_name: pkg
+      bots  = db.collection('Bots')
+      bots.update {scriptId: script._id}, {$set: {scriptId: null}}
     .then ->
       Logger.info "Script #{pkg} removed"
-      db.close()
 
 addScript = (pkg, path) ->
   Logger.info "Loading #{pkg} from #{path}"
-  MongoClient.connect(MONGO_URL)
+  getDb()
   .then (db) ->
-    Logger.info "Connected to DB"
     scripts  = db.collection('Scripts')
+    scripts.deleteMany {npm_pkg_name: pkg}
+    .then ->
+      file = NPM_PATH + path
+      Logger.info "Loading JSON info from #{file}"
+      try
+        script = JSON.parse(Fs.readFileSync(file))[0]
+      catch error
+        Logger.info "Error in reading #{file}"
+        Logger.info error
+        return
 
-    # Clean up any old records
-    scripts.remove npm_pkg_name: pkg
+      Logger.info "Loaded script"
+      Logger.info script
 
-    # Likely that JSON file is up to no good. Catch the
-    # error and display to user
-    jsonFileLocation = NPM_PATH + path
-    try
-      script = JSON.parse(Fs.readFileSync(jsonFileLocation))[0]
-    catch error
-      Logger.info "Error in reading #{jsonFileLocation}"
-      Logger.info error
-      db.close()
-      Logger.info "Disconnected from DB"
-      return
+      # Add the defaults proper to an NPM pacakge
+      packagePath = NPM_PATH + pkg
+      script.npm_pkg_name = pkg
+      script.npm_pkg_location = packagePath
+      script.default_cmd = 'npm start --loglevel silent'
+      script.default_path = packagePath
+      Logger.info "Inserted into the DB"
+      Logger.info script
+      scripts.insert script
+    .catch (err) ->
+      Logger.info "Error thrown in add script"
+      Logger.info err
 
-    # Add the defaults proper to an NPM pacakge
-    packagePath = NPM_PATH + pkg
-    script.npm_pkg_name = pkg
-    script.npm_pkg_location = packagePath
-    script.default_cmd = 'npm start --loglevel silent'
-    script.default_path = packagePath
-    scripts.insert script, ->
-      db.close()
-      Logger.info "Disconnected from DB"
 
-Chokidar.watch '*/bot.json', cwd: NPM_PATH
+# On startup, look for pre-existing packages so we 
+# can tell if anything changed 
+Logger.info NPM_PATH + '*/bot.json'
+glob '**/bot.json', {cwd: NPM_PATH}, (err, files) ->
+ getDb()
+  .then (db) ->
+    scriptsDb  = db.collection('Scripts')
+    packages = files.map (file) -> file.split('/').shift()
+    unless files.length > 0
+      Logger.info "No installed scripts found"
+    else
+      Logger.info "Check to see if the installed scripts are in the database "
+      for file in files
+        pkg = file.split('/').shift()
+        Logger.info "Package: #{pkg}"
+        Logger.info files
+        scriptsDb.findOne({npm_pkg_name: pkg})
+        .then (script) ->
+          if script
+            Logger.info "Already installed #{pkg}"
+          else
+            Logger.info "Looks like #{pkg} was installed while we weren't home.  Let's add it"
+            addScript pkg, file
+            .then ->
+              Logger.info "Complete"
+
+    Logger.info "Checking to see if there are any scripts to uninstall"
+    scriptsDb.find().toArray()
+    .then (scripts) ->
+      Logger.info "No orphaned scripts to be removed found" if scripts.length is 0 
+      for script in scripts
+        pkg = script.npm_pkg_name
+        Logger.info "Checking to see if #{pkg} is still installed"
+        Logger.info "it isn't" unless pkg in packages
+        removeScript(pkg) unless pkg in packages
+
+Chokidar.watch('*/bot.json', {cwd: NPM_PATH, ignoreInitial: true})
 .on 'add', (path) ->
   Logger.info "Found #{path} has changed"
   pkg = path.split('/').shift()
@@ -71,9 +122,8 @@ Chokidar.watch '*/bot.json', cwd: NPM_PATH
   removeScript path.split('/').shift()
 
 # Update the database to indicate what our local node directory is
-MongoClient.connect(MONGO_URL)
+getDb()
 .then (db) ->
-  Logger.info "Connected to DB. Updating npm directory path"
   CP.exec 'npm root', (error, stdout, stderr) ->
     if error
       Logger.info "Thrown error in call to npm root"
@@ -87,8 +137,6 @@ MongoClient.connect(MONGO_URL)
     db.collection('ServerSettings').update { type:     'NODE_PATH' },
                                            setting, { upsert:   true }
     .then (setting) ->
-      Logger.info "Inserted #{path}"
-      db.close()
+      Logger.info "Inserted node path #{path} into server settings"
     .catch (error) ->
       Logger.info "Error in saving NPM root : #{error}"
-      db.close()

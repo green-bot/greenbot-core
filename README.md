@@ -4,6 +4,7 @@ greenbot is a chat bot server, designed to give your bot a place to live.  If yo
 
 
 # Installation using Docker
+Start with a generic Ubuntu image, we normally use Digital Ocean: 2 GB Memory / 40 GB Disk / NYC3 - Ubuntu 14.04.4 x64
 
     1  wget -qO- https://get.docker.com/ | sh
     2  sudo usermod -aG docker $(whoami)

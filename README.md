@@ -3,11 +3,19 @@
 greenbot is a chat bot server, designed to give your bot a place to live.  If you want to host a variety of kinds of bots, and connect them to messaging networks of all kinds, and stick the results of all of those chats into cloud services, databases and emails, then you would probably appreciate a bot server.  Just like we use web servers to serve up HTML, bot servers start and manage sessions with end users.
 
 
-# Installation
+# Installation using Docker
+Start with a generic Ubuntu image, we normally use Digital Ocean: 2 GB Memory / 40 GB Disk / NYC3 - Ubuntu 14.04.4 x64
 
-1. git clone https://github.com/green-bot/greenbot-core.git
-2. npm install
-3. coffee server/greenbot.coffee
+    wget -qO- https://get.docker.com/ | sh
+    sudo usermod -aG docker $(whoami)
+    sudo apt-get -y install python-pip
+    sudo pip install docker-compose
+    git clone https://github.com/green-bot/greenbot-core.git
+    git clone https://github.com/green-bot/greenbot-admin.git
+    cd greenbot-core
+    export ROOT_URL=http://{your IP}
+    docker-compose -f docker-compose-portal.yml up
+
 
 
 # Environment Variables

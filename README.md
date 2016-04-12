@@ -12,8 +12,8 @@ Start with a generic Ubuntu image, we normally use Digital Ocean: 2 GB Memory / 
     4  sudo pip install docker-compose
     5  git clone https://github.com/green-bot/greenbot-core.git
     6  git clone https://github.com/green-bot/greenbot-admin.git
-    7  cd ../greenbot-core/
-    8  export ROOT_URL=http://104.131.120.192
+    7  cd greenbot-core
+    8  export ROOT_URL=http://{your IP}
     9  docker-compose -f docker-compose-portal.yml up
 
 

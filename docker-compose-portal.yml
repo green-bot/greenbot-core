@@ -13,6 +13,7 @@ services:
     command: npm start
     ports:
       - "3001:3001"
+      - "3003:3003"
     links:
       - db
       - redis
@@ -21,16 +22,19 @@ services:
       REDIS_PORT: 6379
       REDIS_HOST: redis
       MONGO_URL: mongodb://db:27017/greenbot
+      TRACE_MESSAGES: why_not
   greenbot-admin:
-    image: meteorhacks/meteord:base
+    image: greenbot/greenbot-admin
     depends_on:
       - db
     ports:
       - "8080:80"
     links:
       - db
+      - greenbot-core
     volumes: 
        - /root/code/bundle:/bundle
     environment:
       MONGO_URL: mongodb://db:27017/greenbot
-      ROOT_URL: http://104.131.57.1
+      ROOT_URL: ${ROOT_URL}
+      GREENBOT_IO_URL: ${ROOT_URL}:3003

@@ -6,15 +6,15 @@ greenbot is a chat bot server, designed to give your bot a place to live.  If yo
 # Installation using Docker
 Start with a generic Ubuntu image, we normally use Digital Ocean: 2 GB Memory / 40 GB Disk / NYC3 - Ubuntu 14.04.4 x64
 
-    1  wget -qO- https://get.docker.com/ | sh
-    2  sudo usermod -aG docker $(whoami)
-    3  sudo apt-get -y install python-pip
-    4  sudo pip install docker-compose
-    5  git clone https://github.com/green-bot/greenbot-core.git
-    6  git clone https://github.com/green-bot/greenbot-admin.git
-    7  cd greenbot-core
-    8  export ROOT_URL=http://{your IP}
-    9  docker-compose -f docker-compose-portal.yml up
+    wget -qO- https://get.docker.com/ | sh
+    sudo usermod -aG docker $(whoami)
+    sudo apt-get -y install python-pip
+    sudo pip install docker-compose
+    git clone https://github.com/green-bot/greenbot-core.git
+    git clone https://github.com/green-bot/greenbot-admin.git
+    cd greenbot-core
+    export ROOT_URL=http://{your IP}
+    docker-compose -f docker-compose-portal.yml up
 
 
 

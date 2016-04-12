@@ -9,7 +9,7 @@ var bluebird = require('bluebird')
 bluebird.promisifyAll(redis.RedisClient.prototype)
 bluebird.promisifyAll(redis.Multi.prototype)
 var redisPort = process.env.REDIS_PORT || 6379
-var redisHost = process.env.REDIS_PORT || 'localhost'
+var redisHost = process.env.REDIS_HOST|| 'localhost'
 var msgClient = redis.createClient(redisPort, redisHost)
 var sessionClient = redis.createClient(redisPort, redisHost)
 var client = redis.createClient(redisPort, redisHost)

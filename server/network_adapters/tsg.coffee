@@ -14,6 +14,20 @@ Util           = require('util')
 Request        = require("request-promise")
 ExpressServer  = require '../express-server'
 
+# Before any of this stuff happens, see if we are configured for
+# TSG
+
+configured = true
+configured = false unless process.env.TSG_CALLBACK_HOST?
+configured = false unless process.env.TSG_SECRET?
+configured = false unless process.env.TSG_COBRA_KEY?
+
+if not configured
+  Logger.info "No TSG Credentials"
+  return
+
+Logger.info 'Configuring the TSG Adapter'
+
 TSG_SEND_MSG_URL = "http://sms.tsgglobal.com/jsonrpc"
 CONNECTION_STRING = process.env.MONGO_URL or
                     'mongodb://localhost:27017/greenbot'
@@ -80,7 +94,6 @@ getClient = () ->
     client = db
     return client
 
-
 setInterval ->
   getClient()
   .then (db) ->
@@ -122,3 +135,11 @@ setInterval ->
                 Logger.info response
 
 , 4000
+
+getClient()
+.then (db) ->
+  networks = db.collection('Networks')
+  networkObj = name: 'tsg'
+  networks.update networkObj, networkObj, upsert: true
+  .then ->
+    Logger.info "Updated network list"

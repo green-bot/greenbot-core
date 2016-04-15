@@ -11,6 +11,6 @@ app.use(BodyParser.json())
 app.use(BodyParser.urlencoded({ extended: true }))
 app.use(Multer())
 expressPort = process.env.GREENBOT_BOT_SERVER_PORT or 3001
-app.listen(3001)
+app.listen(expressPort)
 Logger.info "Started express on port #{expressPort}"
 exports.app = app

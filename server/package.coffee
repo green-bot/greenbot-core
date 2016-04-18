@@ -11,6 +11,7 @@ Chokidar       = require('chokidar')
 CP             = require('child_process')
 glob           = require("glob")
 Random         = require('meteor-random')
+_              = require("underscore")
 
 MONGO_URL = process.env.MONGO_URL or 'mongodb://localhost:27017/greenbot'
 NPM_PATH =  process.env.GREENBOT_NPM_PATH or './node_modules/'
@@ -34,16 +35,20 @@ getDb = ->
     db = database
 
 removeScript = (pkg) ->
+  Logger.info "Removing #{pkg}"
   getDb()
   .then (db) ->
     scripts  = db.collection('Scripts')
-    scripts.findOne({npm_pkg_name: pkg})
+    scripts.find({npm_pkg_name: pkg}).limit(1).next()
     .then (script) ->
       scripts.remove npm_pkg_name: pkg
       bots  = db.collection('Bots')
       bots.update {scriptId: script._id}, {$set: {scriptId: null}}
     .then ->
       Logger.info "Script #{pkg} removed"
+  .catch (err) ->
+    Logger.info "Error in addScriptifMissing #{pkgName}"
+    Logger.info err
 
 addScript = (pkg, path) ->
   Logger.info "Loading #{pkg} from #{path}"
@@ -53,17 +58,12 @@ addScript = (pkg, path) ->
     scripts.deleteMany {npm_pkg_name: pkg}
     .then ->
       file = NPM_PATH + path
-      Logger.info "Loading JSON info from #{file}"
       try
         script = JSON.parse(Fs.readFileSync(file))[0]
       catch error
         Logger.info "Error in reading #{file}"
         Logger.info error
         return
-
-      Logger.info "Loaded script"
-      Logger.info script
-
       # Add the defaults proper to an NPM pacakge
       packagePath = NPM_PATH + pkg
       script.npm_pkg_name = pkg
@@ -78,42 +78,41 @@ addScript = (pkg, path) ->
       Logger.info "Error thrown in add script"
       Logger.info err
 
-
-# On startup, look for pre-existing packages so we 
-# can tell if anything changed 
-Logger.info NPM_PATH + '*/bot.json'
-glob '**/bot.json', {cwd: NPM_PATH}, (err, files) ->
- getDb()
+addScriptifMissing = (file) ->
+  pkgName = file.split('/').shift()
+  getDb()
   .then (db) ->
     scriptsDb  = db.collection('Scripts')
-    packages = files.map (file) -> file.split('/').shift()
-    unless files.length > 0
-      Logger.info "No installed scripts found"
-    else
-      Logger.info "Check to see if the installed scripts are in the database "
-      for file in files
-        pkg = file.split('/').shift()
-        Logger.info "Package: #{pkg}"
-        Logger.info files
-        scriptsDb.findOne({npm_pkg_name: pkg})
-        .then (script) ->
-          if script
-            Logger.info "Already installed #{pkg}"
-          else
-            Logger.info "Looks like #{pkg} was installed while we weren't home.  Let's add it"
-            addScript pkg, file
-            .then ->
-              Logger.info "Complete"
+    scriptsDb.count({npm_pkg_name: pkgName})
+  .then (numScripts) ->
+    unless numScripts is 0
+      Logger.info "#{pkgName} installed"
+      return
+    Logger.info "Installing #{pkgName}"
+    addScript pkgName, file
+  .catch (err) ->
+    Logger.info "Error in addScriptifMissing #{pkgName}"
+    Logger.info err
 
-    Logger.info "Checking to see if there are any scripts to uninstall"
-    scriptsDb.find().toArray()
-    .then (scripts) ->
-      Logger.info "No orphaned scripts to be removed found" if scripts.length is 0 
-      for script in scripts
-        pkg = script.npm_pkg_name
-        Logger.info "Checking to see if #{pkg} is still installed"
-        Logger.info "it isn't" unless pkg in packages
-        removeScript(pkg) unless pkg in packages
+# On startup, look for pre-existing packages so we
+# can tell if anything changed
+Logger.info NPM_PATH + '*/bot.json'
+glob '**/bot.json', {cwd: NPM_PATH}, (err, files) ->
+  getDb()
+  .then (db) ->
+    packages = files.map (file) -> file.split('/').shift()
+    Logger.info "Found #{packages}"
+    _.each files, addScriptifMissing
+  .then (files)->
+    scriptsDb  = db.collection('Scripts')
+    scriptsDb.find()
+    .each (script) ->
+      return unless script
+      Logger.info "Checking #{script.npm_pkg_name} to see if it is installed."
+      removeScript(script.npm_pkg_name) if script.npm_pkg_name not in packages
+  .catch (err) ->
+    Logger.info "Error in finding packages"
+    Logger.info err
 
 Chokidar.watch('*/bot.json', {cwd: NPM_PATH, ignoreInitial: true})
 .on 'add', (path) ->

@@ -10,6 +10,7 @@ Fs             = require('fs')
 Chokidar       = require('chokidar')
 CP             = require('child_process')
 glob           = require("glob")
+Random         = require('meteor-random')
 
 MONGO_URL = process.env.MONGO_URL or 'mongodb://localhost:27017/greenbot'
 NPM_PATH =  process.env.GREENBOT_NPM_PATH or './node_modules/'
@@ -69,6 +70,7 @@ addScript = (pkg, path) ->
       script.npm_pkg_location = packagePath
       script.default_cmd = 'npm start --loglevel silent'
       script.default_path = packagePath
+      script._id = Random.id()
       Logger.info "Inserted into the DB"
       Logger.info script
       scripts.insert script

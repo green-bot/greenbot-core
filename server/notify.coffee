@@ -89,7 +89,7 @@ sendEmail = (session, bot) ->
     message =
       to:       bot.notificationEmails
       from:     int.auth.credentials.username
-      subject:  'Conversation Complete'
+      subject:  bot.notificationEmailSubject
       text:     emailText
 
     info "Sending " + message.text

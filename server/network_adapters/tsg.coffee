@@ -74,11 +74,11 @@ getClient = () ->
   if client
     promise = new Promise()
     promise.resolve client
-
-  MongoClient.connect(CONNECTION_STRING)
-  .then (db) ->
-    client = db
-    return client
+  else
+    MongoClient.connect(CONNECTION_STRING)
+    .then (db) ->
+      client = db
+      return client
 
 
 setInterval ->

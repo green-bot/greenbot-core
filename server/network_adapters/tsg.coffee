@@ -83,19 +83,8 @@ sendTsgMessage = (msg) ->
 
 registeredNumbers = []
 
-client = undefined
-getClient = () ->
-  if client
-    promise = new Promise()
-    promise.resolve client
-  else
-    MongoClient.connect(CONNECTION_STRING)
-    .then (db) ->
-      client = db
-      return client
-
 setInterval ->
-  getClient()
+  MongoClient.connect(CONNECTION_STRING)
   .then (db) ->
     botsDb = db.collection('Bots')
     botsDb.find 'addresses.network': 'tsg'
@@ -136,10 +125,11 @@ setInterval ->
 
 , 4000
 
-getClient()
+MongoClient.connect(CONNECTION_STRING)
 .then (db) ->
   networks = db.collection('Networks')
   networkObj = name: 'tsg'
   networks.update networkObj, networkObj, upsert: true
   .then ->
-    Logger.info "Updated network list"
+    db.close()
+

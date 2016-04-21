@@ -98,15 +98,16 @@ addScriptifMissing = (file) ->
 # can tell if anything changed
 Logger.info NPM_PATH + '*/bot.json'
 glob '**/bot.json', {cwd: NPM_PATH}, (err, files) ->
+  packages = files.map (file) -> file.split('/').shift()
   getDb()
   .then (db) ->
-    packages = files.map (file) -> file.split('/').shift()
     Logger.info "Found #{packages}"
     _.each files, addScriptifMissing
   .then (files)->
+    Logger.info "Removing scripts that have been uninstalled."
     scriptsDb  = db.collection('Scripts')
     scriptsDb.find()
-    .each (script) ->
+    .each (err, script) ->
       return unless script
       Logger.info "Checking #{script.npm_pkg_name} to see if it is installed."
       removeScript(script.npm_pkg_name) if script.npm_pkg_name not in packages

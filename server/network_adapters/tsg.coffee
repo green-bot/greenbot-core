@@ -49,7 +49,7 @@ app.post CALLBACK_PATH, (req, res) ->
   msg =
     dst: "tsg::" + hostNumber
     src: "tsg::" + remoteNumber
-    txt: txt
+    txt: txt + "\n"
     egressEvent: egressEvent
   events.emit 'ingress', msg
   return

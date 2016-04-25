@@ -115,6 +115,7 @@ class Session
     session = Session.findByKey(sessionKey)
     if session
       # We already have a session, so send it off.
+      trace "Session exists, send it off"
       session.ingressMsg(msg.txt)
     else
       # No session active. Kick one off.

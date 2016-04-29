@@ -1,17 +1,28 @@
 Request        = require("request-promise")
 Mailer         = require("nodemailer")
 Util           = require('util')
-Pubsub         = require('./pubsub')
 Logger         = require('./logger')
 MongoClient    = require('mongodb').MongoClient
 Promise        = require('es6-promise').Promise
-events         = Pubsub.pubsub
 Fs             = require('fs')
 Chokidar       = require('chokidar')
 CP             = require('child_process')
 glob           = require("glob")
 Random         = require('meteor-random')
+Pubsub         = require './pubsub'
+
 _              = require("underscore")
+events         = Pubsub.pubsub
+
+
+events.on 'api:installPackage', (packageName)->
+  console.log "Got install package request from the api: npm install #{packageName}"
+  CP.exec "npm install #{packageName}", (error, stdout, stderr) ->
+    if error
+      Logger.info "Thrown error in call to npm install"
+      Logger.info error
+    if stderr
+      Logger.info "STDERR: #{stderr}"
 
 MONGO_URL = process.env.MONGO_URL or 'mongodb://localhost:27017/greenbot'
 NPM_PATH =  process.env.GREENBOT_NPM_PATH or './node_modules/'

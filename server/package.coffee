@@ -24,6 +24,15 @@ events.on 'api:installPackage', (packageName)->
     if stderr
       Logger.info "STDERR: #{stderr}"
 
+events.on 'api:uninstallPackage', (packageName) ->
+  console.log "Got remove package request from the api: npm uninstall #{packageName}"
+  CP.exec "npm uninstall #{packageName}", (error, stdout, stderr) ->
+    if error
+      Logger.info "Thrown error in call to npm uninstall"
+      Logger.info error
+    if stderr
+      Logger.info "STDERR: #{stderr}"
+
 MONGO_URL = process.env.MONGO_URL or 'mongodb://localhost:27017/greenbot'
 NPM_PATH =  process.env.GREENBOT_NPM_PATH or './node_modules/'
 

@@ -119,20 +119,15 @@ sendHook = (session, bot) ->
   .catch (error) -> trace("Hook error:  #{bot.webhook_url}", error)
 
 
-events.on 'session:ended', (sessionId) ->
-  info "Notifying on the end of session #{sessionId}"
-  session = undefined
-  sessionsDb.find({ sessionId: sessionId }).limit(1).next()
-  .then (sess) ->
-    session = sess
-    info "Notifying session #{sessionId} for bot #{session.botId}"
-    trace session
-    botsDb.find({_id: session.botId}).limit(1).next()
+events.on 'session:ended', (session) ->
+  info "Notifying on the end of session #{session.sessionId}"
+  info "Notifying session #{session.sessionId} for bot #{session.botId}"
+  trace session
+  botsDb.find({_id: session.botId}).limit(1).next()
   .then (bot) ->
     trace "Found the bot, notifying", bot
-    trace "for session ", session
     sendHook(session, bot) if bot.postConversationWebhook
     sendEmail(session, bot) if bot.notificationEmails
   .catch (error) ->
     trace(error.stack)
-    trace("Session end error:  #{sessionId}", error)
+    trace("Session end error:  #{session.sessionId}", error)

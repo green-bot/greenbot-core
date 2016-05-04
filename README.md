@@ -6,6 +6,16 @@ greenbot is a chat bot server, designed to give your bot a place to live.  If yo
 # Standard Installation
 Start with a generic Ubuntu image, we normally use Digital Ocean: 2 GB Memory / 40 GB Disk / NYC3 - Ubuntu 14.04.4 x64
 
+## Prerequisites
+Greenbot-core requires 
+* [mongodb](https://www.mongodb.org)
+* [redis](http://redis.io/)
+* [ruby 2+](https://www.ruby-lang.org/en/)
+* [node](https://www.npmjs.com/) 
+
+
+## Core install
+
     git clone https://github.com/green-bot/greenbot-core.git
     git clone https://github.com/green-bot/greenbot-admin.git
     cd greenbot-core
@@ -62,5 +72,7 @@ The following environment variables control the configuration of GreenBot
 * TSG_COBRA_KEY: Token for changing postback URL for inbound webhook. Used by tools/tsg_webhook_config.coffee
 
 ## Greenbot Admin
+Prior to installing greenbot-admin, install meteor `curl https://install.meteor.com/ | sh`
+
 * GREENBOT_IO_URL: The default address of socket.io interface to GreenBot. Used to support running bots from the admin portal. default:  'http://localhost:3003'
 * GREENBOT_BOT_SERVER_PORT: The port that the GB API is listening to on localhost. default: 3001

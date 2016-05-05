@@ -53,7 +53,8 @@ SESSION_ENDED_FEED = 'COMPLETED_SESSIONS'
 
 # Set the default directory for scripts
 DEF_SCRIPT_DIR = process.env.DEF_SCRIPT_DIR || './scripts/'
-CONNECTION_STRING = process.env.MONGO_URL or 'mongodb://localhost:27017/greenbot'
+CONNECTION_STRING = process.env.MONGO_URL or
+                    'mongodb://localhost:27017/greenbot'
 
 genSessionKey = (msg) -> msg.src + "_" + msg.dst
 cleanText     = (text = "") -> text.trim().toLowerCase()
@@ -108,6 +109,21 @@ class Session
       ]
     .limit(1).next()
 
+  @allKeywords = (handle) ->
+    Session.botsDb.find 'addresses.networkHandleName': handle
+    .toArray()
+    .then (bots) ->
+      Logger.info 'Found the following bots in keywords'
+      Logger.info bots
+      keywords = []
+      for bot in bots
+        for a in bot.addresses
+          Logger.info 'Checking out address'
+          Logger.info a
+          keywords = keywords.concat a.keywords if a.networkHandleName is handle
+      Logger.info 'Found keywords'
+      Logger.info keywords
+      return keywords
 
   @findOrCreate = (msg, cb) ->
     # All messages that come from the network end up here.
@@ -122,9 +138,8 @@ class Session
       name = msg.dst.toLowerCase()
       keyword = cleanText(msg.txt)
 
-
       Session.findBot(name, keyword)
-      .then (bot) =>
+      .then (bot) ->
         return bot if bot
         Logger.info "Hmmm. Keep looking."
         Session.findBot(name, 'default')
@@ -144,13 +159,22 @@ class Session
     @src = @msg.src
     @dst = @msg.dst.toLowerCase()
     @sessionKey = genSessionKey(@msg)
-    @id = Random.id() 
+    @id = Random.id()
     Session.active[@sessionKey] = @
     @automated = true
     @processStack = []
+    @networkHandleName = @msg.dst.toLowerCase()
 
-    # Assemble the @command, @arguments, @opts
-    Session.sessionsDb.findOne({src: @src}, {sort: {updatedAt: -1}})
+    # Get the other keywords that also match
+    # this network handle.
+    Session.allKeywords(@networkHandleName)
+    .then (keywords) =>
+      Logger.info 'Other keywords happen to be'
+      Logger.info keywords
+      @keywords = keywords
+    .then () =>
+      # Assemble the @command, @arguments, @opts
+      Session.sessionsDb.findOne({src: @src}, {sort: {updatedAt: -1}})
     .then (session) =>
       return err if err?
       if session?.lang?
@@ -170,6 +194,7 @@ class Session
     trace "Starting session ENV", @
     trace "Scripts collection", Session.scriptsDb
     trace "Bot looks like", @bot
+    trace "All keywords", @keywords
     Session.scriptsDb.findOne( { _id: @bot.scriptId })
     .then (script) =>
       trace("Just got the script", script)
@@ -183,6 +208,7 @@ class Session
       @arguments.shift()
       @env = @cmdSettings()
       @env.INITIAL_MSG = @msg.txt
+      @env.ALL_KEYWORDS = @keywords.join(',')
       @opts =
         cwd: @script.default_path
         env: @env
@@ -202,6 +228,7 @@ class Session
       botId: @bot._id
       scriptId: @bot.scriptId
       type: @bot.type
+
     trace "New session starting", sess
     newSessionRequest = JSON.stringify sess
     client.lpush NEW_SESSIONS_FEED, newSessionRequest
@@ -324,7 +351,7 @@ class Session
   createJsonFilter: () =>
     # Filter out JSON as it goes through the system
     jsonFilter = new Stream.Transform()
-    jsonFilter._transform = (chunk, encoding, done) =>
+    jsonFilter._transform = (chunk, encoding, done) ->
       lines = chunk.toString().split("\n")
       for line in lines
         do (line) ->

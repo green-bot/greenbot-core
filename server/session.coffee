@@ -273,6 +273,7 @@ class Session
 
     # Now save it in the database
   updateDb: =>
+    console.log "Updating db"
     Session.sessionsDb.update {sessionId: @id}, @information(), upsert: true
 
   information: =>
@@ -297,7 +298,7 @@ class Session
       @kickOffProcess(command, args, opts, lang)
     else
       Logger.info "Ending and recording session #{@id}"
-      events.emit 'session:ended', @id
+      events.emit 'session:ended', @information()
       delete Session.active[@sessionKey]
 
   cmdSettings: =>

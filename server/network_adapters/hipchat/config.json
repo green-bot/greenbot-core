@@ -1,0 +1,108 @@
+{
+  // This is the default environment. To change your app to use
+  // a different env, set NODE_ENV (http://expressjs.com/api.html#app.configure)
+  "development": {
+    // If you want to test your local running add-on against hipchat.com, you'll
+    // need to use a local tunnel tool (we highly recommend https://ngrok.com)
+    // to make your local add-on server accessible from the internet. You'll also
+    // need to specify this property with the base URL of your tunnel:
+    "localBaseUrl": "https://709a012b.ngrok.io", 
+
+    // HipChat add-ons don't use asymmetric key algos
+    "usePublicKey": false,
+    // HipChat add-ons don't support auto registration with HipChat.com so
+    // might as well disable watching the atlassian-connect.json file
+    "watch": false,
+
+    // This is the port your Express server will listen on
+    "port": 3000,
+
+    // This allows the jwt token to be valid for 24 hours. This is only in development.
+    // The default for production is 15 minutes.
+    "maxTokenAge": 86400,
+
+    // If you are not happy with the default avatar picked for your addon, but still want
+    // to use one of our generated avatars, visit http://abotars.hipch.at/designer/
+    // Pick an id you like, and put it below and delete the already downloaded avatar.png.
+    //"avatarId": "custom_id",
+
+    // ace-abotars also supports the following additional parameters
+    // File name (from root of project):
+    //"avatarFileName" : "avatar.png",
+    // Expiry time (only used in production)
+    //"avatarExpiryTime" : 86400,
+
+    // alassian-connect-express currently integrates with JugglingDB for persistence
+    // to store the host client information (i.e., client key, host public
+    // key, etc). When no adapter is specified, it defaults to JugglingDB's
+    // fallback memory storage.
+    //
+    // To specify a backend for JugglingDB other than "memory", set the
+    // "type" value to one of Juggling's other supported types.  See
+    // https://github.com/1602/jugglingdb for more information.
+    //
+    // To use your own storage adapter, add the key
+    // "adapter" to the following configuration, and replace "type" and
+    // "connection" with any values your adapter expects.  Then make sure
+    // that you register your adapter factory with the following code in
+    // app.js:
+    //
+    //   ac.store.register(adapterName, factoryFn)
+    //
+    // See atlassian-connect-express/lib/store/index.js and the default jugglingdb.js
+    // files for code demonstrating how to write a conformant adapter.  The
+    // default values are as follows:
+    //
+    //   "store": {
+    //     "adapter": "jugglingdb",
+    //     "type": "memory"
+    //   },
+    //
+    // To instead configure, say, a PostgreSQL store, the following could be
+    // used:
+    //
+    //   "store": {
+    //     "adapter": "jugglingdb",
+    //     "type": "postgres",
+    //     "url": "postgres://localhost/my_addon_database"
+    //   },
+    //
+    // Or if you want to be a cool kid, use Redis instead. It's fast, highly flexible
+    // and well suited for storing Connect client information. This requires the
+    // `atlassian-connect-express-redis` module.
+    //
+    // "store": {
+    //   "adapter": "redis",
+    //   "url": "redis://localhost:6379"
+    // },
+    "store": {
+      "adapter": "redis",
+      "url": "redis://localhost:6379"
+    }
+  },
+
+  // This is the production add-on configuration, which is enabled by setting
+  // the NODE_ENV=production environment variable.
+  "production": {
+    // HipChat add-ons don't use asymmetric key algos
+    "usePublicKey": false,
+    // On a PaaS host like Heroku, the runtime environment will provide the
+    // HTTP port to you via the PORT environement variable, so we configure
+    // that to be honored here.
+    "port": "$PORT",
+    // This is the public URL to your production add-on.
+    "localBaseUrl": "https://your-subdomain.herokuapp.com",
+    "store": {
+      // Let's use Redis as our default data store in prod
+      "adapter": "redis",
+      // Again, a PaaS host like Heroku will probably provide the db connection
+      // URL to you through the environment, so we tell atlassian-connect-express to use that value.
+      "url": "$REDIS_URL"
+    },
+    // Make sure that your add-on can only be registered by the hosts on
+    // these domains.
+    "whitelist": [
+      "*.hipchat.com"
+    ]
+  }
+}

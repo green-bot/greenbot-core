@@ -1,0 +1,15 @@
+{{!< layout}}
+
+<!-- The dialog has a primary action "say hello", declared in the descriptor atlassian-connect.json -->
+<!-- It is implemented in the js/addon.js file imported in the layout -->
+
+<div class="aui-group">
+  <div class="aui-item">
+    <h3>Your sidebar goes here!</h3>
+    <ul>
+      <li>Group ID: {{identity.groupId}}</li>
+      <li>Room ID: {{identity.roomId}}</li>
+      <li>User ID: {{identity.userId}}</li>
+    </ul>
+  </div>
+</div>

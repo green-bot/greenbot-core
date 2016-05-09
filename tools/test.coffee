@@ -1,29 +1,42 @@
 #!/usr/bin/env coffee
 
-prompt = require 'prompt'
+stdio = require 'stdio'
 socketUrl = process.env.GB_SOCKET_URL or "http://127.0.0.1:3003"
 consoleSrc = process.env.CONSOLE_SRC or 'console'
 consoleDst = process.argv[2] or 'development::console'
 keyword = process.argv[3] or 'default'
+if process.argv[4]
+  reps = parseInt( process.argv[4], 10 )
+else
+  reps = 1
+
 io = require('socket.io-client')(socketUrl)
+debug = require('debug')('test.coffee')
 
 unless process.argv[1] and process.argv[2]
-  console.log "Usage : test <network::handle> <keyword>, using defaults"
+  debug "Usage : test <network::handle> <keyword> <reps>, using defaults"
 
-console.log "Connecting to #{socketUrl} as #{consoleSrc}"
-console.log "Starting conversation with #{consoleDst}, keyword #{keyword}"
-console.log "Send a CTL-C to end"
+debug "Connecting to #{socketUrl} as #{consoleSrc}"
+debug "Starting conversation with #{consoleDst}, keyword #{keyword}"
+debug "Send a CTL-C to end"
 
 io.on 'connect', ->
-  console.log "Connected to #{socketUrl}"
+  debug "Connected to #{socketUrl}"
 io.on 'disconnect', ->
-  console.log "Disconnected from #{socketUrl}"
+  debug "Disconnected from #{socketUrl}"
 io.on 'egress', (msg) ->
   console.log msg.txt
 io.on 'session:ended', (sess) ->
+  debug 'Received a session end event'
+  debug sess
   if sess.src is consoleSrc
-    console.log "Session ended"
-    console.log sess
+    debug "Session ended"
+    debug sess
+    reps -= 1
+    process.exit 0 if reps is 0
+
+    # Otherwise, kick it off again
+    sendMsg consoleSrc, consoleDst, keyword
 
 sendMsg = (src, dst, txt) ->
   msg =
@@ -32,14 +45,7 @@ sendMsg = (src, dst, txt) ->
     txt: txt + "\n"
   io.emit 'ingress', msg
 
-errHandler =  (err) ->
-  console.log "Error from prompt"
-  console.log err
-  return
+stdio.read (text) ->
+  sendMsg consoleSrc, consoleDst, text
 
-handleMsg = (err, result) ->
-  sendMsg consoleSrc, consoleDst, result.input
-  prompt.get ['input'], handleMsg
-
-prompt.start()
-prompt.get ['input'], handleMsg
+sendMsg consoleSrc, consoleDst, keyword

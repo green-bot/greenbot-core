@@ -28,7 +28,9 @@ Stream         = require('stream')
 Url            = require("url")
 Us             = require("underscore.string")
 Util           = require('util')
-Random = require('meteor-random')
+Random         = require('meteor-random')
+debug          = require('debug')('session')
+
 
 #DBLogger = require('mongodb').Logger
 #DBLogger.setLevel('debug')
@@ -56,6 +58,9 @@ DEF_SCRIPT_DIR = process.env.DEF_SCRIPT_DIR || './scripts/'
 CONNECTION_STRING = process.env.MONGO_URL or
                     'mongodb://localhost:27017/greenbot'
 
+# Guard band for messages returning from session after it ends
+SESSION_GUARD = 5000  # 5 SECONDS
+
 genSessionKey = (msg) -> msg.src + "_" + msg.dst
 cleanText     = (text = "") -> text.trim().toLowerCase()
 isJson = (str) ->
@@ -69,14 +74,8 @@ isJson = (str) ->
   true
 
 errorHandler = (desc, err) ->
-  Logger.info desc
-  Logger.info err
-
-trace = (desc, obj) ->
-  if process.env.TRACE_MESSAGES?
-    Logger.info desc
-    Logger.info Util.inspect(obj) if obj?
-
+  debug desc
+  debug err
 
 class Session
   @active = {}
@@ -85,13 +84,13 @@ class Session
     # Setup the connection to the database
     MongoClient.connect(url)
     .then (@db) =>
-      Logger.info "Connected to the DB"
+      debug "Connected to the DB"
       @botsDb     = @db.collection('Bots')
       @sessionsDb = @db.collection('Sessions')
       @scriptsDb  = @db.collection('Scripts')
 
     .catch (err) ->
-      Logger.info "Cannot connect to DB. Fail"
+      debug "Cannot connect to DB. Fail"
       exit -1
 
   @findById = (id) ->
@@ -113,16 +112,12 @@ class Session
     Session.botsDb.find 'addresses.networkHandleName': handle
     .toArray()
     .then (bots) ->
-      Logger.info 'Found the following bots in keywords'
-      Logger.info bots
       keywords = []
       for bot in bots
         for a in bot.addresses
-          Logger.info 'Checking out address'
-          Logger.info a
           keywords = keywords.concat a.keywords if a.networkHandleName is handle
-      Logger.info 'Found keywords'
-      Logger.info keywords
+      debug 'Found keywords'
+      debug keywords
       return keywords
 
   @findOrCreate = (msg, cb) ->
@@ -131,7 +126,7 @@ class Session
     session = Session.findByKey(sessionKey)
     if session
       # We already have a session, so send it off.
-      trace "Session exists, send it off"
+      debug "Session exists, send it off"
       session.ingressMsg(msg.txt)
     else
       # No session active. Kick one off.
@@ -141,18 +136,20 @@ class Session
       Session.findBot(name, keyword)
       .then (bot) ->
         return bot if bot
-        Logger.info "Hmmm. Keep looking."
+        debug "Hmmm. Keep looking."
         Session.findBot(name, 'default')
       .then (bot) ->
         unless bot
-          trace "No default keyword set for that network handle."
+          debug "No default keyword set for that network handle."
           return
-        trace "This is the bot I am looking for. Creating session", bot
+        debug "This is the bot I am looking for. Creating session ",
+              bot.name, bot._id
+
         new Session(msg, bot, cb)
       .catch (err) -> errorHandler("Error thrown in finding the bot", err)
 
   constructor: (@msg, @bot, @cb) ->
-    Logger.info "Constructing the session"
+    debug "Constructing the session"
     # The variables that make up a Session
     @transcript = []
     @createdAt = new Date()
@@ -169,8 +166,8 @@ class Session
     # this network handle.
     Session.allKeywords(@networkHandleName)
     .then (keywords) =>
-      Logger.info 'Other keywords happen to be'
-      Logger.info keywords
+      debug 'Other keywords happen to be'
+      debug keywords
       @keywords = keywords
     .then () =>
       # Assemble the @command, @arguments, @opts
@@ -181,23 +178,19 @@ class Session
         @lang = session.lang
       else
         @lang = process.env.DEFAULT_LANG or 'en'
-      trace 'Language selection ', @lang
+      debug 'Language selection ', @lang
     .then =>
       @createSessionEnv()
     .then =>
       @kickOffProcess(@command, @arguments, @opts, @lang)
     .then ->
-      Logger.info "Session started"
+      debug "Session started"
     .catch (err) -> errorHandler("Error in session constructor", err)
 
   createSessionEnv: =>
-    trace "Starting session ENV", @
-    trace "Scripts collection", Session.scriptsDb
-    trace "Bot looks like", @bot
-    trace "All keywords", @keywords
     Session.scriptsDb.findOne( { _id: @bot.scriptId })
     .then (script) =>
-      trace("Just got the script", script)
+      debug "Just got the script ", @bot.name, @bot.scriptId
       @script = script
       if @isOwner() and not @bot.testMode
         @arguments  = @script.owner_cmd.split(" ")
@@ -217,7 +210,7 @@ class Session
 
 
   kickOffProcess : (command, args, opts, lang) =>
-    Logger.info "Kicking off session as #{command} #{args} in #{lang}"
+    debug "Kicking off session as #{command} #{args} in #{lang}"
     # Start the process, connect the pipes
     sess =
       command: command
@@ -229,7 +222,6 @@ class Session
       scriptId: @bot.scriptId
       type: @bot.type
 
-    trace "New session starting", sess
     newSessionRequest = JSON.stringify sess
     client.lpush NEW_SESSIONS_FEED, newSessionRequest
     client.publish NEW_SESSIONS_FEED, newSessionRequest
@@ -256,12 +248,12 @@ class Session
       @egressProcessStream.on "readable", =>
         @egressMsg @egressProcessStream.read()
       @egressProcessStream.on "error", (err) ->
-        Logger.info "Error thrown from session"
-        Logger.info err
+        debug "Error thrown from session"
+        debug err
 
       # When the language changes, restart the bot dialog
       @language.on "langChanged", (oldLang, newLang) =>
-        Logger.info "Language changed, restarting : #{oldLang} to #{newLang}"
+        debug "Language changed, restarting : #{oldLang} to #{newLang}"
         @egressProcessStream.write("Language changed, restarting conversation.")
         @lang = newLang
         nextProcess =
@@ -293,13 +285,15 @@ class Session
     nextProcess = @processStack.shift()
       # If process stack has element, run that.
     if nextProcess?
-      Logger.info 'Process ended. Starting a new one.'
+      debug 'Process ended. Starting a new one.'
       {command, args, opts, lang} = nextProcess
       @kickOffProcess(command, args, opts, lang)
     else
-      Logger.info "Ending and recording session #{@id}"
-      events.emit 'session:ended', @information()
-      delete Session.active[@sessionKey]
+      debug "Ending and recording session #{@id}"
+      setTimeout =>
+        events.emit 'session:ended', @information()
+        delete Session.active[@sessionKey]
+      , SESSION_GUARD
 
   cmdSettings: =>
     env_settings = _.clone(process.env)
@@ -312,10 +306,10 @@ class Session
     return env_settings
 
   isOwner: () =>
-    trace "Checking to see if #{@src} is in", @bot
+    debug "Checking to see if #{@src} is in", @bot.ownerHandles
     for address in @bot.addresses
       return true if @src in @bot.ownerHandles
-    Logger.info "Running session #{@id} as a visitor"
+    debug "Running session #{@id} as a visitor"
     return false
 
 
@@ -369,7 +363,7 @@ class Session
     return jsonFilter
 
   writeEgressMessage: (txt) =>
-    trace "Writing egress message #{txt}"
+    debug "Writing egress message #{txt}"
     lines = txt.split("\n")
     if @egressProcessStream
       @egressProcessStream.write(line) for line in lines
@@ -382,7 +376,7 @@ class Session
           @egressMsg line
 
   redisPopErrored: (err) ->
-    Logger.info('Popping message returns ' + err)
+    debug('Popping message returns ' + err)
 
   ingressList: -> @id + '.ingress'
   egressList: ->  @id + '.egress'
@@ -390,13 +384,13 @@ class Session
 
 events.on 'ingress', (msg) ->
   #flipping for egress
-  trace "Inbound message ", msg
+  debug "Inbound message ", msg
   src = msg.dst
   dst = msg.src
   egressEvent = msg.egressEvent
   Session.findOrCreate msg, (txt) ->
     egressMsg = {src: src, dst: dst, txt: txt}
-    trace "Sending out message to #{dst}", egressMsg
+    debug "Sending out message to #{dst}", egressMsg
     events.emit egressEvent, egressMsg
 
 
@@ -408,16 +402,15 @@ egressClient.on "message", (chan, sessionId) ->
   #get the right session from sesion id
   session = Session.findById(sessionId)
   if not session
-    trace "I can't find #{sessionId}", session
+    debug "I can't find #{sessionId}", session
     return
   else
-    trace "Found session #{sessionId}"
-    trace session
+    debug "Found session #{sessionId}"
 
   client.lpopAsync(session.egressList())
   .then (txt) ->
     session.writeEgressMessage(txt)
-    trace "Message egress from session", txt
+    debug "Message egress from session", txt
   .catch (err) -> errorHandler("Error thrown in redisPopErrored", err)
 
 egressClient.subscribe(EGRESS_MSGS_FEED)

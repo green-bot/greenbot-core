@@ -16,17 +16,12 @@ Util           = require('util')
 Pubsub         = require('./pubsub')
 Logger         = require('./logger')
 MongoClient    = require('mongodb').MongoClient
+debug          = require('debug')('notify')
 events         = Pubsub.pubsub
 
 errorHandler = (desc, err) ->
-  Logger.info desc
-  Logger.info err
-
-trace = (desc, obj) ->
-  if process.env.TRACE_MESSAGES?
-    Logger.info desc
-    Logger.info Util.inspect(obj) if obj?
-
+  Logger.debug desc
+  Logger.debug err
 
 # Global scope so we can get it later.
 botsDb = undefined
@@ -38,16 +33,13 @@ CONNECTION_STRING = process.env.MONGO_URL or
 
 MongoClient.connect(CONNECTION_STRING)
 .then (db) ->
-  Logger.info "Connected to the DB"
+  debug "Connected to the DB"
   botsDb          = db.collection('Bots')
   sessionsDb      = db.collection('Sessions')
   integrationsDb  = db.collection('Integrations')
 
-info = (text) ->
-  events.emit 'log', text
-
 formatEmail = (session) ->
-  trace "Formatting email for session", session
+  debug "Formatting email for session", session
   txt = "#{session.src.trim()}\n,
   You have a new conversation from #{session.dst}.\n
   \n
@@ -67,16 +59,16 @@ formatEmail = (session) ->
   txt
 
 sendEmail = (session, bot) ->
-  info "Sending emails for session #{session.sessionId}"
+  debug "Sending emails for session #{session.sessionId}"
   emailText = formatEmail(session)
   integrationsDb.find({ type: 'mail', provider: 'mailgun'}).limit(1).next()
   .then (int) ->
     unless int
-      trace "No email integration found. Returning"
+      debug "No email integration found. Returning"
       return
 
-    trace "Found email integration", int
-    trace "Applying it to bot", bot
+    debug "Found email integration", int
+    debug "Applying it to bot", bot
     smtpConfig =
       host: int.serviceUrl
       port: 465
@@ -92,11 +84,11 @@ sendEmail = (session, bot) ->
       subject:  bot.notificationEmailSubject
       text:     emailText
 
-    info "Sending " + message.text
+    debug "Sending " + message.text
     transporter.sendMail message
   .then (res) ->
-    info "Sent email for session #{session.sessionId}"
-  .catch (error) -> trace("Email err for session #{session.sessionId}", error)
+    debug "Sent email for session #{session.sessionId}"
+  .catch (error) -> debug("Email err for session #{session.sessionId}", error)
 
 sendHook = (session, bot) ->
   webhook_options =
@@ -110,24 +102,23 @@ sendHook = (session, bot) ->
     webhook_options.headers =
       Authorization: bot.webhook_authtoken
 
-  info "Webhook #{bot.postConversationWebhook} sent for #{session.sessionId}"
+  debug "Webhook #{bot.postConversationWebhook} sent for #{session.sessionId}"
   Request.post(bot.postConversationWebhook, webhook_options)
   .then (response) ->
-    info "Completed."
-    trace response.statusCode
-    trace response.headers['content-type']
-  .catch (error) -> trace("Hook error:  #{bot.webhook_url}", error)
+    debug "Completed."
+    debug response.statusCode
+    debug response.headers['content-type']
+  .catch (error) -> debug("Hook error:  #{bot.webhook_url}", error)
 
 
 events.on 'session:ended', (session) ->
-  info "Notifying on the end of session #{session.sessionId}"
-  info "Notifying session #{session.sessionId} for bot #{session.botId}"
-  trace session
+  debug "Notifying on the end of session #{session.sessionId}"
+  debug "Notifying session #{session.sessionId} for bot #{session.botId}"
   botsDb.find({_id: session.botId}).limit(1).next()
   .then (bot) ->
-    trace "Found the bot, notifying", bot
+    debug "Found the bot, notifying"
     sendHook(session, bot) if bot.postConversationWebhook
     sendEmail(session, bot) if bot.notificationEmails
   .catch (error) ->
-    trace(error.stack)
-    trace("Session end error:  #{session.sessionId}", error)
+    debug(error.stack)
+    debug("Session end error:  #{session.sessionId}", error)

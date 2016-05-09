@@ -6,6 +6,8 @@ Bash = require('./bash-process')
 Watson = require('./watson-process')
 Matrix = require('./matrix')
 Pubsub = require('./pubsub')
+Monitor = require('./monitor')
+
 events = Pubsub.pubsub
 PackageMgr = require('./package')
 

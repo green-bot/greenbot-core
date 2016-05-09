@@ -142,6 +142,9 @@ class Session
         unless bot
           debug "No default keyword set for that network handle."
           return
+        unless bot.scriptId
+          debug 'This script has been removed for this bot. No dice'
+          return
         debug "This is the bot I am looking for. Creating session ",
               bot.name, bot._id
 

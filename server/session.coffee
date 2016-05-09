@@ -132,6 +132,7 @@ class Session
       # No session active. Kick one off.
       name = msg.dst.toLowerCase()
       keyword = cleanText(msg.txt)
+      candidateBot = undefined
 
       Session.findBot(name, keyword)
       .then (bot) ->
@@ -140,15 +141,24 @@ class Session
         Session.findBot(name, 'default')
       .then (bot) ->
         unless bot
-          debug "No default keyword set for that network handle."
-          return
+          reason = "No default keyword set for that network handle."
+          debug reason
+          throw reason
         unless bot.scriptId
-          debug 'This script has been removed for this bot. No dice'
-          return
-        debug "This is the bot I am looking for. Creating session ",
-              bot.name, bot._id
-
-        new Session(msg, bot, cb)
+          reason = "Script has been removed for this bot. No dice."
+          debug reason
+          throw reason
+        candidateBot = bot
+        Session.scriptsDb.findOne({ _id: candidateBot.scriptId })
+      .then (script) ->
+        unless script
+          reason = "Script has been removed from the system. Ouch."
+          debug reason
+          throw reason
+        else
+          debug "This is the bot I am looking for. Creating session ",
+                candidateBot.name, candidateBot._id
+          new Session(msg, candidateBot, cb)
       .catch (err) -> errorHandler("Error thrown in finding the bot", err)
 
   constructor: (@msg, @bot, @cb) ->

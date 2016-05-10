@@ -24,7 +24,6 @@
     "express": "^4.13.4",
     "glob": "7.0.3",
     "install": "0.1.8",
-    "keyword-bot": "0.1.6",
     "lodash": "4.11.2",
     "matrix-js-sdk": "0.3.0",
     "memwatch-next": "0.3.0",

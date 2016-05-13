@@ -13,6 +13,7 @@ Url            = require("url")
 Util           = require('util')
 Request        = require("request-promise")
 ExpressServer  = require '../express-server'
+debug          = require('debug')('tsg')
 
 # Before any of this stuff happens, see if we are configured for
 # TSG
@@ -23,10 +24,10 @@ configured = false unless process.env.TSG_SECRET?
 configured = false unless process.env.TSG_COBRA_KEY?
 
 if not configured
-  Logger.info "No TSG Credentials"
+  debug "No TSG Credentials"
   return
 
-Logger.info 'Configuring the TSG Adapter'
+debug 'Configuring the TSG Adapter'
 
 TSG_SEND_MSG_URL = "http://sms.tsgglobal.com/jsonrpc"
 CONNECTION_STRING = process.env.MONGO_URL or
@@ -44,7 +45,7 @@ app.post CALLBACK_PATH, (req, res) ->
   txt = req.body.message
   res.writeHead 200,     "Content-Type": "text/plain"
   res.end()
-  Logger.info 'Inbound message TSG: ' + txt
+  debug 'Inbound message TSG: ' + txt
 
   msg =
     dst: "tsg::" + hostNumber
@@ -55,9 +56,9 @@ app.post CALLBACK_PATH, (req, res) ->
   return
 
 events.on egressEvent, (msg) ->
-  Logger.info 'tsg egress: ' + msg.txt
+  debug 'tsg egress: ' + msg.txt
   sendTsgMessage(msg)
-Logger.info 'tsg server listening'
+debug 'tsg server listening'
 
 sendTsgMessage = (msg) ->
   {src, dst, txt} = msg
@@ -76,54 +77,59 @@ sendTsgMessage = (msg) ->
 
   Request.post(options)
   .then (response) ->
-    Logger.info "Sent #{src}->#{dst}: #{txt}"
+    debug "Sent #{src}->#{dst}: #{txt}"
     if response.error?
-      Logger.info "ERROR POSTING TO TSG:"
-      Logger.info response
+      debug "ERROR POSTING TO TSG:"
+      debug response
 
 registeredNumbers = []
 
-setInterval ->
-  MongoClient.connect(CONNECTION_STRING)
+checkAddresses = (db) ->
+  debug 'Checking for new addresses'
+  botsDb = db.collection('Bots')
+  botsDb.find 'addresses.network': 'tsg'
+  .each (err, bot) ->
+    if err
+      debug "Mongo client threw error"
+      debug err
+      return
+    unless bot
+      return
+
+    debug 'Checking bot ', bot._id
+    for address in bot.addresses
+      if /tsg/i.test address.networkHandleName
+        debug 'Found TSG address in ', address.networkHandleName
+        unless address.networkHandleName in registeredNumbers
+          registeredNumbers.push address.networkHandleName
+          did = address.networkHandleName.split("::").pop()
+          api_key = process.env.TSG_COBRA_KEY
+          url = TSG_CALLBACK_URL
+
+          # Now set the callback to this number to this
+          # machine
+          debug "Settings callback for #{did} to #{TSG_CALLBACK_URL}"
+          options =
+            uri: 'https://api.tsgglobal.net/sms_posturl_update.php'
+            qs:
+              did:      did
+              api_key:  api_key
+              posturl:  TSG_CALLBACK_URL
+            json: true
+          Request.get(options)
+          .then (response) ->
+            if response.error?
+              debug "ERROR POSTING TO TSG:"
+              debug response
+            else
+              debug "TSG Responds"
+              debug response
+      else
+        debug 'Already registered.'
+
+MongoClient.connect(CONNECTION_STRING)
   .then (db) ->
-    botsDb = db.collection('Bots')
-    botsDb.find 'addresses.network': 'tsg'
-    .each (err, bot) ->
-      if err
-        console.log "Mongo client threw error"
-        console.log err
-        return
-      unless bot
-        return
-
-      for address in bot.addresses
-        if /tsg/i.test address.networkHandleName
-          unless address.networkHandleName in registeredNumbers
-            registeredNumbers.push address.networkHandleName
-            did = address.networkHandleName.split("::").pop()
-            api_key = process.env.TSG_COBRA_KEY
-            url = TSG_CALLBACK_URL
-
-            # Now set the callback to this number to this
-            # machine
-            Logger.info "Settings callback for #{did} to #{TSG_CALLBACK_URL}"
-            options =
-              uri: 'https://api.tsgglobal.net/sms_posturl_update.php'
-              qs:
-                did:      did
-                api_key:  api_key
-                posturl:  TSG_CALLBACK_URL
-              json: true
-            Request.get(options)
-            .then (response) ->
-              if response.error?
-                Logger.info "ERROR POSTING TO TSG:"
-                Logger.info response
-              else
-                Logger.info "TSG Responds"
-                Logger.info response
-
-, 4000
+    setInterval checkAddresses, 4000, db
 
 MongoClient.connect(CONNECTION_STRING)
 .then (db) ->
@@ -132,4 +138,3 @@ MongoClient.connect(CONNECTION_STRING)
   networks.update networkObj, networkObj, upsert: true
   .then ->
     db.close()
-

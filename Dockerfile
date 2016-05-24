@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:14.04
 MAINTAINER Thomas Howe <ghostofbasho@gmail.com>
 
 # Set the locale

@@ -52,6 +52,7 @@ INGRESS_MSGS_FEED  = 'INGRESS_MSGS'
 EGRESS_MSGS_FEED   = 'EGRESS_MSGS'
 NEW_SESSIONS_FEED  = 'NEW_SESSIONS'
 SESSION_ENDED_FEED = 'COMPLETED_SESSIONS'
+TERMINATE_SESSION_FEED = 'TERMINATE_SESSION'
 
 # Set the default directory for scripts
 DEF_SCRIPT_DIR = process.env.DEF_SCRIPT_DIR || './scripts/'
@@ -340,19 +341,18 @@ class Session
 
   ingressMsg: (text) =>
     # Handle slash commands, if any
-    if cleanText(text) == '/human'
-      @automated = false
-      events.emit 'livechat:newsession', @information()
+    debug cleanText(text)
+    if cleanText(text) is '/quit'
+      debug "received /quit command --- QUITTING!!!!"
+      client.publish TERMINATE_SESSION_FEED, @id
+      return
 
-    # If we are in automated mode, send it to the bot
-    if @automated
-      if @ingressProcessStream
-        @ingressProcessStream.write("#{text}\n")
-      else
-        client.lpush @ingressList(), text
-        client.publish INGRESS_MSGS_FEED, @id
+    if @ingressProcessStream
+      @ingressProcessStream.write("#{text}\n")
     else
-      events.emit 'livechat:ingress', @information(), text
+      client.lpush @ingressList(), text
+      client.publish INGRESS_MSGS_FEED, @id
+
     @transcript.push { direction: 'ingress', text: text}
     @updateDb()
 

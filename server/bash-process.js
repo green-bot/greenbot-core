@@ -2,7 +2,7 @@
 //
 
 // Load config for RethinkDB and express
-var cp = require('child_process')
+var ChildProcess = require('child_process')
 var gB = require('./greenbot-process')
 var u = require('util')
 
@@ -23,7 +23,7 @@ var createBash = function (sess) {
   var sessionId = sess.sessionId
 
   trace('starting process: ' + sess.command)
-  sess.process = cp.spawn(sess.command, sess.args, sess.opts)
+  sess.process = ChildProcess.spawn(sess.command, sess.args, sess.opts)
   // Check for thrown errors
   sess.process.on('exit', function (code, signal) {
     trace('Session ended ' + code)
@@ -51,4 +51,10 @@ var ingressMsg = function (sessionId, txt) {
   session.process.stdin.write(txt)
 }
 
-var gbProcess = gB(ingressMsg, createBash, 'bash')
+var terminateSessionFunction = function (sessionId) {
+  var session = sessions[sessionId]
+  if (!session) return
+  session.process.kill('SIGHUP')
+}
+
+var gbProcess = gB(ingressMsg, createBash, 'bash', terminateSessionFunction)

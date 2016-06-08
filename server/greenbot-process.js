@@ -12,16 +12,18 @@ var redisPort = process.env.REDIS_PORT || 6379
 var redisHost = process.env.REDIS_HOST|| 'localhost'
 var msgClient = redis.createClient(redisPort, redisHost)
 var sessionClient = redis.createClient(redisPort, redisHost)
+var terminateClient = redis.createClient(redisPort, redisHost)
 var client = redis.createClient(redisPort, redisHost)
 var abstractIngress = null
 var abstractCreate = null
 var abstractType = null
 
-// The table we need
+// The redis lists we need
 const NEW_SESSIONS_FEED = 'NEW_SESSIONS'
 const INGRESS_MSGS_FEED = 'INGRESS_MSGS'
 const EGRESS_MSGS_FEED = 'EGRESS_MSGS'
 const SESSION_ENDED_FEED = 'COMPLETED_SESSIONS'
+const TERMINATE_SESSION_FEED = 'TERMINATE_SESSION'
 
 // Couple convenience functions
 var trace = function (text) {
@@ -45,16 +47,8 @@ client.on('error', handleError)
 sessionClient.on('error', handleError)
 msgClient.on('error', handleError)
 
-// Start the subscriber for the bash_process pub/sub
+// Start the subscriber for the message pub/sub
 sessionClient.on('message', function (chan, sess) {
-  // As a quick and dirty approach to reliability,
-  // we will wait a random small amount of time before trying
-  // to read from the NEW_SESSIONS_FEED list. If we get the
-  // element, start it. If we didn't, well, something else got
-  // there first.   The random amount of time is to prevent
-  // deadlocks. But, we will probably need a better
-  // scale solution anyways. Thus, quick and dirty.
-
   if (sess.type && (sess.type !== abstractType)) {
     // We've defined a type for this script... and this aint it.
     trace('Process passing on ' + sess.type)
@@ -86,6 +80,16 @@ msgClient.on('message', function (chan, sessionId) {
 msgClient.subscribe(INGRESS_MSGS_FEED)
 trace('Subscribed to inbound notifications on ' + INGRESS_MSGS_FEED)
 
+// Start the subscriber for the handling inbound messages
+terminateClient.on('message', function (chan, sessionId) {
+  if(abstractTerminate){ //abstractTerminate is optional at the moment so make sure it was passed in before calling it
+    abstractTerminate(sessionId)
+  }
+})
+terminateClient.subscribe(TERMINATE_SESSION_FEED)
+trace('Subscribed to terminate session notifications on ' + TERMINATE_SESSION_FEED)
+
+
 var readMsg = function (sessionId) {
   var listName = ingressList(sessionId)
   var popped = function (txt) {
@@ -111,10 +115,11 @@ var egress = function (sessionId, txt) {
   client.publish(EGRESS_MSGS_FEED, sessionId)
 }
 
-module.exports = function override (ingressFunc, createFunc, type) {
+module.exports = function override (ingressFunc, createFunc, type, terminateFunc = null) {
   abstractIngress = ingressFunc
   abstractCreate = createFunc
   abstractType = type
+  abstractTerminate = terminateFunc
 
   return {
     complete: endSession,

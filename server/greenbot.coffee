@@ -1,4 +1,6 @@
 require('coffee-script')
+require('dotenv').config()
+
 Notify = require('./notify')
 Session = require('./session')
 Logger = require('./logger')

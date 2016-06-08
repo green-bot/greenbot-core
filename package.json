@@ -20,6 +20,7 @@
     "colors": "^1.1.0",
     "continuation-local-storage": "^3.1.6",
     "debug": "2.2.0",
+    "dotenv": "^2.0.0",
     "es6-promise": "3.1.2",
     "express": "^4.13.4",
     "glob": "7.0.3",

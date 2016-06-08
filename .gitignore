@@ -10,4 +10,4 @@ vendor
 *.rdb
 .sass-cache
 tools/npm-debug.log
-export_env_vars
+.env

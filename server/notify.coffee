@@ -15,7 +15,7 @@ Mailer         = require("nodemailer")
 Util           = require('util')
 Pubsub         = require('./pubsub')
 Logger         = require('./logger')
-MongoClient    = require('mongodb').MongoClient
+MongoConnection = require('./mongo-singleton')
 debug          = require('debug')('notify')
 events         = Pubsub.pubsub
 
@@ -25,17 +25,12 @@ errorHandler = (desc, err) ->
 
 # Global scope so we can get it later.
 botsDb = undefined
-sessionsDb = undefined
 integrationsDb= undefined
 
-CONNECTION_STRING = process.env.MONGO_URL or
-                    'mongodb://localhost:27017/greenbot'
-
-MongoClient.connect(CONNECTION_STRING)
+MongoConnection()
 .then (db) ->
   debug "Connected to the DB"
   botsDb          = db.collection('Bots')
-  sessionsDb      = db.collection('Sessions')
   integrationsDb  = db.collection('Integrations')
 
 formatEmail = (session) ->

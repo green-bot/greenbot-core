@@ -7,7 +7,7 @@ Util           = require "util"
 ExpressServer  = require('../express-server')
 events         = require('../pubsub').pubsub
 debug          = require('debug')('gh')
-MongoClient    = require('mongodb').MongoClient
+MongoConnection    = require('../mongo-singleton')
 Crypto         = require('crypto')
 
 GH_TOKEN       = process.env.GH_TOKEN
@@ -15,7 +15,6 @@ GH_NUMBER      = process.env.GH_NUMBER
 EGRESS_EVENT   = "gh_egress"
 WEBHOOK_PATH   = process.env.GH_WEBHOOK or '/networks/gh'
 NETWORK_NAME   = "gh"
-MONGO_URL      = process.env.MONGO_URL or 'mongodb://localhost:27017/greenbot'
 app            = ExpressServer.app
 
 configured = true
@@ -28,13 +27,11 @@ if not configured
   return
 
 debug 'Configuring the GH Adapter'
-MongoClient.connect(MONGO_URL)
+MongoConnection.connect()
 .then (db) ->
   networks = db.collection('Networks')
   networkObj = name: 'gh'
   networks.update networkObj, networkObj, upsert: true
-  .then ->
-    db.close()
 
 events.on EGRESS_EVENT, (msg) ->
   {src, dst, txt} = msg

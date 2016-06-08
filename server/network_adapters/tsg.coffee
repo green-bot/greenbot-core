@@ -4,7 +4,7 @@ _              = require('underscore')
 Async          = require('async')
 Bluebird       = require('bluebird')
 Logger         = require('../logger')
-MongoClient    = require('mongodb').MongoClient
+MongoConnection    = require('../mongo-singleton')
 Os             = require("os")
 Promise        = require('node-promise').Promise
 Pubsub         = require('../pubsub')
@@ -30,8 +30,6 @@ if not configured
 debug 'Configuring the TSG Adapter'
 
 TSG_SEND_MSG_URL = "http://sms.tsgglobal.com/jsonrpc"
-CONNECTION_STRING = process.env.MONGO_URL or
-                    'mongodb://localhost:27017/greenbot'
 CALLBACK_PATH = '/networks/tsg'
 TSG_CALLBACK_URL = process.env.TSG_CALLBACK_HOST + CALLBACK_PATH
 
@@ -127,14 +125,12 @@ checkAddresses = (db) ->
       else
         debug 'Already registered.'
 
-MongoClient.connect(CONNECTION_STRING)
+MongoConnection()
   .then (db) ->
     setInterval checkAddresses, 4000, db
 
-MongoClient.connect(CONNECTION_STRING)
+MongoConnection()
 .then (db) ->
   networks = db.collection('Networks')
   networkObj = name: 'tsg'
   networks.update networkObj, networkObj, upsert: true
-  .then ->
-    db.close()

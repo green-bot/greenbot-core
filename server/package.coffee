@@ -2,7 +2,7 @@ Request        = require("request-promise")
 Mailer         = require("nodemailer")
 Util           = require('util')
 Logger         = require('./logger')
-MongoClient    = require('mongodb').MongoClient
+MongoConnection = require('./mongo-singleton')
 Promise        = require('es6-promise').Promise
 Fs             = require('fs')
 Chokidar       = require('chokidar')
@@ -33,7 +33,6 @@ events.on 'api:uninstallPackage', (packageName) ->
     if stderr
       Logger.info "STDERR: #{stderr}"
 
-MONGO_URL = process.env.MONGO_URL or 'mongodb://localhost:27017/greenbot'
 NPM_PATH =  process.env.GREENBOT_NPM_PATH or './node_modules/'
 
 errorHandler = (desc, err) ->
@@ -45,18 +44,9 @@ trace = (desc, obj) ->
     Logger.info desc
     Logger.info Util.inspect(obj) if obj?
 
-db = undefined
-getDb = ->
-  Logger.info "Returning cached db connection" if db
-  return Promise.resolve(db) if db
-  MongoClient.connect(MONGO_URL)
-  .then (database) ->
-    Logger.info "Package connection to db established"
-    db = database
-
 removeScript = (pkg) ->
   Logger.info "Removing #{pkg}"
-  getDb()
+  MongoConnection()
   .then (db) ->
     scripts  = db.collection('Scripts')
     scripts.find({npm_pkg_name: pkg}).limit(1).next()
@@ -67,12 +57,12 @@ removeScript = (pkg) ->
     .then ->
       Logger.info "Script #{pkg} removed"
   .catch (err) ->
-    Logger.info "Error in addScriptifMissing #{pkgName}"
+    Logger.info "Error in addScriptIfMissing #{pkgName}"
     Logger.info err
 
 addScript = (pkg, path) ->
   Logger.info "Loading #{pkg} from #{path}"
-  getDb()
+  MongoConnection()
   .then (db) ->
     scripts  = db.collection('Scripts')
     scripts.deleteMany {npm_pkg_name: pkg}
@@ -98,9 +88,9 @@ addScript = (pkg, path) ->
       Logger.info "Error thrown in add script"
       Logger.info err
 
-addScriptifMissing = (file) ->
+addScriptIfMissing = (file) ->
   pkgName = file.split('/').shift()
-  getDb()
+  MongoConnection()
   .then (db) ->
     scriptsDb  = db.collection('Scripts')
     scriptsDb.count({npm_pkg_name: pkgName})
@@ -111,7 +101,7 @@ addScriptifMissing = (file) ->
     Logger.info "Installing #{pkgName}"
     addScript pkgName, file
   .catch (err) ->
-    Logger.info "Error in addScriptifMissing #{pkgName}"
+    Logger.info "Error in addScriptIfMissing #{pkgName}"
     Logger.info err
 
 # On startup, look for pre-existing packages so we
@@ -119,15 +109,15 @@ addScriptifMissing = (file) ->
 Logger.info NPM_PATH + '*/bot.json'
 glob '**/bot.json', {cwd: NPM_PATH}, (err, files) ->
   packages = files.map (file) -> file.split('/').shift()
-  getDb()
+  Logger.info "Found #{packages}"
+  _.each files, addScriptIfMissing
+  MongoConnection()
   .then (db) ->
-    Logger.info "Found #{packages}"
-    _.each files, addScriptifMissing
-  .then (files)->
     Logger.info "Removing scripts that have been uninstalled."
     scriptsDb  = db.collection('Scripts')
     scriptsDb.find()
     .each (err, script) ->
+      throw err if err 
       return unless script
       Logger.info "Checking #{script.npm_pkg_name} to see if it is installed."
       removeScript(script.npm_pkg_name) if script.npm_pkg_name not in packages
@@ -144,7 +134,7 @@ Chokidar.watch('*/bot.json', {cwd: NPM_PATH, ignoreInitial: true})
   removeScript path.split('/').shift()
 
 # Update the database to indicate what our local node directory is
-getDb()
+MongoConnection()
 .then (db) ->
   CP.exec 'npm root', (error, stdout, stderr) ->
     if error

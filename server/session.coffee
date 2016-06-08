@@ -18,7 +18,7 @@ ChildProcess   = require("child_process")
 LanguageFilter = require('watson-translate-stream')
 Logger         = require('./logger')
 Mailer         = require("nodemailer")
-MongoClient    = require('mongodb').MongoClient
+MongoConnection = require('./mongo-singleton')
 Os             = require("os")
 Pipe           = require("multipipe")
 Promise        = require('node-promise')
@@ -80,9 +80,9 @@ errorHandler = (desc, err) ->
 class Session
   @active = {}
 
-  @connectDb = (url) ->
+  @connectDb = ->
     # Setup the connection to the database
-    MongoClient.connect(url)
+    MongoConnection()
     .then (@db) =>
       debug "Connected to the DB"
       @botsDb     = @db.collection('Bots')
@@ -430,4 +430,4 @@ egressClient.subscribe(EGRESS_MSGS_FEED)
 sessionClient.subscribe(SESSION_ENDED_FEED)
 
 # Connect to the DB
-Session.connectDb(CONNECTION_STRING)
+Session.connectDb()

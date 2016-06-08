@@ -4,7 +4,7 @@ _              = require 'underscore'
 Async          = require 'async'
 Bluebird       = require 'bluebird'
 Logger         = require '../logger'
-MongoClient    = require('mongodb').MongoClient
+MongoConnection = require('../mongo-singleton')
 Os             = require 'os'
 Promise        = require('node-promise').Promise
 Pubsub         = require '../pubsub'
@@ -14,8 +14,6 @@ Util           = require 'util'
 Request        = require 'request-promise'
 ExpressServer  = require '../express-server'
 
-CONNECTION_STRING = process.env.MONGO_URL or
-                    'mongodb://localhost:27017/greenbot'
 CALLBACK_PATH = '/networks/hipchat'
 HIPCHAT_CALLBACK_URL = process.env.HIPCHAT_CALLBACK_HOST + CALLBACK_PATH
 
@@ -71,17 +69,6 @@ sendHipchatMessage = (msg) ->
 
 registeredNumbers = []
 
-client = undefined
-getClient = () ->
-  if client
-    promise = new Promise()
-    promise.resolve client
-    promise
-  else
-    MongoClient.connect(CONNECTION_STRING).then (db) ->
-      client = db
-      return client
-
 updateBotWebhooks = (bot) ->
   for address in bot.addresses
     if /hipchat/i.test address.networkHandleName
@@ -110,7 +97,8 @@ updateBotWebhooks = (bot) ->
             Logger.info response
 
 updateWebhooks = ->
-  getClient().then (db) ->
+  MongoConnection()
+  .then (db) ->
     botsDb = db.collection 'Bots'
     botsDb.find 'addresses.network': 'hipchat'
     .each (err, bot) ->

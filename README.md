@@ -8,7 +8,6 @@ Greenbot does all kinds of good stuff:
 * **Routing**: Greenbot connects keywords to bots, and allows bots to transfer to other bots.
 * **Language Translation**: Greenbot translates between human languages, so when you text in with French, but the prompts are in English, it will restart the bot conversation with correct language. Slick.
 * **All Kinds Bots**: Greenbot currently supports simple script bots, bot-kit bots, and Watson Dialog bots. More kinds of bots coming all the time.
-* 
 
 # Standard Installation
 Start with a generic Ubuntu image, we normally use Digital Ocean: 2 GB Memory / 40 GB Disk / NYC3 - Ubuntu 14.04.4 x64

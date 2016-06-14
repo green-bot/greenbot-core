@@ -29,7 +29,7 @@ Url            = require("url")
 Us             = require("underscore.string")
 Util           = require('util')
 Random         = require('meteor-random')
-debug          = require('debug')('session')
+debug = require('debug')("session")
 
 
 #DBLogger = require('mongodb').Logger
@@ -59,11 +59,10 @@ DEF_SCRIPT_DIR = process.env.DEF_SCRIPT_DIR || './scripts/'
 CONNECTION_STRING = process.env.MONGO_URL or
                     'mongodb://localhost:27017/greenbot'
 
-# Guard band for messages returning from session after it ends
-SESSION_GUARD = 5000  # 5 SECONDS
-
 genSessionKey = (msg) -> msg.src + "_" + msg.dst
-cleanText     = (text = "") -> text.trim().toLowerCase()
+cleanText     = (text = "") ->
+  text.trim().toLowerCase().replace(/^\/+/, '/')
+
 isJson = (str) ->
   # When a text message comes from a session, if it's a valid JSON
   # string, we will treat it as a command or data. This function
@@ -163,14 +162,15 @@ class Session
       .catch (err) -> errorHandler("Error thrown in finding the bot", err)
 
   constructor: (@msg, @bot, @cb) ->
-    debug "Constructing the session"
+    @id = Random.id()
+    @debug = require('debug')("session:#{@id}")
+    @debug "Constructing the session"
     # The variables that make up a Session
     @transcript = []
     @createdAt = new Date()
     @src = @msg.src
     @dst = @msg.dst.toLowerCase()
     @sessionKey = genSessionKey(@msg)
-    @id = Random.id()
     Session.active[@sessionKey] = @
     @automated = true
     @processStack = []
@@ -180,8 +180,8 @@ class Session
     # this network handle.
     Session.allKeywords(@networkHandleName)
     .then (keywords) =>
-      debug 'Other keywords happen to be'
-      debug keywords
+      @debug 'Other keywords happen to be'
+      @debug keywords
       @keywords = keywords
     .then () =>
       # Assemble the @command, @arguments, @opts
@@ -192,19 +192,19 @@ class Session
         @lang = session.lang
       else
         @lang = process.env.DEFAULT_LANG or 'en'
-      debug 'Language selection ', @lang
+      @debug 'Language selection ', @lang
     .then =>
       @createSessionEnv()
     .then =>
       @kickOffProcess(@command, @arguments, @opts, @lang)
-    .then ->
-      debug "Session started"
+    .then =>
+      @debug "Session started"
     .catch (err) -> errorHandler("Error in session constructor", err)
 
   createSessionEnv: =>
     Session.scriptsDb.findOne( { _id: @bot.scriptId })
     .then (script) =>
-      debug "Just got the script ", @bot.name, @bot.scriptId
+      @debug "Just got the script ", @bot.name, @bot.scriptId
       @script = script
       if @isOwner() and not @bot.testMode
         @arguments  = @script.owner_cmd.split(" ")
@@ -224,7 +224,7 @@ class Session
 
 
   kickOffProcess : (command, args, opts, lang) =>
-    debug "Kicking off session as #{command} #{args} in #{lang}"
+    @debug "Kicking off session as #{command} #{args} in #{lang}"
     # Start the process, connect the pipes
     sess =
       command: command
@@ -261,13 +261,13 @@ class Session
       @egressProcessStream = Pipe(jsonFilter, @language.egressStream)
       @egressProcessStream.on "readable", =>
         @egressMsg @egressProcessStream.read()
-      @egressProcessStream.on "error", (err) ->
-        debug "Error thrown from session"
-        debug err
+      @egressProcessStream.on "error", (err) =>
+        @debug "Error thrown from session"
+        @debug err
 
       # When the language changes, restart the bot dialog
       @language.on "langChanged", (oldLang, newLang) =>
-        debug "Language changed, restarting : #{oldLang} to #{newLang}"
+        @debug "Language changed, restarting : #{oldLang} to #{newLang}"
         @egressProcessStream.write("Language changed, restarting conversation.")
         @lang = newLang
         nextProcess =
@@ -279,7 +279,7 @@ class Session
 
     # Now save it in the database
   updateDb: =>
-    console.log "Updating db"
+    @debug "Updating db"
     Session.sessionsDb.update {sessionId: @id}, @information(), upsert: true
 
   information: =>
@@ -299,15 +299,13 @@ class Session
     nextProcess = @processStack.shift()
       # If process stack has element, run that.
     if nextProcess?
-      debug 'Process ended. Starting a new one.'
+      @debug 'Process ended. Starting a new one.'
       {command, args, opts, lang} = nextProcess
       @kickOffProcess(command, args, opts, lang)
     else
-      debug "Ending and recording session #{@id}"
-      setTimeout =>
-        events.emit 'session:ended', @information()
-        delete Session.active[@sessionKey]
-      , SESSION_GUARD
+      @debug "Ending and recording session #{@id}"
+      delete Session.active[@sessionKey]
+      events.emit 'session:ended', @information()
 
   cmdSettings: =>
     env_settings = _.clone(process.env)
@@ -320,32 +318,69 @@ class Session
     return env_settings
 
   isOwner: () =>
-    debug "Checking to see if #{@src} is in", @bot.ownerHandles
+    @debug "Checking to see if #{@src} is in", @bot.ownerHandles
     for address in @bot.addresses
       return true if @src in @bot.ownerHandles
-    debug "Running session #{@id} as a visitor"
+    @debug "Running session #{@id} as a visitor"
     return false
 
-
   egressMsg: (text) =>
-    if text
-      lines = text.toString().split("\n")
-    else
-      lines = []
+    return unless text
+    lines = text.toString().split("\n")
     for line in lines
-      line = line.trim()
-      if line.length > 0
-        @cb line
-        @transcript.push { direction: 'egress', text: line}
-        @updateDb()
+      text = line.trim()
+      continue unless !!text
+
+      # Handle slash commands, if any
+      cleaned = cleanText(text)
+      @debug cleaned
+      if cleaned is '/quit'
+        @debug "received /quit command --- QUITTING!!!!"
+        client.publish TERMINATE_SESSION_FEED, @id
+      else if cleaned[0] is "/" #is a slash command
+        @debug 'We have a slash command on our hands'
+        transfer = (session) =>
+          @debug 'transfer session initiated!!!!!'
+          return unless session.sessionId is @id #check that it's the tranfserred session
+          @debug 'Its my party and i will transfer if I want to'
+          events.removeListener('session:ended', transfer)
+          newMsg = _.clone(@msg)
+          newMsg.txt = cleaned[1..]
+          events.emit 'ingress', newMsg #start session with keyword /slash
+        events.on 'session:ended', transfer
+        client.publish TERMINATE_SESSION_FEED, @id #terminate this session
+      else
+        @debug "Sending out message to #{@msg.dst}: #{text}"
+        @cb text
+
+      @transcript.push { direction: 'egress', text: text}
+      @updateDb()
 
   ingressMsg: (text) =>
     # Handle slash commands, if any
-    debug cleanText(text)
-    if cleanText(text) is '/quit'
-      debug "received /quit command --- QUITTING!!!!"
+    @debug "CLEAN TEXT!!!!!!!!!!!!"
+    cleaned = cleanText(text)
+    @debug cleaned
+    if cleaned is '/quit'
+      @debug "received /quit command --- QUITTING!!!!"
       client.publish TERMINATE_SESSION_FEED, @id
       return
+
+    if cleaned[0] is "/" #is a slash command
+      @debug 'We have a slash command on our hands'
+      transfer = (session) =>
+        @debug 'transfer session initiated!!!!!'
+        if session.sessionId is @id #check that it's the tranfserred session
+          @debug 'Its my party and i will transfer if I want to'
+          events.removeListener('session:ended', transfer)
+          newMsg = _.clone(@msg)
+          newMsg.txt = cleaned[1..]
+          events.emit 'ingress', newMsg #start session with keyword /slash
+      events.on 'session:ended', transfer
+      client.publish TERMINATE_SESSION_FEED, @id #terminate this session
+      return
+
+
 
     if @ingressProcessStream
       @ingressProcessStream.write("#{text}\n")
@@ -376,20 +411,21 @@ class Session
     return jsonFilter
 
   writeEgressMessage: (txt) =>
-    debug "Writing egress message #{txt}"
     lines = txt.split("\n")
     if @egressProcessStream
       @egressProcessStream.write(line) for line in lines
     else
       for line in lines
         if isJson(line)
+          @debug "Saving collected data: #{line}"
           @collectedData = JSON.parse line
           @updateDb()
         else
+          @debug "Writing egress message: #{line}"
           @egressMsg line
 
-  redisPopErrored: (err) ->
-    debug('Popping message returns ' + err)
+  redisPopErrored: (err) =>
+    @debug('Popping message returns ' + err)
 
   ingressList: -> @id + '.ingress'
   egressList: ->  @id + '.egress'
@@ -403,7 +439,6 @@ events.on 'ingress', (msg) ->
   egressEvent = msg.egressEvent
   Session.findOrCreate msg, (txt) ->
     egressMsg = {src: src, dst: dst, txt: txt}
-    debug "Sending out message to #{dst}", egressMsg
     events.emit egressEvent, egressMsg
 
 
@@ -415,7 +450,7 @@ egressClient.on "message", (chan, sessionId) ->
   #get the right session from sesion id
   session = Session.findById(sessionId)
   if not session
-    debug "I can't find #{sessionId}", session
+    debug "Can't find active session with sessionId : #{sessionId}", session
     return
   else
     debug "Found session #{sessionId}"
@@ -423,7 +458,6 @@ egressClient.on "message", (chan, sessionId) ->
   client.lpopAsync(session.egressList())
   .then (txt) ->
     session.writeEgressMessage(txt)
-    debug "Message egress from session", txt
   .catch (err) -> errorHandler("Error thrown in redisPopErrored", err)
 
 egressClient.subscribe(EGRESS_MSGS_FEED)

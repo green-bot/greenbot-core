@@ -1,6 +1,6 @@
 Pubsub = require('./pubsub')
 events = Pubsub.pubsub
-debug = require('debug')('verbose')
+debug = require('debug')('logger')
 
 
 events.on 'log', (msg) ->

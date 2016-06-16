@@ -27,7 +27,7 @@ if not configured
   return
 
 debug 'Configuring the GH Adapter'
-MongoConnection.connect()
+MongoConnection()
 .then (db) ->
   networks = db.collection('Networks')
   networkObj = name: 'gh'
@@ -71,7 +71,7 @@ egressMsg = (token, src, dst, txt) ->
   src = src.split('::')[1]
   dst = dst.split('::')[1]
   options =
-    uri: "https://mnsq.ghuser.com/bot/message"
+    uri: process.env.GH_SEND_URL or "https://edge-mobile-api.ghuser.com/bot/message"
     method: "POST"
     headers: Authorization: authToken(src)
     json: true

@@ -8,3 +8,5 @@ Greenbot does all kinds of good stuff:
 * **Routing**: Greenbot connects keywords to bots, and allows bots to transfer to other bots.
 * **Language Translation**: Greenbot translates between human languages, so when you text in with French, but the prompts are in English, it will restart the bot conversation with correct language. Slick.
 * **All Kinds Bots**: Greenbot currently supports simple script bots, bot-kit bots, and Watson Dialog bots. More kinds of bots coming all the time.
+
+Want to learn more? [Check out the Wiki](https://github.com/green-bot/greenbot-core/wiki)

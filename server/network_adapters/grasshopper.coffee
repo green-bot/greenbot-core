@@ -11,14 +11,12 @@ MongoConnection    = require('../mongo-singleton')
 Crypto         = require('crypto')
 
 GH_TOKEN       = process.env.GH_TOKEN
-GH_NUMBER      = process.env.GH_NUMBER
 EGRESS_EVENT   = "gh_egress"
 WEBHOOK_PATH   = process.env.GH_WEBHOOK or '/networks/gh'
 NETWORK_NAME   = "gh"
 app            = ExpressServer.app
 
 configured = true
-configured = false unless process.env.GH_NUMBER?
 configured = false unless process.env.GH_TOKEN?
 configured = false unless process.env.GH_VENDOR_ID?
 

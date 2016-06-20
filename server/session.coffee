@@ -324,6 +324,30 @@ class Session
     @debug "Running session #{@id} as a visitor"
     return false
 
+  transferTo: (keyword) =>
+    @debug 'We have a slash command on our hands'
+    transfer = (session) =>
+      @debug 'transfer session initiated!!!!!'
+      return unless session.sessionId is @id #check that it's the tranfserred session
+      @debug 'Its my party and i will transfer if I want to'
+      events.removeListener('session:ended', transfer)
+      newMsg = _.clone(@msg)
+      newMsg.txt = keyword
+      events.emit 'ingress', newMsg #start session with keyword /slash
+    events.on 'session:ended', transfer
+    client.publish TERMINATE_SESSION_FEED, @id #terminate this session
+
+  handleSlash: (command) =>
+    @debug "Handling line #{command}"
+    switch
+      when command is '/quit'
+        @debug "received /quit command --- QUITTING!!!!"
+        client.publish TERMINATE_SESSION_FEED, @id
+      when command is '/restart'
+        @transferTo @msg.txt
+      when command[0] is "/"
+        @transferTo command[1..]
+
   egressMsg: (text) =>
     return unless text
     lines = text.toString().split("\n")
@@ -333,22 +357,8 @@ class Session
 
       # Handle slash commands, if any
       cleaned = cleanText(text)
-      @debug cleaned
-      if cleaned is '/quit'
-        @debug "received /quit command --- QUITTING!!!!"
-        client.publish TERMINATE_SESSION_FEED, @id
-      else if cleaned[0] is "/" #is a slash command
-        @debug 'We have a slash command on our hands'
-        transfer = (session) =>
-          @debug 'transfer session initiated!!!!!'
-          return unless session.sessionId is @id #check that it's the tranfserred session
-          @debug 'Its my party and i will transfer if I want to'
-          events.removeListener('session:ended', transfer)
-          newMsg = _.clone(@msg)
-          newMsg.txt = cleaned[1..]
-          events.emit 'ingress', newMsg #start session with keyword /slash
-        events.on 'session:ended', transfer
-        client.publish TERMINATE_SESSION_FEED, @id #terminate this session
+      if cleaned[0] is "/"
+        @handleSlash cleaned
       else
         @debug "Sending out message to #{@msg.dst}: #{text}"
         @cb text
@@ -358,35 +368,16 @@ class Session
 
   ingressMsg: (text) =>
     # Handle slash commands, if any
-    @debug "CLEAN TEXT!!!!!!!!!!!!"
     cleaned = cleanText(text)
-    @debug cleaned
-    if cleaned is '/quit'
-      @debug "received /quit command --- QUITTING!!!!"
-      client.publish TERMINATE_SESSION_FEED, @id
-      return
-
-    if cleaned[0] is "/" #is a slash command
-      @debug 'We have a slash command on our hands'
-      transfer = (session) =>
-        @debug 'transfer session initiated!!!!!'
-        if session.sessionId is @id #check that it's the tranfserred session
-          @debug 'Its my party and i will transfer if I want to'
-          events.removeListener('session:ended', transfer)
-          newMsg = _.clone(@msg)
-          newMsg.txt = cleaned[1..]
-          events.emit 'ingress', newMsg #start session with keyword /slash
-      events.on 'session:ended', transfer
-      client.publish TERMINATE_SESSION_FEED, @id #terminate this session
-      return
-
-
-
-    if @ingressProcessStream
-      @ingressProcessStream.write("#{text}\n")
+    @debug "Handling  ingress text : #{cleaned}"
+    if cleaned[0] is "/"
+      @handleSlash cleaned
     else
-      client.lpush @ingressList(), text
-      client.publish INGRESS_MSGS_FEED, @id
+      if @ingressProcessStream
+        @ingressProcessStream.write("#{text}\n")
+      else
+        client.lpush @ingressList(), text
+        client.publish INGRESS_MSGS_FEED, @id
 
     @transcript.push { direction: 'ingress', text: text}
     @updateDb()

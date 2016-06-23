@@ -155,7 +155,7 @@ EventMachine.run do
     # If we are the master, go get some email.
     if master_script
       print_and_flush "Apparently, I'm the master!"
-      gmail = Gmail.connect!("text2email@green-bot.com", "gr33nb0t") if gmail.nil?
+      gmail = Gmail.connect!("xxxxx@gmail.com", "xxxxx") if gmail.nil?
 
       # Check for inbound emails.
       begin

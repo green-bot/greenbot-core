@@ -21,7 +21,7 @@ Mailer         = require("nodemailer")
 MongoConnection = require('./mongo-singleton')
 Os             = require("os")
 Pipe           = require("multipipe")
-Promise        = require('node-promise')
+Promise        = require('es6-promise').Promise
 Redis          = require('redis')
 ShortUUID      = require('shortid')
 Stream         = require('stream')
@@ -101,12 +101,8 @@ class Session
     Session.active[key]
 
   @findBot = (handle, keyword) ->
-    Session.botsDb.find
-      $and: [
-        'addresses.networkHandleName': handle,
-        'addresses.keywords': $in: [keyword]
-      ]
-    .limit(1).next()
+    Session.botsDb.find({ addresses: { $elemMatch: { keywords: keyword, networkHandleName: handle}}})
+    .limit(1).next() #TODO add validation to the UI so we don't have to limit this here
 
   @allKeywords = (handle) ->
     Session.botsDb.find 'addresses.networkHandleName': handle
@@ -175,6 +171,9 @@ class Session
     @automated = true
     @processStack = []
     @networkHandleName = @msg.dst.toLowerCase()
+    @completedAt = null
+    @transferChildId = null
+    @transferParentId = null
 
     # Get the other keywords that also match
     # this network handle.
@@ -198,6 +197,7 @@ class Session
     .then =>
       @kickOffProcess(@command, @arguments, @opts, @lang)
     .then =>
+      events.emit 'session:started', @
       @debug "Session started"
     .catch (err) -> errorHandler("Error in session constructor", err)
 
@@ -286,11 +286,15 @@ class Session
     transcript:     @transcript
     src:            @src
     dst:            @dst
+    initialMessage: @msg
     sessionKey:     @sessionKey
     sessionId:      @id
     collectedData:  @collectedData
     updatedAt:      new Date()
     createdAt:      @createdAt
+    completedAt:    @completedAt
+    transferChildId: @transferChildId
+    transferParentId: @transferParentId
     lang:           @lang
     botId:          @bot._id
     _id:            @id
@@ -305,6 +309,7 @@ class Session
     else
       @debug "Ending and recording session #{@id}"
       delete Session.active[@sessionKey]
+      @completedAt = new Date()
       events.emit 'session:ended', @information()
 
   cmdSettings: =>
@@ -324,7 +329,25 @@ class Session
     @debug "Running session #{@id} as a visitor"
     return false
 
+  @getInitialParent = (sessionId) ->
+    debug "SESSION ID!!!!!!: " + sessionId
+    Session.sessionsDb.findOne({_id: sessionId})
+    .then (session) =>
+      return session unless session.transferParentId
+      Session.getInitialParent(session.transferParentId)
+
+  originalMessage: =>
+    unless @transferParentId
+      @debug "No transfer parent ID"
+      return Promise.resolve(@msg)
+    Session.getInitialParent(@id)
+    .then (session) =>
+      @debug "INITIAL PARENT!!!!!!:"
+      @debug session
+      session.initialMessage
+
   transferTo: (keyword) =>
+    return unless keyword.trim() in @keywords
     @debug 'We have a slash command on our hands'
     transfer = (session) =>
       @debug 'transfer session initiated!!!!!'
@@ -334,8 +357,20 @@ class Session
       newMsg = _.clone(@msg)
       newMsg.txt = keyword
       events.emit 'ingress', newMsg #start session with keyword /slash
+
     events.on 'session:ended', transfer
     client.publish TERMINATE_SESSION_FEED, @id #terminate this session
+
+    # The new session has started.
+    # Find new session, give it some context of where it came from
+    wireUpTransferData = (session) =>
+      return unless session.src is @src and session.dest is @dest #check that it's the tranfserred session
+      events.removeListener('session:started', wireUpTransferData)
+      session.transferParentId = @id
+      @transferChildId = session.id
+      session.updateDb()
+      @updateDb()
+     events.on 'session:started', wireUpTransferData
 
   handleSlash: (command) =>
     @debug "Handling line #{command}"
@@ -344,7 +379,10 @@ class Session
         @debug "received /quit command --- QUITTING!!!!"
         client.publish TERMINATE_SESSION_FEED, @id
       when command is '/restart'
-        @transferTo @msg.txt
+        @debug "received /restart command --- RESTARTING!!!!"
+        @originalMessage().then (msg) =>
+          @debug "ORIGINAL MESSAGE WAS!!!!: #{msg}"
+          @transferTo msg.txt
       when command[0] is "/"
         @transferTo command[1..]
 

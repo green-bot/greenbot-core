@@ -81,6 +81,13 @@ addScript = (pkg, path) ->
       script.default_cmd = 'npm start --loglevel silent'
       script.default_path = packagePath
       script._id = Random.id()
+
+      readme = ''
+      try
+        bufData = Fs.readFileSync  packagePath + '/README.md'
+        readme = bufData.toString()
+      script.readme = readme
+
       Logger.info "Inserted into the DB"
       Logger.info script
       scripts.insert script

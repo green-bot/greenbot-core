@@ -310,6 +310,7 @@ class Session
       @debug "Ending and recording session #{@id}"
       delete Session.active[@sessionKey]
       @completedAt = new Date()
+      @updateDb()
       events.emit 'session:ended', @information()
 
   cmdSettings: =>
@@ -470,6 +471,9 @@ events.on 'ingress', (msg) ->
     egressMsg = {src: src, dst: dst, txt: txt}
     events.emit egressEvent, egressMsg
 
+events.on 'api:killSession', (sessionId) ->
+  debug "Killing session #{sessionId}"
+  client.publish TERMINATE_SESSION_FEED, sessionId
 
 sessionClient.on 'message', (chan, sessionId) ->
   session = Session.findById(sessionId)

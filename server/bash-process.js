@@ -54,6 +54,7 @@ var ingressMsg = function (sessionId, txt) {
 var terminateSessionFunction = function (sessionId) {
   var session = sessions[sessionId]
   if (!session) return
+    //gbProcess.complete(sessionId)
   session.process.kill('SIGHUP')
 }
 

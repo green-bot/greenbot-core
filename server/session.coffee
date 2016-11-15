@@ -97,6 +97,11 @@ class Session
     for key, session of Session.active
       return session if session.id is id
 
+  @findBySrcAndDst = (msg) ->
+    key = genSessionKey(msg)
+    findByKey(key)
+
+
   @findByKey = (key) ->
     Session.active[key]
 
@@ -157,6 +162,21 @@ class Session
           new Session(msg, candidateBot, cb)
       .catch (err) -> errorHandler("Error thrown in finding the bot", err)
 
+  @findSessionIdByIdentInfo: (sessionIdentInfo) ->
+    if typeof(sessionIdentInfo) is 'string'
+      return new Promise (resolve, reject) ->
+        resolve sessionIdentInfo
+
+    console.log "looking for session by src and dst"
+    console.log {src: sessionIdentInfo.src, dst: sessionIdentInfo.dst}
+    Session.sessionsDb.findOne(src: sessionIdentInfo.src, dst: sessionIdentInfo.dst).then (session) ->
+      console.log "found: "
+      console.log session
+      session.sessionId
+  
+  @markComplete = (sessionId) ->
+    Session.sessionsDb.update {sessionId: sessionId}, {completedAt: new Date() }
+    
   constructor: (@msg, @bot, @cb) ->
     @id = Random.id()
     @debug = require('debug')("session:#{@id}")
@@ -471,9 +491,14 @@ events.on 'ingress', (msg) ->
     egressMsg = {src: src, dst: dst, txt: txt}
     events.emit egressEvent, egressMsg
 
-events.on 'api:killSession', (sessionId) ->
-  debug "Killing session #{sessionId}"
-  client.publish TERMINATE_SESSION_FEED, sessionId
+events.on 'api:killSession', (sessionIdentInfo) ->
+  Session.findSessionIdByIdentInfo(sessionIdentInfo)
+  .then (sessionId) ->
+    session = Session.findById(sessionId)
+    Session.markComplete(sessionId) unless session?
+      
+    debug "Killing session #{sessionId}"
+    client.publish TERMINATE_SESSION_FEED, sessionId
 
 sessionClient.on 'message', (chan, sessionId) ->
   session = Session.findById(sessionId)

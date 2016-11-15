@@ -14,6 +14,8 @@ app.delete '/api/uninstallPackage', (req, res) ->
   console.log "Requested npm pkg removal: #{ packageName }"
   events.emit("api:uninstallPackage", packageName)
 app.delete '/api/killSession', (req, res) ->
-  sessionId = req.body.sessionId
-  console.log "Requested we kill session #{sessionId}"
-  events.emit 'api:killSession', sessionId
+  sessionIdentInfo = sessionId = req.body.sessionId
+  sessionIdentInfo = {src: req.body.src, dst: req.body.dst} unless sessionId
+  console.log "Requested we kill session :"
+  console.log sessionIdentInfo
+  events.emit 'api:killSession', sessionIdentInfo
